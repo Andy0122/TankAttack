@@ -31,6 +31,8 @@ public:
      */
     void draw(GtkWidget *widget, cairo_t *cr);
 
+    void draw2(GtkWidget *widget, cairo_t *cr);
+
     /**
      * @brief Obtiene el tamaño de las celdas.
      *

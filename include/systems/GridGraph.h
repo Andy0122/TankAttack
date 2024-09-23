@@ -26,25 +26,25 @@ public:
  */
 class GridGraph {
 private:
-    static const int rows = 11; ///< Número predefinido de filas en la cuadrícula.
-    static const int cols = 21; ///< Número predefinido de columnas en la cuadrícula.
+    static const int rows = 13; ///< Número predefinido de filas en la cuadrícula.
+    static const int cols = 25; ///< Número predefinido de columnas en la cuadrícula.
     std::vector<std::vector<Node>> grid;  ///< Matriz que contiene los nodos del grafo.
     std::vector<std::vector<int>> adjList; ///< Lista de adyacencia para representar conexiones entre nodos.
-
-    /**
-     * @brief Convierte coordenadas 2D en un índice 1D en la cuadrícula.
-     *
-     * @param row Fila del nodo.
-     * @param col Columna del nodo.
-     * @return Índice 1D correspondiente.
-     */
-    int toIndex(int row, int col) const;
 
 public:
     /**
      * @brief Constructor de la clase GridGraph. Inicializa la cuadrícula de nodos.
      */
     GridGraph();
+
+    /**
+    * @brief Convierte coordenadas 2D en un índice 1D en la cuadrícula.
+    *
+    * @param row Fila del nodo.
+    * @param col Columna del nodo.
+    * @return Índice 1D correspondiente.
+    */
+    int toIndex(int row, int col) const;
 
     /**
      * @brief Conecta los nodos accesibles en la cuadrícula.
@@ -96,7 +96,14 @@ public:
     /**
      * @brief Genera obstáculos aleatorios en la cuadrícula, marcando nodos como inaccesibles.
      */
-    void generateObstacles();
+    void generateObstacles(int density);
+
+    bool checkOverlap(const std::vector<std::vector<int>> &rotatedPattern, int startRow, int startCol,
+                      const std::vector<int> &occupiedPositions);
+
+    bool areAccessibleNodesConnected();
+
+    void placePattern(const std::vector<std::vector<int>> &pattern, int row, int col, bool revert);
 
     /**
      * @brief Verifica si un nodo específico es seguro.

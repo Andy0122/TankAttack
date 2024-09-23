@@ -38,8 +38,9 @@ int main(int argc, char *argv[]) {
 
     // Crear el grafo
     GridGraph gridGraph;
-    gridGraph.generateObstacles();
+    gridGraph.generateObstacles(2);
     gridGraph.connectNodes();
+    gridGraph.printAccessibility();
 
     // Crear la ventana
     GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);

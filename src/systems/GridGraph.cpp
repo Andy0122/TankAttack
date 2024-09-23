@@ -1,6 +1,9 @@
 #include "../../include/systems/GridGraph.h"
 #include <cstdlib>
 #include <ctime>
+#include <queue>
+#include <utility>
+#include <algorithm>
 
 /**
  * @brief Constructor de la clase Node.
@@ -29,6 +32,70 @@ GridGraph::GridGraph() {
 
     // Inicializar la lista de adyacencia
     adjList.resize(rows * cols);
+}
+
+/**
+ * @brief Verifica si un nodo es un nodo seguro.
+ *
+ * Un nodo seguro no puede ser inaccesible.
+ *
+ * @param nodeId ID del nodo a verificar.
+ * @return true Si el nodo es seguro.
+ * @return false Si el nodo no es seguro.
+ */
+bool GridGraph::isSafeNode(int nodeId) {
+    std::vector<int> safeNodes = {75, 76, 98, 99, 100, 101, 102, 122, 123, 124, 125, 126, 127, 147, 148, 149, 150, 151,
+152, 172, 173, 174, 175, 176, 177, 197, 198, 199, 200, 201, 202, 222, 223, 224, 225,
+226, 248, 249};
+    //std::vector<int> safeNodes = {63, 64, 82, 83, 84, 85, 86, 102, 103, 104, 105, 106, 107, 123, 124, 125, 126, 127, 128, 144, 145, 146, 147, 148, 166, 167};
+    // Recorrer la lista de nodos seguros y verificar si nodeId está en ella
+    for (int safeNode : safeNodes) {
+        if (safeNode == nodeId) {
+            return true;
+        }
+    }
+    return false;
+}
+
+std::vector<std::vector<std::vector<int>>> getPredefinedPatterns() {
+    return {
+            {
+                {0, 0, 0, 0},{0, 1, 1, 0},{0, 1, 0, 0},{0, 0, 0, 0}
+            },
+            {
+                {1,1,0},{1,1,0},{0,0,0}
+            },
+            {
+                {0,1,0},{0,1,0},{0,1,0}
+            },
+            {
+                {1, 1, 0, 1},{1, 0, 0, 1},{1, 0, 0, 1},{1, 0, 1, 1}
+            },
+            {
+                {0, 0, 0, 0, 0, 0},{0, 0, 0, 1, 0, 0},{0, 1, 1, 1, 0, 0},{0, 0, 1, 1, 1, 0},
+                {0, 0, 1, 0, 0, 0},{0, 0, 0, 0, 0, 0}
+            },
+            {
+                {1, 1, 0, 0, 1}, {1, 1, 0, 1, 1},{0, 0, 0, 0, 1},{1, 1, 1, 1, 1},{0, 0, 0, 0, 0}
+            },
+            {
+                {0, 0, 1, 1, 0, 0}, {0, 0, 0, 0, 0, 0}, {1, 0, 1, 1, 0, 1}, {1, 0, 0, 1, 0, 1},
+                {0, 0, 0, 0, 0, 0}, {0, 0, 1, 1, 0, 0}
+            }
+    };
+}
+
+std::vector<std::vector<int>> rotatePattern(const std::vector<std::vector<int>>& pattern) {
+    int rows = pattern.size();
+    int cols = pattern[0].size();
+    std::vector<std::vector<int>> rotated(cols, std::vector<int>(rows));
+
+    for (int row = 0; row < rows; ++row) {
+        for (int col = 0; col < cols; ++col) {
+            rotated[col][rows - row - 1] = pattern[row][col];
+        }
+    }
+    return rotated;
 }
 
 /**
@@ -152,56 +219,162 @@ const Node& GridGraph::getNode(int row, int col) const {
 }
 
 /**
- * @brief Verifica si un nodo es un nodo seguro.
- *
- * Un nodo seguro no puede ser inaccesible.
- *
- * @param nodeId ID del nodo a verificar.
- * @return true Si el nodo es seguro.
- * @return false Si el nodo no es seguro.
- */
-bool GridGraph::isSafeNode(int nodeId) {
-    std::vector<int> safeNodes = {63, 64, 86, 107, 128, 148, 147, 85, 84, 105, 106, 127, 126, 125, 124, 123, 102, 103, 104, 83, 82, 144, 145, 146, 167, 166};
-
-    // Recorrer la lista de nodos seguros y verificar si nodeId está en ella
-    for (int safeNode : safeNodes) {
-        if (safeNode == nodeId) {
-            return true;
-        }
-    }
-    return false;
-}
-
-/**
  * @brief Genera obstáculos aleatorios en la cuadrícula.
  *
  * Genera zonas inaccesibles aleatorias, respetando los nodos seguros.
  */
-void GridGraph::generateObstacles() {
-    // Inicializar random seed
+void GridGraph::generateObstacles(int density) {
+    if (density == 0) {
+        return;  // No se generan obstáculos
+    }
+
     std::srand(std::time(0));
 
-    // Número de obstáculos a generar (puedes ajustar este número según el tamaño de la cuadrícula)
-    int numObstacles = 10 + std::rand() % 10;  // Generar entre 10 y 20 obstáculos
+    // Calcular el número máximo de obstáculos según la densidad (0-10)
+    int maxObstacles = (rows * cols * density) / 60;
+    int numObstacles = 0;
 
-    for (int i = 0; i < numObstacles; ++i) {
-        // Seleccionar una posición inicial aleatoria para el obstáculo
-        int startRow = std::rand() % rows;
-        int startCol = std::rand() % cols;
+    // Lista para registrar los IDs de las posiciones donde ya se colocaron obstáculos
+    std::vector<int> occupiedPositions;
 
-        // Tamaño aleatorio del obstáculo
-        int obstacleWidth = 1 + std::rand() % 3;  // Ancho del obstáculo (entre 1 y 3)
-        int obstacleHeight = 1 + std::rand() % 3;  // Alto del obstáculo (entre 1 y 3)
+    // Obtener los patrones predefinidos
+    std::vector<std::vector<std::vector<int>>> patterns = getPredefinedPatterns();
 
-        // Generar un obstáculo de forma rectangular
-        for (int row = startRow; row < startRow + obstacleHeight && row < rows; ++row) {
-            for (int col = startCol; col < startCol + obstacleWidth && col < cols; ++col) {
-                int nodeId = row * cols + col;
+    while (numObstacles < maxObstacles) {
+        // Seleccionar un patrón aleatorio
+        const std::vector<std::vector<int>>& pattern = patterns[std::rand() % patterns.size()];
 
-                // Usar el metodo isSafeNode para verificar si el nodo es seguro antes de hacerlo inaccesible
-                if (!isSafeNode(nodeId)) {
-                    grid[row][col].accessible = false;  // Hacer inaccesible
+        // Rotar el patrón aleatoriamente
+        int rotations = std::rand() % 4;
+        auto rotatedPattern = pattern;
+        for (int i = 0; i < rotations; ++i) {
+            rotatedPattern = rotatePattern(rotatedPattern);
+        }
+
+        // Seleccionar una posición aleatoria
+        int startRow = std::rand() % (rows - rotatedPattern.size() + 1);
+        int startCol = std::rand() % (cols - rotatedPattern[0].size() + 1);
+
+        // Verificar solapamiento con la nueva función
+        if (checkOverlap(rotatedPattern, startRow, startCol, occupiedPositions)) {
+            continue;  // Si se solapa con un obstáculo o una zona segura, no se coloca el patrón
+        }
+
+        // Colocar el patrón en la cuadrícula
+        for (int r = 0; r < rotatedPattern.size(); ++r) {
+            for (int c = 0; c < rotatedPattern[0].size(); ++c) {
+                int nodeId = toIndex(startRow + r, startCol + c);
+                grid[startRow + r][startCol + c].accessible = (rotatedPattern[r][c] == 0) ? true : false;
+
+                // Añadir el ID de la posición (ya sea 0 o 1) a occupiedPositions
+                occupiedPositions.push_back(nodeId);
+            }
+        }
+
+        numObstacles++;
+
+        // Verificar que los nodos accesibles aún están conectados
+        if (!areAccessibleNodesConnected()) {
+            // Revertir si los nodos accesibles se desconectaron
+            placePattern(rotatedPattern, startRow, startCol, true);  // Revertir el patrón
+            if (std::rand() % 2 == 0) {
+                numObstacles--;
+            }
+            // Eliminar los IDs recién agregados de la lista
+            for (int r = 0; r < rotatedPattern.size(); ++r) {
+                for (int c = 0; c < rotatedPattern[0].size(); ++c) {
+                    occupiedPositions.pop_back();  // Quitar el último ID agregado
                 }
+            }
+        }
+    }
+}
+
+
+bool GridGraph::checkOverlap(const std::vector<std::vector<int>>& rotatedPattern, int startRow, int startCol, const std::vector<int>& occupiedPositions) {
+    bool overlaps = false;
+
+    for (int r = 0; r < rotatedPattern.size() && !overlaps; ++r) {
+        for (int c = 0; c < rotatedPattern[0].size(); ++c) {
+            int nodeId = toIndex(startRow + r, startCol + c);
+
+            // Verificar si ya está ocupado o es una zona segura (aunque el valor sea 0)
+            if (std::find(occupiedPositions.begin(), occupiedPositions.end(), nodeId) != occupiedPositions.end() ||
+                (rotatedPattern[r][c] == 1 && isSafeNode(nodeId))) {
+                overlaps = true;
+                break;
+                }
+        }
+    }
+
+    return overlaps;
+}
+
+
+bool GridGraph::areAccessibleNodesConnected() {
+    std::vector<std::vector<bool>> visited(rows, std::vector<bool>(cols, false));
+    std::queue<std::pair<int, int>> q;
+    int accessibleCount = 0;
+
+    // Encontrar un nodo accesible para iniciar la búsqueda
+    bool startFound = false;
+    for (int row = 0; row < rows && !startFound; ++row) {
+        for (int col = 0; col < cols; ++col) {
+            if (grid[row][col].accessible) {
+                q.push({row, col});
+                visited[row][col] = true;
+                startFound = true;
+                break;
+            }
+        }
+    }
+
+    // Si no hay nodos accesibles, consideramos que no hay problema de conectividad
+    if (q.empty()) {
+        return true;
+    }
+
+    // Contar la cantidad total de nodos accesibles
+    for (int row = 0; row < rows; ++row) {
+        for (int col = 0; col < cols; ++col) {
+            if (grid[row][col].accessible) {
+                accessibleCount++;
+            }
+        }
+    }
+
+    // Realizar la búsqueda BFS
+    int visitedCount = 0;
+    while (!q.empty()) {
+        auto [currentRow, currentCol] = q.front();
+        q.pop();
+        visitedCount++;
+
+        // Obtener los vecinos (arriba, abajo, izquierda, derecha)
+        std::vector<std::pair<int, int>> neighbors = {
+            {currentRow - 1, currentCol}, {currentRow + 1, currentCol},
+            {currentRow, currentCol - 1}, {currentRow, currentCol + 1}
+        };
+
+        for (const auto& [nRow, nCol] : neighbors) {
+            if (nRow >= 0 && nRow < rows && nCol >= 0 && nCol < cols &&
+                grid[nRow][nCol].accessible && !visited[nRow][nCol]) {
+                visited[nRow][nCol] = true;
+                q.push({nRow, nCol});
+                }
+        }
+    }
+
+    // Verificar si se visitaron todos los nodos accesibles
+    return visitedCount == accessibleCount;
+}
+
+
+void GridGraph::placePattern(const std::vector<std::vector<int>>& pattern, int row, int col, bool revert = false) {
+    for (int r = 0; r < pattern.size(); ++r) {
+        for (int c = 0; c < pattern[0].size(); ++c) {
+            if (pattern[r][c] == 1) {
+                grid[row + r][col + c].accessible = revert ? true : false;
             }
         }
     }

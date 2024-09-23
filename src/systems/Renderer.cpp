@@ -88,6 +88,47 @@ void Renderer::draw(GtkWidget *widget, cairo_t *cr) {
     }
 }
 
+// Draw save zones
+void Renderer::draw2(GtkWidget *widget, cairo_t *cr) {
+    GtkAllocation allocation;
+    gtk_widget_get_allocation(widget, &allocation);
+
+    calculateDimensions(allocation.width, allocation.height);  // Calcular el tamaño de las celdas
+
+    for (int row = 0; row < gridGraph.getRows(); ++row) {
+        for (int col = 0; col < gridGraph.getCols(); ++col) {
+            // Obtener el nodo específico
+            const Node& node = gridGraph.getNode(row, col);
+
+            // Verificar si el nodo es seguro o no seguro
+            bool isSafe = gridGraph.isSafeNode(gridGraph.toIndex(row, col));
+
+            // Guardar el estado actual del contexto
+            cairo_save(cr);
+
+            // Establecer el color en función de si el nodo es seguro o no
+            if (isSafe) {
+                cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);  // Verde para nodos seguros
+            } else {
+                cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);  // Rojo para nodos no seguros
+            }
+
+            // Dibujar el rectángulo del nodo
+            cairo_rectangle(cr, xOffset + col * cellSize, yOffset + row * cellSize, cellSize, cellSize);
+            cairo_fill(cr);  // Rellenar el rectángulo con el color seleccionado
+
+            // Restaurar el estado original del contexto
+            cairo_restore(cr);
+
+            // Dibujar bordes
+            cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);  // Negro para los bordes
+            cairo_rectangle(cr, xOffset + col * cellSize, yOffset + row * cellSize, cellSize, cellSize);
+            cairo_stroke(cr);
+        }
+    }
+}
+
+
 /**
  * @brief Calcula el tamaño de las celdas y los offsets en función del tamaño de la ventana.
  *
