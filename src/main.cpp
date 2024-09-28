@@ -1,7 +1,7 @@
 #include <gtk/gtk.h>
-#include "../include/Controller.h"
-#include "../include/Model.h"
-#include "../include/View.h"
+#include "Controller.h"
+#include "Model.h"
+#include "View.h"
 
 
 static void activate(GtkApplication* app, gpointer user_data) {
@@ -10,6 +10,8 @@ static void activate(GtkApplication* app, gpointer user_data) {
     GtkWidget* window = gtk_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(window), "Tank Attack!");
     gtk_window_set_default_size(GTK_WINDOW(window), 1440, 900);
+    gtk_widget_set_vexpand(window, TRUE);
+    gtk_widget_set_hexpand(window, TRUE);
 
     // Create view
     auto* view = new View(window);

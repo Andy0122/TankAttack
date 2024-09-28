@@ -1,27 +1,12 @@
 #include "View.h"
 
 View::View(GtkWidget *window) {
-    GtkWidget* vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-    gtk_container_add(GTK_CONTAINER(window), vbox);
-
-    GtkWidget* hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-    gtk_box_set_homogeneous(GTK_BOX(hbox), TRUE);
-    gtk_box_pack_start(GTK_BOX(vbox), hbox, TRUE, FALSE, 0);
-
-    drawingArea = gtk_drawing_area_new();
-    gtk_widget_set_size_request(drawingArea, COLS * CELL_SIZE, ROWS * CELL_SIZE);
-    gtk_box_pack_start(GTK_BOX(hbox), drawingArea, FALSE, FALSE, 0);
-
-    statusBar = gtk_label_new("Status Bar");
-    gtk_box_pack_start(GTK_BOX(vbox), statusBar, FALSE, FALSE, 0);
-
+    GtkWidget* vbox = createVBox(window);
+    GtkWidget* hbox = createHBox(vbox);
+    createDrawingArea(hbox);
+    createStatusBar(vbox);
     loadAssets();
-
-    g_signal_connect(G_OBJECT(drawingArea), "draw", G_CALLBACK(onDraw), this);
-    g_signal_connect(G_OBJECT(drawingArea), "button-press-event", G_CALLBACK(onClick), this);
-
-    gtk_widget_add_events(drawingArea, GDK_BUTTON_PRESS_MASK);
-
+    connectSignals();
     gtk_widget_show_all(window);
 }
 
@@ -31,6 +16,33 @@ void View::setGridMap(GridGraph *map) {
 
 void View::update() const {
     gtk_widget_queue_draw(drawingArea);
+}
+
+GtkWidget* View::createVBox(GtkWidget *window) {
+    GtkWidget* vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_container_add(GTK_CONTAINER(window), vbox);
+    gtk_widget_set_vexpand(vbox, TRUE);
+
+    return vbox;
+}
+
+GtkWidget* View::createHBox(GtkWidget *vbox) {
+    GtkWidget* hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    gtk_box_set_homogeneous(GTK_BOX(hbox), TRUE);
+    gtk_box_pack_start(GTK_BOX(vbox), hbox, TRUE, FALSE, 0);
+
+    return hbox;
+}
+
+void View::createDrawingArea(GtkWidget *hbox) {
+    drawingArea = gtk_drawing_area_new();
+    gtk_widget_set_size_request(drawingArea, COLS * CELL_SIZE, ROWS * CELL_SIZE);
+    gtk_box_pack_start(GTK_BOX(hbox), drawingArea, FALSE, FALSE, 0);
+}
+
+void View::createStatusBar(GtkWidget *vbox) {
+    statusBar = gtk_label_new("Status Bar");
+    gtk_box_pack_start(GTK_BOX(vbox), statusBar, TRUE, TRUE, 0);
 }
 
 void View::loadAssets() {
@@ -45,6 +57,11 @@ void View::loadAssets() {
     }
 }
 
+void View::connectSignals() {
+    g_signal_connect(G_OBJECT(drawingArea), "draw", G_CALLBACK(onDraw), this);
+    g_signal_connect(G_OBJECT(drawingArea), "button-press-event", G_CALLBACK(onClick), this);
+    gtk_widget_add_events(drawingArea, GDK_BUTTON_PRESS_MASK);
+}
 
 void View::drawMap(cairo_t *cr) {
     for (int row = 0; row < ROWS; ++row) {
@@ -62,10 +79,6 @@ void View::drawMap(cairo_t *cr) {
             cairo_paint(cr);
         }
     }
-    // cairo_set_source_rgb(cr, 1.0, 0.0, 0.0); // Color rojo
-    // cairo_set_line_width(cr, 2.0); // Ancho de línea
-    // cairo_rectangle(cr, 0, 0, gtk_widget_get_allocated_width(drawingArea), gtk_widget_get_allocated_height(drawingArea));
-    // cairo_stroke(cr);
 }
 
 gboolean View::onDraw(GtkWidget *widget, cairo_t *cr, gpointer data) {
@@ -83,9 +96,9 @@ gboolean View::onClick(GtkWidget *widget, const GdkEventButton *event, gpointer 
     int row = event->y / CELL_SIZE;
 
     if (col >= 0 && col < COLS && row >= 0 && row < ROWS) {
-        int id = row * COLS + col;  // ID del cuadro clickeado
+        const int id = row * COLS + col;  // ID del cuadro clickeado
         g_print("Se hizo clic en el cuadro con ID: %d\n", id);
     }
 
-    return TRUE;  // Devolver TRUE para indicar que el evento fue manejado
+    return TRUE;
 }
