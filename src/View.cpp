@@ -14,6 +14,10 @@ void View::setGridMap(GridGraph *map) {
     gridMap = map;
 }
 
+void View::setTank(Tank *tank) {
+    this->tank = tank;
+}
+
 void View::update() const {
     gtk_widget_queue_draw(drawingArea);
 }
@@ -55,6 +59,11 @@ void View::loadAssets() {
         assets["obstacle"] = gdk_pixbuf_scale_simple(originalObstacle, CELL_SIZE, CELL_SIZE, GDK_INTERP_BILINEAR);
         g_object_unref(originalObstacle);
     }
+
+    if (GdkPixbuf* yellowTank = gdk_pixbuf_new_from_file("../assets/tanks/yellow_tank.png", nullptr)) {
+        assets["yellow_tank"] = gdk_pixbuf_scale_simple(yellowTank, CELL_SIZE, CELL_SIZE, GDK_INTERP_BILINEAR);
+        g_object_unref(yellowTank);
+    }
 }
 
 void View::connectSignals() {
@@ -69,7 +78,7 @@ void View::drawMap(cairo_t *cr) {
             const Node& node = gridMap->getNode(row, col);
 
             const GdkPixbuf* pixbuf = nullptr;
-            if (!node.accessible) {
+            if (!node.obstacle) {
                 pixbuf = assets["obstacle"];
             } else {
                 pixbuf = assets["cell"];
@@ -81,10 +90,17 @@ void View::drawMap(cairo_t *cr) {
     }
 }
 
+void View::drawTank(cairo_t *cr) {
+    const GdkPixbuf* pixbuf = assets["yellow_tank"];
+    gdk_cairo_set_source_pixbuf(cr, pixbuf, tank->getColumn() * CELL_SIZE, tank->getRow() * CELL_SIZE);
+    cairo_paint(cr);
+}
+
 gboolean View::onDraw(GtkWidget *widget, cairo_t *cr, gpointer data) {
     const auto view = static_cast<View*>(data);
 
     view->drawMap(cr);
+    view->drawTank(cr);
 
     return FALSE;
 }
@@ -92,13 +108,50 @@ gboolean View::onDraw(GtkWidget *widget, cairo_t *cr, gpointer data) {
 gboolean View::onClick(GtkWidget *widget, const GdkEventButton *event, gpointer data) {
     const auto* view = static_cast<View*>(data);
 
-    const int col = event->x / CELL_SIZE;
-    int row = event->y / CELL_SIZE;
+    const int column = event->x / CELL_SIZE; // X position
+    const int row = event->y / CELL_SIZE; // Y position
 
-    if (col >= 0 && col < COLS && row >= 0 && row < ROWS) {
-        const int id = row * COLS + col;  // ID del cuadro clickeado
+    if (view->tankClicked(row, column)) {
+        handleSelectTank(view->tank);
+    }
+
+    else if (cellClicked(row, column)) {
+        const int id = row * COLS + column;  // ID del cuadro clickeado
         g_print("Se hizo clic en el cuadro con ID: %d\n", id);
+
+        if (event->button == 1) {
+            view->handleMoveTank(view->tank, row, column);
+        }
+        //
+        // if (event->button == 3 && view->tank->isSelected()) {
+        //     // Attack
     }
 
     return TRUE;
+}
+
+bool View::cellClicked(const int row, const int column) {
+    return row >= 0 && row < COLS && column >= 0 && column < ROWS;
+}
+
+bool View::tankClicked(const int row, const int column) const {
+    return row == tank->getRow() && column == tank->getColumn();
+}
+
+void View::handleSelectTank(Tank* tank) {
+    if (!tank->isSelected()) {
+        tank->setSelected(true);
+    }
+}
+
+void View::handleMoveTank(Tank* tank, const int row, const int column) const {
+    if (tank->isSelected()) {
+        if (!gridMap->isObstacle(row, column) && !gridMap->isOccupied(row, column)) {
+            gridMap->removeTank(tank->getRow(), tank->getColumn());
+            tank->setPosition(row, column);
+            gridMap->placeTank(row, column);
+            tank->setSelected(false);
+            update();
+        }
+    }
 }

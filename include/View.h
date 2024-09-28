@@ -4,6 +4,7 @@
 #include <gtk/gtk.h>
 #include <string>
 
+#include "entities/Tank.h"
 #include "systems/GridGraph.h"
 
 
@@ -24,6 +25,8 @@ public:
      */
     void setGridMap(GridGraph* map);
 
+    void setTank(Tank* tank);
+
     /**
      * @brief Updates the game interface
      */
@@ -31,6 +34,7 @@ public:
 
 private:
     GtkWidget* drawingArea; ///< Drawing area of the game
+    Tank* tank; ///< Temp tank of the game
     GtkWidget* statusBar; ///< Status bar of the game
     GridGraph* gridMap = nullptr; ///< Map of the game
     std::map<std::string, GdkPixbuf*> assets; ///< Assets of the game
@@ -77,6 +81,8 @@ private:
      */
     void drawMap(cairo_t* cr);
 
+    void drawTank(cairo_t* cr);
+
     /**
      * @brief Draws the path the game interface
      * @param widget GtkWidget* Widget
@@ -92,6 +98,18 @@ private:
      * @param data gpointer Data
      */
     static gboolean onClick(GtkWidget* widget, const GdkEventButton* event, gpointer data);
+
+    static bool cellClicked(int row, int column);
+
+    [[nodiscard]] bool tankClicked(int row, int column) const;
+
+    /**
+     * @brief Handles the selection of a tank
+     * @param tank Tank* Tank
+     */
+    static void handleSelectTank(Tank* tank);
+
+    void handleMoveTank(Tank* tank, int row, int column) const;
 
     static constexpr int CELL_SIZE = 50; ///< Size of the cell
     static constexpr int ROWS = 11; ///< Number of rows

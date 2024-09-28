@@ -15,7 +15,8 @@ class Tank {
 private:
     int health;          ///< The health of the tank (integer value).
     std::string color;   ///< The color of the tank (as a string).
-    float position[2];   ///< The position of the tank in 2D space (array of two floats: x, y).
+    int row, column;   ///< The cell position of the tank in the grid map.
+    bool selected = false; ///< Indicates if the tank is selected.
 
 public:
     /**
@@ -25,10 +26,10 @@ public:
      * 
      * @param h Initial health of the tank.
      * @param c Color of the tank.
-     * @param x X coordinate of the tank's initial position.
-     * @param y Y coordinate of the tank's initial position.
+     * @param row X coordinate of the tank's initial position.
+     * @param column Y coordinate of the tank's initial position.
      */
-    Tank(int h, std::string c, float x, float y);
+    Tank(int h, std::string c, int row, int column);
 
     /**
      * @brief Gets the current health of the tank.
@@ -51,12 +52,16 @@ public:
      */
     std::string getColor() const;
 
+    [[nodiscard]] bool isSelected() const;
+
     /**
      * @brief Sets the color of the tank.
      * 
      * @param c New color value to set.
      */
     void setColor(std::string c);
+
+    void setSelected(bool s);
 
     /**
      * @brief Gets the current position of the tank.
@@ -65,13 +70,17 @@ public:
      */
     void getPosition() const;
 
+    [[nodiscard]] int getRow() const;
+
+    [[nodiscard]] int getColumn() const;
+
     /**
      * @brief Sets the position of the tank.
      * 
      * @param x New x coordinate.
      * @param y New y coordinate.
      */
-    void setPosition(float x, float y);
+    void setPosition(int newRow, int newColumn);
 
     /**
      * @brief Displays the tank's information.

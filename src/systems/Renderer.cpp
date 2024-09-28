@@ -60,7 +60,7 @@ void Renderer::draw(GtkWidget *widget, cairo_t *cr) {
             const Node& node = gridGraph.getNode(row, col);
 
             // Seleccionar la imagen a dibujar
-            cairo_surface_t *image = node.accessible ? accessibleImage : inaccessibleImage;
+            cairo_surface_t *image = node.obstacle ? accessibleImage : inaccessibleImage;
 
             // Calcular la escala en función del tamaño de la celda
             double imgWidth = cairo_image_surface_get_width(image);

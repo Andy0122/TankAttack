@@ -8,7 +8,7 @@
  * @param id Identificador único del nodo.
  * @param accessible Indica si el nodo es accesible (true por defecto).
  */
-Node::Node(int id, bool accessible) : id(id), accessible(accessible) {}
+Node::Node(int id, bool accessible) : id(id), obstacle(accessible) {}
 
 /**
  * @brief Constructor de la clase GridGraph.
@@ -51,32 +51,32 @@ void GridGraph::connectNodes() {
     for (int row = 0; row < rows; ++row) {
         for (int col = 0; col < cols; ++col) {
             Node& currentNode = grid[row][col];
-            if (!currentNode.accessible) {
+            if (!currentNode.obstacle) {
                 continue; // Si el nodo no es accesible, no se conecta
             }
 
             int currentIndex = toIndex(row, col);
 
             // Conectar al vecino de arriba
-            if (row > 0 && grid[row - 1][col].accessible) {
+            if (row > 0 && grid[row - 1][col].obstacle) {
                 int upIndex = toIndex(row - 1, col);
                 adjList[currentIndex].push_back(upIndex);
             }
 
             // Conectar al vecino de abajo
-            if (row < rows - 1 && grid[row + 1][col].accessible) {
+            if (row < rows - 1 && grid[row + 1][col].obstacle) {
                 int downIndex = toIndex(row + 1, col);
                 adjList[currentIndex].push_back(downIndex);
             }
 
             // Conectar al vecino de la izquierda
-            if (col > 0 && grid[row][col - 1].accessible) {
+            if (col > 0 && grid[row][col - 1].obstacle) {
                 int leftIndex = toIndex(row, col - 1);
                 adjList[currentIndex].push_back(leftIndex);
             }
 
             // Conectar al vecino de la derecha
-            if (col < cols - 1 && grid[row][col + 1].accessible) {
+            if (col < cols - 1 && grid[row][col + 1].obstacle) {
                 int rightIndex = toIndex(row, col + 1);
                 adjList[currentIndex].push_back(rightIndex);
             }
@@ -92,7 +92,23 @@ void GridGraph::connectNodes() {
  * @param accessible Valor booleano que indica si el nodo es accesible o no.
  */
 void GridGraph::setNodeAccessibility(int row, int col, bool accessible) {
-    grid[row][col].accessible = accessible;
+    grid[row][col].obstacle = accessible;
+}
+
+bool GridGraph::isObstacle(int row, int col) const {
+    return !grid[row][col].obstacle;
+}
+
+bool GridGraph::isOccupied(int row, int col) const {
+    return grid[row][col].occupied;
+}
+
+void GridGraph::placeTank(int row, int col) {
+    grid[row][col].occupied = true;
+}
+
+void GridGraph::removeTank(int row, int col) {
+    grid[row][col].occupied = false;
 }
 
 /**
@@ -116,7 +132,7 @@ void GridGraph::printGraph() const {
 void GridGraph::printAccessibility() const {
     for (int row = 0; row < rows; ++row) {
         for (int col = 0; col < cols; ++col) {
-            std::cout << (grid[row][col].accessible ? "1 " : "0 ");
+            std::cout << (grid[row][col].obstacle ? "1 " : "0 ");
         }
         std::cout << std::endl;
     }
@@ -200,7 +216,7 @@ void GridGraph::generateObstacles() {
 
                 // Usar el metodo isSafeNode para verificar si el nodo es seguro antes de hacerlo inaccesible
                 if (!isSafeNode(nodeId)) {
-                    grid[row][col].accessible = false;  // Hacer inaccesible
+                    grid[row][col].obstacle = false;  // Hacer inaccesible
                 }
             }
         }

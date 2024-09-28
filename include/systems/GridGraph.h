@@ -10,7 +10,8 @@
 class Node {
 public:
     int id;            ///< Identificador único del nodo.
-    bool accessible;   ///< Indica si el nodo es accesible o no.
+    bool obstacle;   ///< Indica si el nodo es accesible o no.
+    bool occupied = false;   ///< Indica si el nodo esta ocupado o no.
 
     /**
      * @brief Constructor del nodo.
@@ -64,6 +65,14 @@ public:
      * @param accessible Valor booleano que indica si el nodo es accesible.
      */
     void setNodeAccessibility(int row, int col, bool accessible);
+
+    [[nodiscard]] bool isObstacle(int row, int col) const;
+
+    [[nodiscard]] bool isOccupied(int row, int col) const;
+
+    void placeTank(int row, int col);
+
+    void removeTank(int row, int col);
 
     /**
      * @brief Imprime la accesibilidad de los nodos en la cuadrícula.
