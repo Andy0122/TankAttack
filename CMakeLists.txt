@@ -16,6 +16,8 @@ link_directories(${GTK_LIBRARY_DIRS})
 # Evitar que se usen -Wl,-rpath
 add_definitions(${GTK_CFLAGS_OTHER})
 
+include_directories(include)
+
 
 add_executable(TankAttack src/main.cpp
         src/entities/Tank.cpp
@@ -23,7 +25,10 @@ add_executable(TankAttack src/main.cpp
         include/systems/GridGraph.h
         src/systems/GridGraph.cpp
         include/systems/Renderer.h
-        src/systems/Renderer.cpp)
+        src/systems/Renderer.cpp
+        src/Model.cpp
+        src/View.cpp
+        src/Controller.cpp)
 
 # Linkear las librerías de GTK con tu ejecutable
 target_link_libraries(TankAttack ${GTK_LIBRARIES})
