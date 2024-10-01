@@ -1,6 +1,7 @@
 #include "../../include/systems/GridGraph.h"
 #include <cstdlib>
 #include <ctime>
+#include <random>
 
 /**
  * @brief Constructor de la clase Node.
@@ -103,7 +104,7 @@ bool GridGraph::isOccupied(int row, int col) const {
     return grid[row][col].occupied;
 }
 
-void GridGraph::placeTank(int row, int col) {
+void GridGraph::placeTank(const int row, const int col) {
     grid[row][col].occupied = true;
 }
 
@@ -187,6 +188,23 @@ bool GridGraph::isSafeNode(int nodeId) {
     }
     return false;
 }
+
+Position GridGraph::getRandomAccessiblePosition() const {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> rowDis(0, rows - 1);
+    std::uniform_int_distribution<> colDis(0, cols - 1);
+
+    auto randomPosition = Position(rowDis(gen), colDis(gen));
+    while (isObstacle(randomPosition.row, randomPosition.col)
+        || isOccupied(randomPosition.row, randomPosition.col)) {
+        randomPosition.row = rowDis(gen);
+        randomPosition.col = colDis(gen);
+    }
+
+    return randomPosition;
+}
+
 
 /**
  * @brief Genera obstáculos aleatorios en la cuadrícula.

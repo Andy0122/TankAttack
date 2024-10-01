@@ -28,7 +28,8 @@ add_executable(TankAttack src/main.cpp
         src/systems/Renderer.cpp
         src/Model.cpp
         src/View.cpp
-        src/Controller.cpp)
+        src/Controller.cpp
+        include/Position.h)
 
 # Linkear las librerías de GTK con tu ejecutable
 target_link_libraries(TankAttack ${GTK_LIBRARIES})

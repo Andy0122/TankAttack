@@ -19,6 +19,7 @@ private:
     bool selected = false; ///< Indicates if the tank is selected.
 
 public:
+    Tank();
     /**
      * @brief Constructor for the Tank class.
      * 

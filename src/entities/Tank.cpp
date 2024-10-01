@@ -1,6 +1,8 @@
 #include "../../include/entities/Tank.h"
 
 
+Tank::Tank() : health(0), color(""), row(0), column(0) {}
+
 Tank::Tank(int h, std::string c, int row, int column) : health(h), color(c), row(row), column(column) {}
 
 

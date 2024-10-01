@@ -14,8 +14,8 @@ void View::setGridMap(GridGraph *map) {
     gridMap = map;
 }
 
-void View::setTank(Tank *tank) {
-    this->tank = tank;
+void View::setTanks(Tank* tanks) {
+    this->tanks = tanks;
 }
 
 void View::update() const {
@@ -90,17 +90,20 @@ void View::drawMap(cairo_t *cr) {
     }
 }
 
-void View::drawTank(cairo_t *cr) {
+void View::drawTanks(cairo_t *cr) {
     const GdkPixbuf* pixbuf = assets["yellow_tank"];
-    gdk_cairo_set_source_pixbuf(cr, pixbuf, tank->getColumn() * CELL_SIZE, tank->getRow() * CELL_SIZE);
-    cairo_paint(cr);
+    for (int i = 0; i < 8; i++) {
+        const auto tank = &tanks[i];
+        gdk_cairo_set_source_pixbuf(cr, pixbuf, tank->getColumn() * CELL_SIZE, tank->getRow() * CELL_SIZE);
+        cairo_paint(cr);
+    }
 }
 
 gboolean View::onDraw(GtkWidget *widget, cairo_t *cr, gpointer data) {
     const auto view = static_cast<View*>(data);
 
     view->drawMap(cr);
-    view->drawTank(cr);
+    view->drawTanks(cr);
 
     return FALSE;
 }
@@ -111,16 +114,22 @@ gboolean View::onClick(GtkWidget *widget, const GdkEventButton *event, gpointer 
     const int column = event->x / CELL_SIZE; // X position
     const int row = event->y / CELL_SIZE; // Y position
 
-    if (view->tankClicked(row, column)) {
-        handleSelectTank(view->tank);
+    if (Tank* clickedTank = view->getClickedTank(row, column)) {
+        handleSelectTank(clickedTank);
+        g_print("Tank selected\n"); // For debugging purposes
     }
 
     else if (cellClicked(row, column)) {
-        const int id = row * COLS + column;  // ID del cuadro clickeado
-        g_print("Se hizo clic en el cuadro con ID: %d\n", id);
+        g_print("Cell (%d, %d) was clicked\n", row, column); // For debugging purposes
+        g_print("Cell is %s\n\n", view->gridMap->isObstacle(row, column) ? "obstacle" : "accessible"); // For debugging purposes
 
         if (event->button == 1) {
-            view->handleMoveTank(view->tank, row, column);
+            if (Tank* selectedTank = view->getSelectedTank()) {
+                g_print("Tank was moved from (%d, %d) to (%d, %d)\n", selectedTank->getRow(), selectedTank->getColumn(), row, column); // For debugging purposes
+                view->handleMoveTank(selectedTank, row, column);
+            } else {
+                g_print("Tank can't be moved because there's no selected tank\n"); // For debugging purposes
+            }
         }
         //
         // if (event->button == 3 && view->tank->isSelected()) {
@@ -131,11 +140,29 @@ gboolean View::onClick(GtkWidget *widget, const GdkEventButton *event, gpointer 
 }
 
 bool View::cellClicked(const int row, const int column) {
-    return row >= 0 && row < COLS && column >= 0 && column < ROWS;
+    return row >= 0 && row < ROWS && column >= 0 && column < COLS;
 }
 
-bool View::tankClicked(const int row, const int column) const {
-    return row == tank->getRow() && column == tank->getColumn();
+Tank* View::getClickedTank(const int row, const int column) const {
+    for (int i = 0; i < 8; i++) {
+        if (Tank* tank = &tanks[i];
+            row == tank->getRow() && column == tank->getColumn()) {
+            return tank;
+        }
+    }
+
+    return nullptr;
+}
+
+Tank* View::getSelectedTank() const {
+    for (int i = 0; i < 8; i++) {
+        if (Tank* tank = &tanks[i];
+            tank->isSelected()) {
+            return tank;
+        }
+    }
+
+    return nullptr;
 }
 
 void View::handleSelectTank(Tank* tank) {

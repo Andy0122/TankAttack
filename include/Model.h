@@ -20,9 +20,9 @@ public:
     */
     [[nodiscard]] GridGraph* getMap() const;
 
-    [[nodiscard]] Tank* getTank() const;
+    [[nodiscard]] Tank* getTanks() const;
 
 private:
     GridGraph* map; ///< Map of the game
-    Tank* tank; ///< Temp tank
+    Tank* tanks; ///< Array tank
 };

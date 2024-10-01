@@ -4,6 +4,8 @@
 #include <vector>
 #include <iostream>
 
+#include "Position.h"
+
 /**
  * @brief Clase que representa un nodo individual en la cuadrícula del grafo.
  */
@@ -115,6 +117,8 @@ public:
      * @return false Si el nodo no es seguro.
      */
     bool isSafeNode(int nodeId);
+
+    Position getRandomAccessiblePosition() const;
 };
 
 #endif

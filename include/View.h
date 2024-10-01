@@ -25,7 +25,7 @@ public:
      */
     void setGridMap(GridGraph* map);
 
-    void setTank(Tank* tank);
+    void setTanks(Tank* tanks);
 
     /**
      * @brief Updates the game interface
@@ -34,7 +34,7 @@ public:
 
 private:
     GtkWidget* drawingArea; ///< Drawing area of the game
-    Tank* tank; ///< Temp tank of the game
+    Tank* tanks; ///< Array of tanks of the game
     GtkWidget* statusBar; ///< Status bar of the game
     GridGraph* gridMap = nullptr; ///< Map of the game
     std::map<std::string, GdkPixbuf*> assets; ///< Assets of the game
@@ -81,7 +81,7 @@ private:
      */
     void drawMap(cairo_t* cr);
 
-    void drawTank(cairo_t* cr);
+    void drawTanks(cairo_t* cr);
 
     /**
      * @brief Draws the path the game interface
@@ -101,7 +101,9 @@ private:
 
     static bool cellClicked(int row, int column);
 
-    [[nodiscard]] bool tankClicked(int row, int column) const;
+    [[nodiscard]] Tank* getClickedTank(int row, int column) const;
+
+    [[nodiscard]] Tank* getSelectedTank() const;
 
     /**
      * @brief Handles the selection of a tank
