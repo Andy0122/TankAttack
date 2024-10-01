@@ -196,10 +196,10 @@ Position GridGraph::getRandomAccessiblePosition() const {
     std::uniform_int_distribution<> colDis(0, cols - 1);
 
     auto randomPosition = Position(rowDis(gen), colDis(gen));
-    while (isObstacle(randomPosition.row, randomPosition.col)
-        || isOccupied(randomPosition.row, randomPosition.col)) {
+    while (isObstacle(randomPosition.row, randomPosition.column)
+        || isOccupied(randomPosition.row, randomPosition.column)) {
         randomPosition.row = rowDis(gen);
-        randomPosition.col = colDis(gen);
+        randomPosition.column = colDis(gen);
     }
 
     return randomPosition;

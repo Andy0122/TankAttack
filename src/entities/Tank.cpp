@@ -1,33 +1,17 @@
-#include "../../include/entities/Tank.h"
+#include "entities/Tank.h"
 
 
-Tank::Tank() : health(0), color(""), row(0), column(0) {}
+Tank::Tank() : color(Color()), row(0), column(0) {}
 
-Tank::Tank(int h, std::string c, int row, int column) : health(h), color(c), row(row), column(column) {}
-
+Tank::Tank(const Color color, const Position position)
+    : color(color), row(position.row), column(position.column) {}
 
 int Tank::getHealth() const {
     return health;
 }
 
-
-void Tank::setHealth(int h) {
-    health = h;
-}
-
-
-std::string Tank::getColor() const {
+Color Tank::getColor() const {
     return color;
-}
-
-
-void Tank::setColor(std::string c) {
-    color = c;
-}
-
-
-void Tank::getPosition() const {
-    std::cout << "Cell Position: " << row * 21 + column << "\n";
 }
 
 int Tank::getRow() const {
@@ -42,19 +26,20 @@ bool Tank::isSelected() const {
     return selected;
 }
 
-void Tank::setPosition(int newRow, int newColumn) {
-    row = newRow;
-    column = newColumn;
+void Tank::setHealth(const int newHealth) {
+    health = newHealth;
 }
 
-void Tank::setSelected(const bool s) {
-    selected = s;
+void Tank::setColor(const Color newColor) {
+    color = newColor;
 }
 
-void Tank::displayInfo() const {
-    std::cout << "Tank Info: \n";
-    std::cout << "Health: " << health << "\n";
-    std::cout << "Color: " << color << "\n";
-    std::cout << "Cell Position: " << row * 21 + column << "\n";
+void Tank::setPosition(const Position newPosition) {
+    row = newPosition.row;
+    column = newPosition.column;
+}
+
+void Tank::setSelected(const bool newState) {
+    selected = newState;
 }
 

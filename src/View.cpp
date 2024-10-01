@@ -64,6 +64,21 @@ void View::loadAssets() {
         assets["yellow_tank"] = gdk_pixbuf_scale_simple(yellowTank, CELL_SIZE, CELL_SIZE, GDK_INTERP_BILINEAR);
         g_object_unref(yellowTank);
     }
+
+    if (GdkPixbuf* redTank = gdk_pixbuf_new_from_file("../assets/tanks/red_tank.png", nullptr)) {
+        assets["red_tank"] = gdk_pixbuf_scale_simple(redTank, CELL_SIZE, CELL_SIZE, GDK_INTERP_BILINEAR);
+        g_object_unref(redTank);
+    }
+
+    if (GdkPixbuf* blueTank = gdk_pixbuf_new_from_file("../assets/tanks/blue_tank.png", nullptr)) {
+        assets["blue_tank"] = gdk_pixbuf_scale_simple(blueTank, CELL_SIZE, CELL_SIZE, GDK_INTERP_BILINEAR);
+        g_object_unref(blueTank);
+    }
+
+    if (GdkPixbuf* cianTank = gdk_pixbuf_new_from_file("../assets/tanks/cian_tank.png", nullptr)) {
+        assets["cian_tank"] = gdk_pixbuf_scale_simple(cianTank, CELL_SIZE, CELL_SIZE, GDK_INTERP_BILINEAR);
+        g_object_unref(cianTank);
+    }
 }
 
 void View::connectSignals() {
@@ -91,9 +106,18 @@ void View::drawMap(cairo_t *cr) {
 }
 
 void View::drawTanks(cairo_t *cr) {
-    const GdkPixbuf* pixbuf = assets["yellow_tank"];
+    const GdkPixbuf* pixbuf = nullptr;
     for (int i = 0; i < 8; i++) {
         const auto tank = &tanks[i];
+        if (tank->getColor() == Yellow) {
+            pixbuf = assets["yellow_tank"];
+        } else if (tank->getColor() == Red) {
+            pixbuf = assets["red_tank"];
+        } else if (tank->getColor() == Cian) {
+            pixbuf = assets["cian_tank"];
+        } else if (tank->getColor() == Blue) {
+            pixbuf = assets["blue_tank"];
+        }
         gdk_cairo_set_source_pixbuf(cr, pixbuf, tank->getColumn() * CELL_SIZE, tank->getRow() * CELL_SIZE);
         cairo_paint(cr);
     }
@@ -111,22 +135,23 @@ gboolean View::onDraw(GtkWidget *widget, cairo_t *cr, gpointer data) {
 gboolean View::onClick(GtkWidget *widget, const GdkEventButton *event, gpointer data) {
     const auto* view = static_cast<View*>(data);
 
-    const int column = event->x / CELL_SIZE; // X position
     const int row = event->y / CELL_SIZE; // Y position
+    const int column = event->x / CELL_SIZE; // X position
+    const auto position = Position(row, column);
 
-    if (Tank* clickedTank = view->getClickedTank(row, column)) {
+    if (Tank* clickedTank = view->getClickedTank(position)) {
         handleSelectTank(clickedTank);
         g_print("Tank selected\n"); // For debugging purposes
     }
 
-    else if (cellClicked(row, column)) {
+    else if (cellClicked(position)) {
         g_print("Cell (%d, %d) was clicked\n", row, column); // For debugging purposes
         g_print("Cell is %s\n\n", view->gridMap->isObstacle(row, column) ? "obstacle" : "accessible"); // For debugging purposes
 
         if (event->button == 1) {
             if (Tank* selectedTank = view->getSelectedTank()) {
                 g_print("Tank was moved from (%d, %d) to (%d, %d)\n", selectedTank->getRow(), selectedTank->getColumn(), row, column); // For debugging purposes
-                view->handleMoveTank(selectedTank, row, column);
+                view->handleMoveTank(selectedTank, position);
             } else {
                 g_print("Tank can't be moved because there's no selected tank\n"); // For debugging purposes
             }
@@ -139,14 +164,14 @@ gboolean View::onClick(GtkWidget *widget, const GdkEventButton *event, gpointer 
     return TRUE;
 }
 
-bool View::cellClicked(const int row, const int column) {
-    return row >= 0 && row < ROWS && column >= 0 && column < COLS;
+bool View::cellClicked(const Position position) {
+    return position.row >= 0 && position.row < ROWS && position.column >= 0 && position.column < COLS;
 }
 
-Tank* View::getClickedTank(const int row, const int column) const {
+Tank* View::getClickedTank(const Position position) const {
     for (int i = 0; i < 8; i++) {
         if (Tank* tank = &tanks[i];
-            row == tank->getRow() && column == tank->getColumn()) {
+            position.row == tank->getRow() && position.column == tank->getColumn()) {
             return tank;
         }
     }
@@ -171,12 +196,13 @@ void View::handleSelectTank(Tank* tank) {
     }
 }
 
-void View::handleMoveTank(Tank* tank, const int row, const int column) const {
+void View::handleMoveTank(Tank* tank, const Position position) const {
     if (tank->isSelected()) {
-        if (!gridMap->isObstacle(row, column) && !gridMap->isOccupied(row, column)) {
+        if (!gridMap->isObstacle(position.row, position.column)
+            && !gridMap->isOccupied(position.row, position.column)) {
             gridMap->removeTank(tank->getRow(), tank->getColumn());
-            tank->setPosition(row, column);
-            gridMap->placeTank(row, column);
+            tank->setPosition(position);
+            gridMap->placeTank(position.row, position.column);
             tank->setSelected(false);
             update();
         }

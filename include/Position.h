@@ -6,7 +6,7 @@
  */
 struct Position {
     int row;    ///< Row of the position.
-    int col;    ///< Column of the position.
+    int column;    ///< Column of the position.
 };
 
 #endif //POSITION_H

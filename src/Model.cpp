@@ -10,7 +10,7 @@ Model::Model() {
     for (int i = 0; i < 8; i++) {
         const auto [row, col] = map->getRandomAccessiblePosition();
         // create a tank
-        const auto tank = Tank(100, "yellow", row, col);
+        const auto tank = Tank(Cian, Position(row, col));
         // Place the tank in the map
         map->placeTank(row, col);
         tanks[i] = tank;

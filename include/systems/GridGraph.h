@@ -118,7 +118,7 @@ public:
      */
     bool isSafeNode(int nodeId);
 
-    Position getRandomAccessiblePosition() const;
+    [[nodiscard]] Position getRandomAccessiblePosition() const;
 };
 
 #endif

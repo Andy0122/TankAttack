@@ -1,8 +1,11 @@
 #ifndef TANK_H
 #define TANK_H
 
-#include <string>
-#include <iostream>
+#include "Position.h"
+
+enum Color {
+ Red, Yellow, Blue, Cian
+};
 
 /**
  * @class Tank
@@ -12,83 +15,92 @@
  * It also includes methods to modify and access these attributes.
  */
 class Tank {
-private:
-    int health;          ///< The health of the tank (integer value).
-    std::string color;   ///< The color of the tank (as a string).
-    int row, column;   ///< The cell position of the tank in the grid map.
-    bool selected = false; ///< Indicates if the tank is selected.
-
 public:
+   /**
+    * @brief Constructor for the Tank Class
+    *
+    * Initialize an empty tank
+    */
     Tank();
+
     /**
      * @brief Constructor for the Tank class.
      * 
      * Initializes a tank with the given health, color, and position.
-     * 
-     * @param h Initial health of the tank.
-     * @param c Color of the tank.
-     * @param row X coordinate of the tank's initial position.
-     * @param column Y coordinate of the tank's initial position.
+     *
+     * @param color Tank color.
+     * @param position Initial tank position.
      */
-    Tank(int h, std::string c, int row, int column);
+    Tank(Color color, Position position);
 
     /**
      * @brief Gets the current health of the tank.
      * 
      * @return The health of the tank as an integer.
      */
-    int getHealth() const;
+    [[nodiscard]] int getHealth() const;
+
+    /**
+    * @brief Gets the current color of the tank.
+    *
+    * @return The color of the tank as a string.
+    */
+    [[nodiscard]] Color getColor() const;
+
+    /**
+     * @brief Gets the current row where the tank is placed.
+     *
+     * @return The row number.
+     */
+    [[nodiscard]] int getRow() const;
+
+    /**
+     * @brief Gets the current row where the tank is placed.
+     *
+     * @return The column number.
+     */
+    [[nodiscard]] int getColumn() const;
+
+    /**
+     * @brief Checks if the tank is selected.
+     *
+     * @return True if the tank is selected, false otherwise.
+     */
+    [[nodiscard]] bool isSelected() const;
 
     /**
      * @brief Sets the health of the tank.
      * 
-     * @param h New health value to set.
+     * @param newHealth New health value to set.
      */
-    void setHealth(int h);
+    void setHealth(int newHealth);
 
     /**
-     * @brief Gets the current color of the tank.
-     * 
-     * @return The color of the tank as a string.
-     */
-    std::string getColor() const;
-
-    [[nodiscard]] bool isSelected() const;
+    * @brief Sets the color of the tank.
+    *
+    * @param newColor New color value to set.
+    */
+    void setColor(Color newColor);
 
     /**
-     * @brief Sets the color of the tank.
-     * 
-     * @param c New color value to set.
-     */
-    void setColor(std::string c);
-
-    void setSelected(bool s);
+    * @brief Sets the position of the tank.
+    *
+    * @param newPosition New position where the tank will be placed.
+    */
+    void setPosition(Position newPosition);
 
     /**
-     * @brief Gets the current position of the tank.
-     * 
-     * Displays the current x and y coordinates of the tank in the console.
+     * @brief Sets the selected state of the tank.
+     *
+     * @param newState New state for selected.
      */
-    void getPosition() const;
+    void setSelected(bool newState);
 
-    [[nodiscard]] int getRow() const;
-
-    [[nodiscard]] int getColumn() const;
-
-    /**
-     * @brief Sets the position of the tank.
-     * 
-     * @param x New x coordinate.
-     * @param y New y coordinate.
-     */
-    void setPosition(int newRow, int newColumn);
-
-    /**
-     * @brief Displays the tank's information.
-     * 
-     * Prints the current health, color, and position of the tank to the console.
-     */
-    void displayInfo() const;
+private:
+    int health{}; ///< The health of the tank (integer value).
+    Color color; ///< The color of the tank (as a string).
+    int row, column; ///< The cell position of the tank in the grid map.
+    bool selected = false; ///< Indicates if the tank is selected.
 };
 
 #endif // TANK_H
