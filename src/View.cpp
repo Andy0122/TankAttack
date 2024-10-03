@@ -244,8 +244,9 @@ gboolean View::onClick(GtkWidget *widget, const GdkEventButton *event, gpointer 
         }
 
     } else if (event->button == 3) { // Right click
-        if (const Tank* selectedTank = view->getSelectedTank()) { // There's a selected tank
+        if (Tank* selectedTank = view->getSelectedTank()) { // There's a selected tank
             view->handleFireBullet(Position(selectedTank->getRow(), selectedTank->getColumn()), position); // Fire bullet
+            selectedTank->setSelected(false); // Deselect tank
         }
     }
 

@@ -20,6 +20,9 @@ public:
     */
     [[nodiscard]] GridGraph* getMap() const;
 
+    /**
+    * @brief Gets the tanks of the game
+    */
     [[nodiscard]] Tank* getTanks() const;
 
 private:

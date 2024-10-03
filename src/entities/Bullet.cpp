@@ -3,17 +3,16 @@
 
 Bullet::Bullet(const Position origin, const Position target)
     : position(origin), target(target) {
-    const float dx = target.column - origin.column;
-    const float dy = target.row - origin.row;
+    const auto dx = static_cast<float>(target.column - position.column);
+    const auto dy = static_cast<float>(target.row - position.row);
     direction.x = dx;
     direction.y = dy;
 }
 
 bool Bullet::move() {
-    float distance = calculateDistance();
-    if (distance > 0.1) {
-        position.row += speed * direction.y;
-        position.column += speed * direction.x;
+    if (const float distance = calculateDistance(); distance > 0.1) {
+        position.row += static_cast<int>(speed * direction.y);
+        position.column += static_cast<int>(speed * direction.x);
         return false;
     }
     position = target;
@@ -29,11 +28,7 @@ Position Bullet::getPosition() const {
 }
 
 float Bullet::calculateDistance() const {
-    const float dx = target.column - position.column;
-    const float dy = target.row - position.row;
+    const auto dx = static_cast<float>(target.column - position.column);
+    const auto dy = static_cast<float>(target.row - position.row);
     return std::sqrt(dx * dx + dy * dy);
 }
-
-// void Bullet::handleBounce() {
-//
-// }

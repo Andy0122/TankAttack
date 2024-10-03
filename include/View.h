@@ -78,14 +78,42 @@ private:
      */
     void createStatusBar(GtkWidget* vbox);
 
+    /**
+     * @brief Creates the player label.
+     *
+     * @param player int Player.
+     * @return GtkWidget* Player label.
+     */
     [[nodiscard]] static GtkWidget* createPlayerLabel(int player);
 
+    /**
+     * @brief Creates the player box.
+     *
+     * @param player int Player.
+     * @return GtkWidget* Player box.
+     */
     [[nodiscard]] GtkWidget* createPlayerBox(int player) const;
 
+    /**
+     * @brief Creates the tank box.
+     *
+     * @param player int Player.
+     * @param col int Column.
+     * @return GtkWidget* Tank box.
+     */
     [[nodiscard]] GtkWidget* createTankBox(int player, int col) const;
 
+    /**
+     * @brief Creates the tank display.
+     *
+     * @param tank Tank Tank.
+     * @return GtkWidget* Tank display.
+     */
     [[nodiscard]] GtkWidget* createTankDisplay(const Tank& tank) const;
 
+    /**
+     * @brief Updates the status bar.
+     */
     void updateStatusBar() const;
 
     /**
@@ -137,12 +165,34 @@ private:
      */
     static gboolean onClick(GtkWidget* widget, const GdkEventButton* event, gpointer data);
 
+    /**
+     * @brief Handles the move of the bullet.
+     *
+     * @param data gpointer Data.
+     * @return gboolean True if the bullet is moving.
+     */
     static gboolean handleMoveBullet(gpointer data);
 
+    /**
+    * @brief Gets the position of the cell clicked.
+    *
+    * @param position Position where the click happened.
+    */
     static bool cellClicked(Position position);
 
+    /**
+     * @brief Gets the clicked tank.
+     *
+     * @param position Position Position.
+     * @return Tank* Clicked tank.
+     */
     [[nodiscard]] Tank* getClickedTank(Position position) const;
 
+    /**
+     * @brief Gets the selected tank.
+     *
+     * @return Tank* Selected tank.
+     */
     [[nodiscard]] Tank* getSelectedTank() const;
 
     /**
@@ -152,8 +202,20 @@ private:
      */
     static void handleSelectTank(Tank* tank);
 
+    /**
+     * @brief Handles the movement of a tank.
+     *
+     * @param tank Tank* Tank.
+     * @param position Position Position.
+     */
     void handleMoveTank(Tank* tank, Position position) const;
 
+    /**
+     * @brief Handles the fire of a bullet.
+     *
+     * @param origin Position Origin.
+     * @param target Position Target.
+     */
     void handleFireBullet(const Position& origin, const Position& target);
 
     static constexpr int CELL_SIZE = 50; ///< Size of the cell

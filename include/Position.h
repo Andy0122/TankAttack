@@ -1,6 +1,7 @@
 #ifndef POSITION_H
 #define POSITION_H
 
+
 /**
  * @brief Struct that represents a position in a grid map.
  */
