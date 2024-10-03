@@ -79,6 +79,11 @@ void View::loadAssets() {
         assets["cian_tank"] = gdk_pixbuf_scale_simple(cianTank, CELL_SIZE, CELL_SIZE, GDK_INTERP_BILINEAR);
         g_object_unref(cianTank);
     }
+
+    if (GdkPixbuf* bullet = gdk_pixbuf_new_from_file("../assets/bullet.png", nullptr)) {
+        assets["bullet"] = gdk_pixbuf_scale_simple(bullet, CELL_SIZE / 2, CELL_SIZE / 2, GDK_INTERP_BILINEAR);
+        g_object_unref(bullet);
+    }
 }
 
 void View::connectSignals() {
@@ -123,42 +128,64 @@ void View::drawTanks(cairo_t *cr) {
     }
 }
 
+void View::drawBullet(cairo_t *cr) const {
+    if (bullet) {
+        auto [row, column] = bullet->getPosition();
+        const GdkPixbuf* pixbuf = assets.at("bullet");
+        gdk_cairo_set_source_pixbuf(cr, pixbuf, column * CELL_SIZE + CELL_SIZE / 4, row * CELL_SIZE + CELL_SIZE / 4);
+        cairo_paint(cr);
+    }
+}
+
 gboolean View::onDraw(GtkWidget *widget, cairo_t *cr, gpointer data) {
     const auto view = static_cast<View*>(data);
 
     view->drawMap(cr);
     view->drawTanks(cr);
+    view->drawBullet(cr);
 
     return FALSE;
 }
 
 gboolean View::onClick(GtkWidget *widget, const GdkEventButton *event, gpointer data) {
-    const auto* view = static_cast<View*>(data);
+    auto* view = static_cast<View*>(data);
 
     const int row = event->y / CELL_SIZE; // Y position
     const int column = event->x / CELL_SIZE; // X position
     const auto position = Position(row, column);
 
-    if (Tank* clickedTank = view->getClickedTank(position)) {
-        handleSelectTank(clickedTank);
-        g_print("Tank selected\n"); // For debugging purposes
-    }
+    if (event->button == 1) { // Left click
+        if (Tank* clickedTank = view->getClickedTank(position)) { // Tank clicked
+            handleSelectTank(clickedTank); // Select tank
+            g_print("Tank selected\n"); // For debugging purposes
 
-    else if (cellClicked(position)) {
-        g_print("Cell (%d, %d) was clicked\n", row, column); // For debugging purposes
-        g_print("Cell is %s\n\n", view->gridMap->isObstacle(row, column) ? "obstacle" : "accessible"); // For debugging purposes
-
-        if (event->button == 1) {
-            if (Tank* selectedTank = view->getSelectedTank()) {
-                g_print("Tank was moved from (%d, %d) to (%d, %d)\n", selectedTank->getRow(), selectedTank->getColumn(), row, column); // For debugging purposes
-                view->handleMoveTank(selectedTank, position);
+        } else if (cellClicked(position)) { // Cell clicked
+            if (Tank* selectedTank = view->getSelectedTank()) { // There's a selected tank
+                view->handleMoveTank(selectedTank, position); // Move tank
             } else {
                 g_print("Tank can't be moved because there's no selected tank\n"); // For debugging purposes
             }
         }
-        //
-        // if (event->button == 3 && view->tank->isSelected()) {
-        //     // Attack
+
+    } else if (event->button == 3) { // Right click
+        if (const Tank* selectedTank = view->getSelectedTank()) { // There's a selected tank
+            view->handleFireBullet(Position(selectedTank->getRow(), selectedTank->getColumn()), position); // Fire bullet
+        }
+    }
+
+    return TRUE;
+}
+
+gboolean View::handleMoveBullet(gpointer data) {
+    auto* view = static_cast<View*>(data);
+
+    if (view->bullet) {
+        if (view->bullet->move()) {
+            delete view->bullet;
+            view->bullet = nullptr;
+            return FALSE;
+        }
+        view->update();
     }
 
     return TRUE;
@@ -207,4 +234,10 @@ void View::handleMoveTank(Tank* tank, const Position position) const {
             update();
         }
     }
+}
+
+void View::handleFireBullet(const Position &origin, const Position &target) {
+    bullet = new Bullet(origin, target);
+    g_timeout_add(30, handleMoveBullet, this);
+    update();
 }

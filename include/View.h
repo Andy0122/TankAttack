@@ -4,6 +4,7 @@
 #include <gtk/gtk.h>
 #include <string>
 
+#include "entities/Bullet.h"
 #include "entities/Tank.h"
 #include "systems/GridGraph.h"
 
@@ -42,6 +43,7 @@ public:
 private:
     GtkWidget* drawingArea = nullptr; ///< Drawing area of the game
     Tank* tanks = nullptr; ///< Array of tanks of the game
+    Bullet* bullet = nullptr; ///< Bullet of the game
     GtkWidget* statusBar = nullptr; ///< Status bar of the game
     GridGraph* gridMap = nullptr; ///< Map of the game
     std::map<std::string, GdkPixbuf*> assets; ///< Assets of the game
@@ -93,7 +95,19 @@ private:
      */
     void drawMap(cairo_t* cr);
 
+    /**
+     * @brief Draws the tanks of the game.
+     *
+     * @param cr cairo_t* Cairo context.
+     */
     void drawTanks(cairo_t* cr);
+
+    /**
+     * @brief Draws the bullet of the game.
+     *
+     * @param cr cairo_t* Cairo context.
+     */
+    void drawBullet(cairo_t* cr) const;
 
     /**
      * @brief Draws the path the game interface.
@@ -113,6 +127,8 @@ private:
      */
     static gboolean onClick(GtkWidget* widget, const GdkEventButton* event, gpointer data);
 
+    static gboolean handleMoveBullet(gpointer data);
+
     static bool cellClicked(Position position);
 
     [[nodiscard]] Tank* getClickedTank(Position position) const;
@@ -127,6 +143,8 @@ private:
     static void handleSelectTank(Tank* tank);
 
     void handleMoveTank(Tank* tank, Position position) const;
+
+    void handleFireBullet(const Position& origin, const Position& target);
 
     static constexpr int CELL_SIZE = 50; ///< Size of the cell
     static constexpr int ROWS = 11; ///< Number of rows
