@@ -3,6 +3,10 @@
 
 #include "Position.h"
 
+
+/**
+ * @enum Color Represents the color of the tank.
+ */
 enum Color {
  Red, Yellow, Blue, Cian
 };

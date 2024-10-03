@@ -24,8 +24,6 @@ add_executable(TankAttack src/main.cpp
         include/entities/Tank.h
         include/systems/GridGraph.h
         src/systems/GridGraph.cpp
-        include/systems/Renderer.h
-        src/systems/Renderer.cpp
         src/Model.cpp
         src/View.cpp
         src/Controller.cpp
