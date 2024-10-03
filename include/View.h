@@ -78,6 +78,16 @@ private:
      */
     void createStatusBar(GtkWidget* vbox);
 
+    [[nodiscard]] static GtkWidget* createPlayerLabel(int player);
+
+    [[nodiscard]] GtkWidget* createPlayerBox(int player) const;
+
+    [[nodiscard]] GtkWidget* createTankBox(int player, int col) const;
+
+    [[nodiscard]] GtkWidget* createTankDisplay(const Tank& tank) const;
+
+    void updateStatusBar() const;
+
     /**
      * @brief Loads the assets of the game.
      */

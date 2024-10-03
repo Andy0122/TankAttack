@@ -45,8 +45,83 @@ void View::createDrawingArea(GtkWidget *hbox) {
 }
 
 void View::createStatusBar(GtkWidget *vbox) {
-    statusBar = gtk_label_new("Status Bar");
+    statusBar = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
     gtk_box_pack_start(GTK_BOX(vbox), statusBar, TRUE, TRUE, 0);
+}
+
+void View::updateStatusBar() const {
+    gtk_container_foreach(GTK_CONTAINER(statusBar), reinterpret_cast<GtkCallback>(gtk_widget_destroy), nullptr);
+
+    for (int player = 0; player < 2; ++player) {
+        GtkWidget* playerContainer = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+
+        GtkWidget* playerLabel = createPlayerLabel(player);
+        gtk_box_pack_start(GTK_BOX(playerContainer), playerLabel, FALSE, FALSE, 0);
+
+        GtkWidget* playerBox = createPlayerBox(player);
+        gtk_widget_set_halign(playerBox, GTK_ALIGN_CENTER);
+        gtk_widget_set_valign(playerBox, GTK_ALIGN_CENTER);
+        gtk_box_pack_start(GTK_BOX(playerContainer), playerBox, TRUE, TRUE, 0);
+
+        gtk_box_pack_start(GTK_BOX(statusBar), playerContainer, TRUE, TRUE, 0);
+    }
+
+    gtk_widget_show_all(statusBar);
+}
+
+GtkWidget* View::createPlayerLabel(const int player) {
+    const std::string labelText = "Player " + std::to_string(player + 1);
+    return gtk_label_new(labelText.c_str());
+}
+
+GtkWidget* View::createPlayerBox(const int player) const {
+    GtkWidget* playerBox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
+
+    for (int col = 0; col < 2; ++col) {
+        GtkWidget* colBox = createTankBox(player, col);
+        gtk_box_pack_start(GTK_BOX(playerBox), colBox, FALSE, FALSE, 0);
+
+        if (col == 0) {
+            GtkWidget* separator = gtk_separator_new(GTK_ORIENTATION_VERTICAL);
+            gtk_box_pack_start(GTK_BOX(playerBox), separator, FALSE, FALSE, 10);
+        }
+    }
+
+    return playerBox;
+}
+
+GtkWidget* View::createTankBox(const int player, const int col) const {
+    GtkWidget* colBox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+
+    for (int tankIndex = 0; tankIndex < 2; ++tankIndex) {
+        const int tankId = player * 4 + col * 2 + tankIndex;
+        const Tank& tank = tanks[tankId];
+        GtkWidget* hbox = createTankDisplay(tank);
+        gtk_box_pack_start(GTK_BOX(colBox), hbox, FALSE, FALSE, 0);
+    }
+
+    return colBox;
+}
+
+GtkWidget* View::createTankDisplay(const Tank& tank) const {
+    GtkWidget* hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
+
+    GdkPixbuf* pixbuf = nullptr;
+    switch (tank.getColor()) {
+        case Yellow: pixbuf = assets.at("yellow_tank"); break;
+        case Red: pixbuf = assets.at("red_tank"); break;
+        case Cian: pixbuf = assets.at("cian_tank"); break;
+        case Blue: pixbuf = assets.at("blue_tank"); break;
+    }
+
+    GtkWidget* image = gtk_image_new_from_pixbuf(pixbuf);
+    gtk_box_pack_start(GTK_BOX(hbox), image, FALSE, FALSE, 0);
+
+    const std::string healthText = "Health: " + std::to_string(tank.getHealth());
+    GtkWidget* label = gtk_label_new(healthText.c_str());
+    gtk_box_pack_start(GTK_BOX(hbox), label, FALSE, FALSE, 0);
+
+    return hbox;
 }
 
 void View::loadAssets() {
@@ -142,6 +217,7 @@ gboolean View::onDraw(GtkWidget *widget, cairo_t *cr, gpointer data) {
 
     view->drawMap(cr);
     view->drawTanks(cr);
+    view->updateStatusBar();
     view->drawBullet(cr);
 
     return FALSE;
@@ -177,9 +253,7 @@ gboolean View::onClick(GtkWidget *widget, const GdkEventButton *event, gpointer 
 }
 
 gboolean View::handleMoveBullet(gpointer data) {
-    auto* view = static_cast<View*>(data);
-
-    if (view->bullet) {
+    if (auto* view = static_cast<View*>(data); view->bullet) {
         if (view->bullet->move()) {
             delete view->bullet;
             view->bullet = nullptr;
