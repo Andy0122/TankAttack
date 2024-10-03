@@ -4,13 +4,16 @@
 #include <vector>
 #include <iostream>
 
+#include "Position.h"
+
 /**
  * @brief Clase que representa un nodo individual en la cuadrícula del grafo.
  */
 class Node {
 public:
     int id;            ///< Identificador único del nodo.
-    bool accessible;   ///< Indica si el nodo es accesible o no.
+    bool obstacle;   ///< Indica si el nodo es accesible o no.
+    bool occupied = false;   ///< Indica si el nodo esta ocupado o no.
 
     /**
      * @brief Constructor del nodo.
@@ -65,6 +68,14 @@ public:
      */
     void setNodeAccessibility(int row, int col, bool accessible);
 
+    [[nodiscard]] bool isObstacle(int row, int col) const;
+
+    [[nodiscard]] bool isOccupied(int row, int col) const;
+
+    void placeTank(int row, int col);
+
+    void removeTank(int row, int col);
+
     /**
      * @brief Imprime la accesibilidad de los nodos en la cuadrícula.
      */
@@ -106,6 +117,8 @@ public:
      * @return false Si el nodo no es seguro.
      */
     bool isSafeNode(int nodeId);
+
+    [[nodiscard]] Position getRandomAccessiblePosition() const;
 };
 
 #endif
