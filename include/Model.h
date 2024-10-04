@@ -1,5 +1,6 @@
 #pragma once
 
+#include "entities/Tank.h"
 #include "systems/GridGraph.h"
 
 
@@ -19,6 +20,12 @@ public:
     */
     [[nodiscard]] GridGraph* getMap() const;
 
+    /**
+    * @brief Gets the tanks of the game
+    */
+    [[nodiscard]] Tank* getTanks() const;
+
 private:
     GridGraph* map; ///< Map of the game
+    Tank* tanks; ///< Array tank
 };
