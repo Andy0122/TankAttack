@@ -4,11 +4,12 @@
 #include "Position.h"
 
 /**
- * @brief Represents the direction of the bullet.
+ * @brief Represents a unitary vector for the direction of the bullet.
+ * X and Y values are between -1 and 1.
  */
 struct Direction {
-    float x;
-    float y;
+    int x; ///< X value.
+    int y; ///< Y value.
 };
 
 /**
@@ -28,6 +29,8 @@ public:
      * @brief Destroys the bullet.
      */
     ~Bullet() = default;
+
+    void calculateDirection(Position origin, Position target);
 
     /**
      * @brief Moves the bullet.
@@ -56,7 +59,7 @@ private:
     Position position; ///< The position of the bullet.
     Position target; ///< The position where the bullet is aimed.
     Direction direction{}; ///< The direction of the bullet.
-    float speed = 1.0; ///< The speed of the bullet.
+    int speed = 1; ///< The speed of the bullet.
     float bounceAngle = 0.0; ///< The angle of the bounce.
     int damage{}; ///< The bullet damage.
 

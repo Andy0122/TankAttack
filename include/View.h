@@ -200,7 +200,12 @@ private:
      *
      * @param tank Tank* Tank.
      */
-    static void handleSelectTank(Tank* tank);
+    void handleSelectTank(Tank* tank) const;
+
+    /**
+     * @brief Deselects all tanks.
+     */
+    void deselectAllTanks() const;
 
     /**
      * @brief Handles the movement of a tank.

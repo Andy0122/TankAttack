@@ -232,7 +232,7 @@ gboolean View::onClick(GtkWidget *widget, const GdkEventButton *event, gpointer 
 
     if (event->button == 1) { // Left click
         if (Tank* clickedTank = view->getClickedTank(position)) { // Tank clicked
-            handleSelectTank(clickedTank); // Select tank
+            view->handleSelectTank(clickedTank); // Select tank
             g_print("Tank selected\n"); // For debugging purposes
 
         } else if (cellClicked(position)) { // Cell clicked
@@ -261,9 +261,10 @@ gboolean View::handleMoveBullet(gpointer data) {
             return FALSE;
         }
         view->update();
+        return TRUE;
     }
 
-    return TRUE;
+    return FALSE;
 }
 
 bool View::cellClicked(const Position position) {
@@ -292,16 +293,21 @@ Tank* View::getSelectedTank() const {
     return nullptr;
 }
 
-void View::handleSelectTank(Tank* tank) {
-    if (!tank->isSelected()) {
-        tank->setSelected(true);
+void View::handleSelectTank(Tank* tank) const {
+    deselectAllTanks();
+    tank->setSelected(true);
+}
+
+void View::deselectAllTanks() const {
+    for (int i = 0; i < 8; i++) {
+        tanks[i].setSelected(false);
     }
 }
 
 void View::handleMoveTank(Tank* tank, const Position position) const {
     if (tank->isSelected()) {
         if (!gridMap->isObstacle(position.row, position.column)
-            && !gridMap->isOccupied(position.row, position.column)) {
+        && !gridMap->isOccupied(position.row, position.column)) {
             gridMap->removeTank(tank->getRow(), tank->getColumn());
             tank->setPosition(position);
             gridMap->placeTank(position.row, position.column);
