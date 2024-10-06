@@ -47,6 +47,7 @@ private:
     GtkWidget* statusBar = nullptr; ///< Status bar of the game
     GridGraph* gridMap = nullptr; ///< Map of the game
     std::map<std::string, GdkPixbuf*> assets; ///< Assets of the game
+    static gboolean moveTankStep(gpointer data);
 
     /**
      * @brief Creates a vertical box.
@@ -210,6 +211,8 @@ private:
      */
     void handleMoveTank(Tank* tank, Position position) const;
 
+    void MoveTank(Tank *tank, Position position) const;
+
     /**
      * @brief Handles the fire of a bullet.
      *
@@ -223,4 +226,11 @@ private:
     static constexpr int COLS = 21; ///< Number of columns
     static constexpr int X_OFFSET = 30; ///< X offset
     static constexpr int Y_OFFSET = 30; ///< Y offset
+};
+
+struct MoveData {
+ View* view;
+ Tank* tank;
+ std::vector<int> path;
+ std::size_t currentStep;
 };

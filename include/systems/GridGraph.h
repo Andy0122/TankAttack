@@ -107,14 +107,7 @@ public:
     /**
      * @brief Genera obstáculos aleatorios en la cuadrícula, marcando nodos como inaccesibles.
      */
-    void generateObstacles(int density);
-
-    bool checkOverlap(const std::vector<std::vector<int>> &rotatedPattern, int startRow, int startCol,
-                      const std::vector<int> &occupiedPositions);
-
-    bool areAccessibleNodesConnected();
-
-    void placePattern(const std::vector<std::vector<int>> &pattern, int row, int col, bool revert);
+    void generateObstacles();
 
     /**
      * @brief Verifica si un nodo específico es seguro.
@@ -126,6 +119,29 @@ public:
     bool isSafeNode(int nodeId);
 
     [[nodiscard]] Position getRandomAccessiblePosition() const;
+
+    /**
+     * @brief Metodo para obtener la lista de adyacencia del grafo.
+     * @return Una referencia constante a la lista de adyacencia.
+     */
+    const std::vector<std::vector<int>>& getAdjList() const;
+
+    /**
+    * @brief Devuelve una referencia constante al nodo dado su ID.
+    *
+    * @param id Identificador único del nodo.
+    * @return Referencia constante al nodo.
+    */
+    const Node& getNodeById(int id) const;
+
+    /**
+     * @brief Devuelve una referencia al nodo dado su ID.
+     *
+     * @param id Identificador único del nodo.
+     * @return Referencia al nodo.
+     */
+    Node& getNodeById(int id);
+
 };
 
 #endif

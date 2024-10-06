@@ -33,6 +33,14 @@ GridGraph::GridGraph() {
 }
 
 /**
+ * @brief Metodo para obtener la lista de adyacencia del grafo.
+ * @return Una referencia constante a la lista de adyacencia.
+ */
+const std::vector<std::vector<int>>& GridGraph::getAdjList() const {
+    return adjList;
+}
+
+/**
  * @brief Convierte las coordenadas 2D a un índice 1D en la cuadrícula.
  *
  * @param row Fila del nodo.
@@ -215,7 +223,7 @@ void GridGraph::generateObstacles() {
     // Inicializar random seed
     std::srand(std::time(0));
 
-    // Número de obstáculos a generar (puedes ajustar este número según el tamaño de la cuadrícula)
+    // Número de obstáculos a generar
     int numObstacles = 10 + std::rand() % 10;  // Generar entre 10 y 20 obstáculos
 
     for (int i = 0; i < numObstacles; ++i) {
@@ -239,4 +247,28 @@ void GridGraph::generateObstacles() {
             }
         }
     }
+}
+
+/**
+ * @brief Devuelve una referencia constante al nodo dado su ID.
+ *
+ * @param id Identificador único del nodo.
+ * @return Referencia constante al nodo.
+ */
+const Node& GridGraph::getNodeById(int id) const {
+    int row = id / cols;
+    int col = id % cols;
+    return grid[row][col];
+}
+
+/**
+ * @brief Devuelve una referencia al nodo dado su ID.
+ *
+ * @param id Identificador único del nodo.
+ * @return Referencia al nodo.
+ */
+Node& GridGraph::getNodeById(int id) {
+    int row = id / cols;
+    int col = id % cols;
+    return grid[row][col];
 }

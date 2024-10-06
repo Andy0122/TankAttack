@@ -1,4 +1,7 @@
 #include "View.h"
+#include "systems/Pathfinder.h"
+#include <chrono>
+#include <thread>
 
 View::View(GtkWidget *window) {
     GtkWidget* vbox = createVBox(window);
@@ -299,16 +302,60 @@ void View::handleSelectTank(Tank* tank) {
 }
 
 void View::handleMoveTank(Tank* tank, const Position position) const {
+    Pathfinder pathfinder(*gridMap);
+    int startId = gridMap->toIndex(tank->getRow(), tank->getColumn());
+    int goalId = gridMap->toIndex(position.row, position.column);
+
+    std::vector<int> path = pathfinder.bfs(startId, goalId);
+
+    if (path.size() < 2) {
+        tank->setSelected(false);
+        return;
+    }
+
+    // Crear la estructura de datos para el movimiento
+    auto* moveData = new MoveData{const_cast<View*>(this), tank, path, 1};
+
+    // Iniciar el temporizador para mover el tanque
+    g_timeout_add(100, View::moveTankStep, moveData);
+}
+
+void View::MoveTank(Tank* tank, const Position position) const {
     if (tank->isSelected()) {
-        if (!gridMap->isObstacle(position.row, position.column)
-            && !gridMap->isOccupied(position.row, position.column)) {
+        if (!gridMap->isObstacle(position.row, position.column) && !gridMap->isOccupied(position.row, position.column)) {
             gridMap->removeTank(tank->getRow(), tank->getColumn());
-            tank->setPosition(position);
             gridMap->placeTank(position.row, position.column);
-            tank->setSelected(false);
+
+            tank->setPosition(position);
             update();
         }
     }
+}
+
+gboolean View::moveTankStep(gpointer data) {
+    auto* moveData = static_cast<MoveData*>(data);
+    View* view = moveData->view;
+    Tank* tank = moveData->tank;
+    const std::vector<int>& path = moveData->path;
+    std::size_t& currentStep = moveData->currentStep;
+
+    if (currentStep >= path.size()) {
+        // Movimiento completado
+        tank->setSelected(false);
+        delete moveData;
+        return FALSE; // Detener el temporizador
+    }
+
+    int id = path[currentStep++];
+    const int row = id / view->gridMap->getCols();
+    const int column = id % view->gridMap->getCols();
+    const auto NewPosition = Position(row, column);
+    view->MoveTank(tank, NewPosition);
+
+    // La interfaz gráfica se actualiza en MoveTank a través de update()
+    // El temporizador continuará hasta que se devuelva FALSE
+
+    return TRUE; // Continuar el temporizador
 }
 
 void View::handleFireBullet(const Position &origin, const Position &target) {
