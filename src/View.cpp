@@ -187,6 +187,69 @@ void View::drawMap(cairo_t *cr) {
         }
     }
 }
+/*
+void View::drawMap(cairo_t *cr) {
+    // Establecer la fuente y el tamaño del texto
+    cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_set_font_size(cr, 12); // Ajusta el tamaño de la fuente según sea necesario
+
+    for (int row = 0; row < ROWS; ++row) {
+        for (int col = 0; col < COLS; ++col) {
+            const Node& node = gridMap->getNode(row, col);
+
+            // Obtener el ID del nodo actual
+            int nodeId = gridMap->toIndex(row, col);
+
+            // Coordenadas y tamaño del cuadrado
+            double x = col * CELL_SIZE;
+            double y = row * CELL_SIZE;
+            double size = CELL_SIZE;
+
+            // Determinar el color de relleno según si el nodo es seguro o no
+            if (gridMap->isSafeNode(nodeId)) {
+                // Nodo seguro: cuadrado verde con borde negro
+                cairo_set_source_rgb(cr, 0.0, 1.0, 0.0); // Color verde
+            } else {
+                // Nodo no seguro: cuadrado rojo con borde negro
+                cairo_set_source_rgb(cr, 1.0, 0.0, 0.0); // Color rojo
+            }
+
+            // Dibujar el cuadrado relleno
+            cairo_rectangle(cr, x, y, size, size);
+            cairo_fill_preserve(cr); // Rellenar y preservar el camino
+
+            // Establecer el color y ancho del borde
+            cairo_set_source_rgb(cr, 0.0, 0.0, 0.0); // Negro
+            cairo_set_line_width(cr, 1.0); // Ancho del borde
+
+            // Dibujar el borde del cuadrado
+            cairo_stroke(cr);
+
+            // Dibujar el número de ID dentro del cuadrado
+            // Establecer el color del texto (negro o blanco, según el fondo)
+            if (gridMap->isSafeNode(nodeId)) {
+                cairo_set_source_rgb(cr, 0.0, 0.0, 0.0); // Texto negro en fondo verde
+            } else {
+                cairo_set_source_rgb(cr, 1.0, 1.0, 1.0); // Texto blanco en fondo rojo
+            }
+
+            // Convertir el nodeId a cadena de texto
+            std::string idText = std::to_string(nodeId);
+
+            // Obtener las dimensiones del texto para centrarlo
+            cairo_text_extents_t extents;
+            cairo_text_extents(cr, idText.c_str(), &extents);
+
+            // Calcular la posición para centrar el texto
+            double textX = x + (size - extents.width) / 2 - extents.x_bearing;
+            double textY = y + (size - extents.height) / 2 - extents.y_bearing;
+
+            // Dibujar el texto
+            cairo_move_to(cr, textX, textY);
+            cairo_show_text(cr, idText.c_str());
+        }
+    }
+}*/
 
 void View::drawTanks(cairo_t *cr) {
     const GdkPixbuf* pixbuf = nullptr;
@@ -307,6 +370,8 @@ void View::handleMoveTank(Tank* tank, const Position position) const {
     int goalId = gridMap->toIndex(position.row, position.column);
 
     std::vector<int> path = pathfinder.bfs(startId, goalId);
+
+    std::cout << tank->getColor() << std::endl;
 
     if (path.size() < 2) {
         tank->setSelected(false);

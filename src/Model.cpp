@@ -5,21 +5,42 @@ Model::Model() {
     map->generateObstacles();
     map->connectNodes();
 
+    // Definir los tanques y sus posiciones
     tanks = new Tank[8];
-    Color color = Yellow;
-    for (int i = 0; i < 8; i++) {
-        const auto [row, col] = map->getRandomAccessiblePosition();
-        if (i == 2) {
-            color = Blue;
-        } else if (i == 4) {
-            color = Red;
-        } else if (i == 6) {
-            color = Cian;
+
+    // Lista de pares (ID, Color)
+    std::vector<std::pair<int, Color>> tankPositions = {
+        {75, Red},
+        {101, Red},
+        {151, Blue},
+        {175, Blue},
+        {95, Yellow},
+        {119, Yellow},
+        {169, Cian},
+        {195, Cian}
+    };
+
+    for (int i = 0; i < tankPositions.size(); ++i) {
+        int id = tankPositions[i].first;
+        Color color = tankPositions[i].second;
+
+        // Convertir ID a coordenadas (row, col)
+        int row = id / map->getCols();
+        int col = id % map->getCols();
+
+        // Verificar si la posición es accesible y no está ocupada
+        if (map->isObstacle(row, col) || map->isOccupied(row, col)) {
+            std::cerr << "La posición (" << row << ", " << col << ") no es válida para colocar el tanque." << std::endl;
+            continue;
         }
-        // create a tank
-        const auto tank = Tank(color, Position(row, col));
-        // Place the tank in the map
+
+        // Crear el tanque
+        Tank tank(color, Position(row, col));
+
+        // Colocar el tanque en el mapa
         map->placeTank(row, col);
+
+        // Almacenar el tanque en el arreglo
         tanks[i] = tank;
     }
 }

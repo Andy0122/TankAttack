@@ -186,7 +186,7 @@ const Node& GridGraph::getNode(int row, int col) const {
  * @return false Si el nodo no es seguro.
  */
 bool GridGraph::isSafeNode(int nodeId) {
-    std::vector<int> safeNodes = {63, 64, 86, 107, 128, 148, 147, 85, 84, 105, 106, 127, 126, 125, 124, 123, 102, 103, 104, 83, 82, 144, 145, 146, 167, 166};
+    std::vector<int> safeNodes = {50, 51, 75, 76, 77, 100, 101, 102, 125, 126, 127, 150, 151, 152, 175, 176, 177, 200, 201, 69, 70, 93, 94, 95, 118, 119, 120, 143, 144, 145, 168, 169, 170, 193, 194, 195, 219, 220};
 
     // Recorrer la lista de nodos seguros y verificar si nodeId está en ella
     for (int safeNode : safeNodes) {
