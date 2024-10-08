@@ -59,6 +59,10 @@ Direction Bullet::getDirection() const {
     return direction;
 }
 
+int Bullet::getDistance() const {
+    return distance;
+}
+
 void Bullet::setDirection(const Direction newDirection) {
     direction = newDirection;
 }

@@ -57,6 +57,8 @@ public:
 
     [[nodiscard]] Direction getDirection() const;
 
+    [[nodiscard]] int getDistance() const;
+
     void setDirection(Direction newDirection);
 
 private:
