@@ -173,6 +173,12 @@ private:
      */
     static gboolean handleMoveBullet(gpointer data);
 
+    bool tankCollision(const Bullet* bullet) const;
+
+    bool wallCollision(const Bullet* bullet) const;
+
+    static void handleBulletBounce(Bullet* bullet);
+
     /**
     * @brief Gets the position of the cell clicked.
     *
@@ -186,7 +192,7 @@ private:
      * @param position Position Position.
      * @return Tank* Clicked tank.
      */
-    [[nodiscard]] Tank* getClickedTank(Position position) const;
+    [[nodiscard]] Tank* getTankOnPosition(Position position) const;
 
     /**
      * @brief Gets the selected tank.
@@ -222,6 +228,8 @@ private:
      * @param target Position Target.
      */
     void handleFireBullet(const Position& origin, const Position& target);
+
+    void destroyBullet();
 
     static constexpr int CELL_SIZE = 50; ///< Size of the cell
     static constexpr int ROWS = 11; ///< Number of rows

@@ -1,10 +1,10 @@
 #include "entities/Tank.h"
 
 
-Tank::Tank() : color(Color()), row(0), column(0) {}
+Tank::Tank() : health(TANK_FULL_HEALTH), color(Color()), row(0), column(0) {}
 
 Tank::Tank(const Color color, const Position position)
-    : color(color), row(position.row), column(position.column) {}
+    : health(TANK_FULL_HEALTH), color(color), row(position.row), column(position.column) {}
 
 int Tank::getHealth() const {
     return health;
@@ -41,5 +41,13 @@ void Tank::setPosition(const Position newPosition) {
 
 void Tank::setSelected(const bool newState) {
     selected = newState;
+}
+
+void Tank::applyDamage() {
+    if (color == Cian || color == Blue) {
+        health -= static_cast<int>(TANK_FULL_HEALTH * 0.25);
+    } else {
+        health -= static_cast<int>(TANK_FULL_HEALTH * 0.5);
+    }
 }
 

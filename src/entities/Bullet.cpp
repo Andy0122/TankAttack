@@ -4,6 +4,7 @@
 Bullet::Bullet(const Position origin, const Position target)
     : position(origin), target(target) {
     calculateDirection(origin, target);
+    distance = calculateDistance();
 }
 
 void Bullet::calculateDirection(const Position origin, const Position target) {
@@ -30,7 +31,7 @@ void Bullet::calculateDirection(const Position origin, const Position target) {
 }
 
 bool Bullet::move() {
-    if (const float distance = calculateDistance(); distance > 0.1) {
+    if (distance != 0) {
         if (position.row != target.row) {
             position.row += speed * direction.y;
         }
@@ -38,13 +39,15 @@ bool Bullet::move() {
             position.column += speed * direction.x;
         }
 
+        distance -= 1;
+
         return false;
     }
 
     return true;
 }
 
-bool Bullet::checkCollision(const Position& other) const {
+bool Bullet::bulletCollision(const Position& other) const {
     return position.row == other.row && position.column == other.column;
 }
 
@@ -52,8 +55,16 @@ Position Bullet::getPosition() const {
     return position;
 }
 
-float Bullet::calculateDistance() const {
+Direction Bullet::getDirection() const {
+    return direction;
+}
+
+void Bullet::setDirection(const Direction newDirection) {
+    direction = newDirection;
+}
+
+int Bullet::calculateDistance() const {
     const auto dx = static_cast<float>(target.column - position.column);
     const auto dy = static_cast<float>(target.row - position.row);
-    return std::sqrt(dx * dx + dy * dy);
+    return static_cast<int>(std::sqrt(dx * dx + dy * dy));
 }

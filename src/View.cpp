@@ -231,7 +231,7 @@ gboolean View::onClick(GtkWidget *widget, const GdkEventButton *event, gpointer 
     const auto position = Position(row, column);
 
     if (event->button == 1) { // Left click
-        if (Tank* clickedTank = view->getClickedTank(position)) { // Tank clicked
+        if (Tank* clickedTank = view->getTankOnPosition(position)) { // Tank clicked
             view->handleSelectTank(clickedTank); // Select tank
             g_print("Tank selected\n"); // For debugging purposes
 
@@ -256,10 +256,22 @@ gboolean View::onClick(GtkWidget *widget, const GdkEventButton *event, gpointer 
 gboolean View::handleMoveBullet(gpointer data) {
     if (auto* view = static_cast<View*>(data); view->bullet) {
         if (view->bullet->move()) {
-            delete view->bullet;
-            view->bullet = nullptr;
+            view->destroyBullet();
             return FALSE;
         }
+
+        if (view->tankCollision(view->bullet)) {
+            Tank* TankHit = view->getTankOnPosition(view->bullet->getPosition());
+            TankHit->applyDamage();
+            view->destroyBullet();
+            g_print("Tank Collision\n");
+        }
+
+        else if (view->wallCollision(view->bullet)) {
+            handleBulletBounce(view->bullet);
+            g_print("Wall Collision\n");
+        }
+
         view->update();
         return TRUE;
     }
@@ -267,11 +279,35 @@ gboolean View::handleMoveBullet(gpointer data) {
     return FALSE;
 }
 
+bool View::tankCollision(const Bullet* bullet) const {
+    if (auto [row, col] = bullet->getPosition();
+    gridMap->isOccupied(row, col)) {
+        return true;
+    }
+
+    return false;
+}
+
+bool View::wallCollision(const Bullet* bullet) const {
+    if (auto [row, col] = bullet->getPosition();
+    gridMap->isObstacle(row, col)) {
+        return true;
+    }
+
+    return false;
+}
+
+void View::handleBulletBounce(Bullet* bullet) {
+    auto [x, y] = bullet->getDirection();
+    bullet->setDirection(Direction(-x, -y));
+}
+
+
 bool View::cellClicked(const Position position) {
     return position.row >= 0 && position.row < ROWS && position.column >= 0 && position.column < COLS;
 }
 
-Tank* View::getClickedTank(const Position position) const {
+Tank* View::getTankOnPosition(const Position position) const {
     for (int i = 0; i < 8; i++) {
         if (Tank* tank = &tanks[i];
             position.row == tank->getRow() && position.column == tank->getColumn()) {
@@ -322,3 +358,11 @@ void View::handleFireBullet(const Position &origin, const Position &target) {
     g_timeout_add(30, handleMoveBullet, this);
     update();
 }
+
+void View::destroyBullet() {
+    if (bullet) {
+        delete bullet;
+        bullet = nullptr;
+    }
+}
+

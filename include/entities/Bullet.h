@@ -46,7 +46,7 @@ public:
      * @param other The position to check collision with.
      * @return true if the bullet collides with the other position, false otherwise.
      */
-    [[nodiscard]] bool checkCollision(const Position& other) const;
+    [[nodiscard]] bool bulletCollision(const Position& other) const;
 
     /**
      * @brief Gets the position of the bullet.
@@ -55,20 +55,24 @@ public:
      */
     [[nodiscard]] Position getPosition() const;
 
+    [[nodiscard]] Direction getDirection() const;
+
+    void setDirection(Direction newDirection);
+
 private:
     Position position; ///< The position of the bullet.
     Position target; ///< The position where the bullet is aimed.
     Direction direction{}; ///< The direction of the bullet.
+    int distance;
     int speed = 1; ///< The speed of the bullet.
     float bounceAngle = 0.0; ///< The angle of the bounce.
-    int damage{}; ///< The bullet damage.
 
     /**
      * @brief Calculates the distance between the bullet and the target.
      *
      * @return The distance between the bullet and the target.
      */
-    [[nodiscard]] float calculateDistance() const;
+    [[nodiscard]] int calculateDistance() const;
 };
 
 
