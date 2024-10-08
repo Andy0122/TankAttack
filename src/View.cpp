@@ -22,6 +22,14 @@ void View::update() const {
     gtk_widget_queue_draw(drawingArea);
 }
 
+void View::addTrace() const {
+    if (const int currentIndex = traceDistance + 1 - bullet->getDistance() - 1;
+        0 <= currentIndex && currentIndex < traceDistance) {
+        bulletTrace[currentIndex] = bullet->getPosition();
+    }
+}
+
+
 
 GtkWidget* View::createVBox(GtkWidget *window) {
     GtkWidget* vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
@@ -257,8 +265,6 @@ gboolean View::onClick(GtkWidget *widget, const GdkEventButton *event, gpointer 
         } else if (cellClicked(position)) { // Cell clicked
             if (Tank* selectedTank = view->getSelectedTank()) { // There's a selected tank
                 view->handleMoveTank(selectedTank, position); // Move tank
-            } else {
-                g_print("Tank can't be moved because there's no selected tank\n"); // For debugging purposes
             }
         }
 
@@ -292,7 +298,7 @@ void View::handleMoveTank(Tank* tank, const Position position) const {
 
 void View::handleFireBullet(const Position &origin, const Position &target) {
     bullet = new Bullet(origin, target);
-    traceDistance = bullet->getDistance();
+    traceDistance = bullet->getDistance() - 1;
     bulletTrace = new Position[traceDistance];
     g_timeout_add(30, handleMoveBullet, this);
     update();
@@ -301,16 +307,20 @@ void View::handleFireBullet(const Position &origin, const Position &target) {
 gboolean View::handleMoveBullet(gpointer data) {
     if (auto* view = static_cast<View*>(data); view->bullet) {
         if (view->bullet->move()) {
-            view->destroyBullet();
-            view->destroyBulletTrace();
+            // view->destroyBullet();
+            // view->destroyBulletTrace();
+
+            view->update();
             return FALSE;
         }
 
         if (view->bulletHitTank(view->bullet)) {
             Tank* TankHit = view->getTankOnPosition(view->bullet->getPosition());
             TankHit->applyDamage();
-            view->destroyBullet();
-            view->destroyBulletTrace();
+            // view->destroyBullet();
+            // view->destroyBulletTrace();
+
+            view->update();
             return FALSE;
         }
 
@@ -318,11 +328,7 @@ gboolean View::handleMoveBullet(gpointer data) {
             handleBulletBounce(view->bullet);
         }
 
-        const int current = view->traceDistance - view->bullet->getDistance(); // Fix adding trace to array
-        g_print("Trace Distance: %d, Current Distance: %d\n", view->traceDistance, view->bullet->getDistance());
-        g_print("Trace index: %d\n", current);
-        view->bulletTrace[current] = view->bullet->getPosition();
-
+        view->addTrace();
         view->update();
         return TRUE;
     }

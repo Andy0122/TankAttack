@@ -39,7 +39,6 @@ public:
      */
     [[nodiscard]] bool move();
 
-
     /**
      * @brief Checks if the bullet collides with another position.
      *

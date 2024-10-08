@@ -50,6 +50,8 @@ private:
     GridGraph* gridMap = nullptr; ///< Map of the game
     std::map<std::string, GdkPixbuf*> assets; ///< Assets of the game
 
+    void addTrace() const;
+
 // UI Methods
 
     /**

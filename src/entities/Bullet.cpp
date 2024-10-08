@@ -41,7 +41,7 @@ bool Bullet::move() {
 
         distance -= 1;
 
-        return false;
+        return distance == 0;
     }
 
     return true;
