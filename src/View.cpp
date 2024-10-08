@@ -241,8 +241,8 @@ void View::drawBulletTrace(cairo_t *cr) const {
         const int current = traceDistance - bullet->getDistance();
         for (int i = 0; i < current; i++) {
             const auto [row, column] = bulletTrace[i];
-            double x = column * CELL_SIZE + (CELL_SIZE - TRACE_SIZE) / 2;
-            double y = row * CELL_SIZE + (CELL_SIZE - TRACE_SIZE) / 2;
+            const double x = column * CELL_SIZE + (CELL_SIZE - TRACE_SIZE) / 2;
+            const double y = row * CELL_SIZE + (CELL_SIZE - TRACE_SIZE) / 2;
             cairo_rectangle(cr, x, y, TRACE_SIZE, TRACE_SIZE);
             cairo_fill(cr);
         }
@@ -305,7 +305,7 @@ void View::handleFireBullet(const Position &origin, const Position &target) {
 }
 
 gboolean View::handleMoveBullet(gpointer data) {
-    if (auto* view = static_cast<View*>(data); view->bullet) {
+    if (const auto* view = static_cast<View*>(data); view->bullet) {
         if (view->bullet->move()) {
             // view->destroyBullet();
             // view->destroyBulletTrace();
@@ -408,5 +408,3 @@ void View::destroyBulletTrace() {
 
     }
 }
-
-

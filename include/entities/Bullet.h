@@ -30,13 +30,39 @@ public:
      */
     ~Bullet() = default;
 
-    void calculateDirection(Position origin, Position target);
+    /**
+     * @brief Gets the position of the bullet.
+     *
+     * @return The position of the bullet.
+     */
+    [[nodiscard]] Position getPosition() const;
 
     /**
-     * @brief Moves the bullet.
+     * @brief Gets the direction of the bullet.
      *
-     * @return True if the bullet is still moving, false otherwise.
+     * @return The direction of the bullet.
      */
+    [[nodiscard]] Direction getDirection() const;
+
+    /**
+     * @brief Gets the distance the bullet has to travel.
+     *
+     * @return The distance the bullet has to travel.
+     */
+    [[nodiscard]] int getDistance() const;
+
+    /**
+     * @brief Sets the direction of the bullet.
+     *
+     * @param newDirection The new direction of the bullet.
+     */
+    void setDirection(Direction newDirection);
+
+    /**
+    * @brief Moves the bullet.
+    *
+    * @return True if the bullet is still moving, false otherwise.
+    */
     [[nodiscard]] bool move();
 
     /**
@@ -47,26 +73,22 @@ public:
      */
     [[nodiscard]] bool bulletCollision(const Position& other) const;
 
-    /**
-     * @brief Gets the position of the bullet.
-     *
-     * @return The position of the bullet.
-     */
-    [[nodiscard]] Position getPosition() const;
-
-    [[nodiscard]] Direction getDirection() const;
-
-    [[nodiscard]] int getDistance() const;
-
-    void setDirection(Direction newDirection);
 
 private:
     Position position; ///< The position of the bullet.
     Position target; ///< The position where the bullet is aimed.
     Direction direction{}; ///< The direction of the bullet.
-    int distance;
+    int distance; ///< The distance the bullet has to travel.
     int speed = 1; ///< The speed of the bullet.
     float bounceAngle = 0.0; ///< The angle of the bounce.
+
+    /**
+     * @brief Calculates the direction of the bullet.
+     *
+     * @param origin The position where the bullet is created.
+     * @param target The position where the bullet is aimed.
+     */
+    void calculateDirection(Position origin, Position target);
 
     /**
      * @brief Calculates the distance between the bullet and the target.

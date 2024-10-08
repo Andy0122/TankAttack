@@ -7,27 +7,20 @@ Bullet::Bullet(const Position origin, const Position target)
     distance = calculateDistance();
 }
 
-void Bullet::calculateDirection(const Position origin, const Position target) {
-    int x;
-    int y;
+Position Bullet::getPosition() const {
+    return position;
+}
 
-    if (target.column > origin.column) {
-        x = 1;
-    } else if (target.column < origin.column) {
-        x = -1;
-    } else {
-        x = 0;
-    }
+Direction Bullet::getDirection() const {
+    return direction;
+}
 
-    if (target.row > origin.row) {
-        y = 1;
-    } else if (target.row < origin.row) {
-        y = -1;
-    } else {
-        y = 0;
-    }
+int Bullet::getDistance() const {
+    return distance;
+}
 
-    direction = Direction(x, y);
+void Bullet::setDirection(const Direction newDirection) {
+    direction = newDirection;
 }
 
 bool Bullet::move() {
@@ -51,20 +44,27 @@ bool Bullet::bulletCollision(const Position& other) const {
     return position.row == other.row && position.column == other.column;
 }
 
-Position Bullet::getPosition() const {
-    return position;
-}
+void Bullet::calculateDirection(const Position origin, const Position target) {
+    int x;
+    int y;
 
-Direction Bullet::getDirection() const {
-    return direction;
-}
+    if (target.column > origin.column) {
+        x = 1;
+    } else if (target.column < origin.column) {
+        x = -1;
+    } else {
+        x = 0;
+    }
 
-int Bullet::getDistance() const {
-    return distance;
-}
+    if (target.row > origin.row) {
+        y = 1;
+    } else if (target.row < origin.row) {
+        y = -1;
+    } else {
+        y = 0;
+    }
 
-void Bullet::setDirection(const Direction newDirection) {
-    direction = newDirection;
+    direction = Direction(x, y);
 }
 
 int Bullet::calculateDistance() const {

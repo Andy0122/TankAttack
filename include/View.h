@@ -50,6 +50,9 @@ private:
     GridGraph* gridMap = nullptr; ///< Map of the game
     std::map<std::string, GdkPixbuf*> assets; ///< Assets of the game
 
+    /**
+     * @brief Adds the current bullet position to the bullet trace.
+     */
     void addTrace() const;
 
 // UI Methods
