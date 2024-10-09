@@ -100,11 +100,15 @@ public:
      */
     void setSelected(bool newState);
 
+    void applyDamage();
+
 private:
-    int health{}; ///< The health of the tank (integer value).
+    int health; ///< The health of the tank (integer value).
     Color color; ///< The color of the tank (as a string).
     int row, column; ///< The cell position of the tank in the grid map.
     bool selected = false; ///< Indicates if the tank is selected.
+
+    static constexpr int TANK_FULL_HEALTH = 100; ///< The full health of the tank.
 };
 
 #endif // TANK_H

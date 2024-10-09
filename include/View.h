@@ -44,10 +44,19 @@ private:
     GtkWidget* drawingArea = nullptr; ///< Drawing area of the game
     Tank* tanks = nullptr; ///< Array of tanks of the game
     Bullet* bullet = nullptr; ///< Bullet of the game
+    Position* bulletTrace = nullptr; ///< Bullet movement trace on the game
+    int traceDistance = 0; ///< Distance of the bullet path
     GtkWidget* statusBar = nullptr; ///< Status bar of the game
     GridGraph* gridMap = nullptr; ///< Map of the game
     std::map<std::string, GdkPixbuf*> assets; ///< Assets of the game
     static gboolean moveTankStep(gpointer data);
+
+    /**
+     * @brief Adds the current bullet position to the bullet trace.
+     */
+    void addTrace() const;
+
+// UI Methods
 
     /**
      * @brief Creates a vertical box.
@@ -112,11 +121,8 @@ private:
      */
     [[nodiscard]] GtkWidget* createTankDisplay(const Tank& tank) const;
 
-    /**
-     * @brief Updates the status bar.
-     */
-    void updateStatusBar() const;
 
+// Setup Methods
     /**
      * @brief Loads the assets of the game.
      */
@@ -126,6 +132,17 @@ private:
      * @brief Connects the signals of the game.
      */
     void connectSignals();
+
+
+// Draw Methods
+    /**
+    * @brief Draws the path the game interface.
+    *
+    * @param widget GtkWidget* Widget.
+    * @param cr cairo_t* Cairo context.
+    * @param data gpointer Data.
+    */
+    static gboolean onDraw(GtkWidget* widget, cairo_t* cr, gpointer data);
 
     /**
      * @brief Draws the map of the game.
@@ -141,6 +158,11 @@ private:
      */
     void drawTanks(cairo_t* cr);
 
+     /**
+     * @brief Updates the status bar.
+     */
+     void updateStatusBar() const;
+
     /**
      * @brief Draws the bullet of the game.
      *
@@ -149,14 +171,14 @@ private:
     void drawBullet(cairo_t* cr) const;
 
     /**
-     * @brief Draws the path the game interface.
+     * @brief Draws the bullet trace of the game.
      *
-     * @param widget GtkWidget* Widget.
      * @param cr cairo_t* Cairo context.
-     * @param data gpointer Data.
      */
-    static gboolean onDraw(GtkWidget* widget, cairo_t* cr, gpointer data);
+    void drawBulletTrace(cairo_t* cr) const;
 
+
+// Event Methods
     /**
      * @brief Handles the click event.
      *
@@ -167,6 +189,29 @@ private:
     static gboolean onClick(GtkWidget* widget, const GdkEventButton* event, gpointer data);
 
     /**
+    * @brief Handles the selection of a tank.
+    *
+    * @param tank Tank* Tank.
+    */
+    void handleSelectTank(Tank* tank) const;
+
+    /**
+    * @brief Handles the movement of a tank.
+    *
+    * @param tank Tank* Tank.
+    * @param position Position Position.
+    */
+    void handleMoveTank(Tank* tank, Position position) const;
+
+    /**
+    * @brief Handles the fire of a bullet.
+    *
+    * @param origin Position Origin.
+    * @param target Position Target.
+    */
+    void handleFireBullet(const Position& origin, const Position& target);
+
+    /**
      * @brief Handles the move of the bullet.
      *
      * @param data gpointer Data.
@@ -175,57 +220,77 @@ private:
     static gboolean handleMoveBullet(gpointer data);
 
     /**
+    * @brief Handles the bounce of the bullet.
+    *
+    * @param bullet Bullet* Bullet.
+    */
+    static void handleBulletBounce(Bullet* bullet);
+
+
+// Game Data Methods
+    /**
+    * @brief Gets the tank on the given position.
+    *
+    * @param position Position Position.
+    * @return Tank* Tank on that position.
+    */
+    [[nodiscard]] Tank* getTankOnPosition(Position position) const;
+
+    /**
+    * @brief Gets the selected tank.
+    *
+    * @return Tank* Selected tank.
+    */
+    [[nodiscard]] Tank* getSelectedTank() const;
+
+    /**
     * @brief Gets the position of the cell clicked.
     *
     * @param position Position where the click happened.
     */
-    static bool cellClicked(Position position);
+     static bool cellClicked(Position position);
 
     /**
-     * @brief Gets the clicked tank.
-     *
-     * @param position Position Position.
-     * @return Tank* Clicked tank.
-     */
-    [[nodiscard]] Tank* getClickedTank(Position position) const;
+    * @brief Check if the current bullet hit a tank.
+    *
+    * @param bullet Bullet* Bullet.
+    * @return True if the bullet hit a tank.
+    */
+    bool bulletHitTank(const Bullet* bullet) const;
 
     /**
-     * @brief Gets the selected tank.
-     *
-     * @return Tank* Selected tank.
+    * @brief Check if the current bullet hit a wall.
+    *
+    * @param bullet Bullet* Bullet.
+    * @return True if the bullet hit a wall.
+    */
+    bool BulletHitWall(const Bullet* bullet) const;
+
+
+// Reset Method
+    /**
+     * @brief Deselects all tanks.
      */
-    [[nodiscard]] Tank* getSelectedTank() const;
+    void deselectAllTanks() const;
 
     /**
-     * @brief Handles the selection of a tank.
-     *
-     * @param tank Tank* Tank.
+     * @brief Destroys the current bullet.
      */
-    static void handleSelectTank(Tank* tank);
-
-    /**
-     * @brief Handles the movement of a tank.
-     *
-     * @param tank Tank* Tank.
-     * @param position Position Position.
-     */
-    void handleMoveTank(Tank* tank, Position position) const;
+    void destroyBullet();
 
     void MoveTank(Tank *tank, Position position) const;
 
     /**
-     * @brief Handles the fire of a bullet.
-     *
-     * @param origin Position Origin.
-     * @param target Position Target.
+     * @brief Destroys the bullet trace.
      */
-    void handleFireBullet(const Position& origin, const Position& target);
+    void destroyBulletTrace();
 
     static constexpr int CELL_SIZE = 50; ///< Size of the cell
     static constexpr int ROWS = 13; ///< Number of rows
     static constexpr int COLS = 25; ///< Number of columns
     static constexpr int X_OFFSET = 30; ///< X offset
     static constexpr int Y_OFFSET = 30; ///< Y offset
+    static constexpr float TRACE_SIZE = CELL_SIZE * 0.25; ///< Size of the bullet trace
 };
 
 struct MoveData {

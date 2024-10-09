@@ -25,6 +25,15 @@ void View::update() const {
     gtk_widget_queue_draw(drawingArea);
 }
 
+void View::addTrace() const {
+    if (const int currentIndex = traceDistance + 1 - bullet->getDistance() - 1;
+        0 <= currentIndex && currentIndex < traceDistance) {
+        bulletTrace[currentIndex] = bullet->getPosition();
+    }
+}
+
+
+
 GtkWidget* View::createVBox(GtkWidget *window) {
     GtkWidget* vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_container_add(GTK_CONTAINER(window), vbox);
@@ -50,26 +59,6 @@ void View::createDrawingArea(GtkWidget *hbox) {
 void View::createStatusBar(GtkWidget *vbox) {
     statusBar = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
     gtk_box_pack_start(GTK_BOX(vbox), statusBar, TRUE, TRUE, 0);
-}
-
-void View::updateStatusBar() const {
-    gtk_container_foreach(GTK_CONTAINER(statusBar), reinterpret_cast<GtkCallback>(gtk_widget_destroy), nullptr);
-
-    for (int player = 0; player < 2; ++player) {
-        GtkWidget* playerContainer = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
-
-        GtkWidget* playerLabel = createPlayerLabel(player);
-        gtk_box_pack_start(GTK_BOX(playerContainer), playerLabel, FALSE, FALSE, 0);
-
-        GtkWidget* playerBox = createPlayerBox(player);
-        gtk_widget_set_halign(playerBox, GTK_ALIGN_CENTER);
-        gtk_widget_set_valign(playerBox, GTK_ALIGN_CENTER);
-        gtk_box_pack_start(GTK_BOX(playerContainer), playerBox, TRUE, TRUE, 0);
-
-        gtk_box_pack_start(GTK_BOX(statusBar), playerContainer, TRUE, TRUE, 0);
-    }
-
-    gtk_widget_show_all(statusBar);
 }
 
 GtkWidget* View::createPlayerLabel(const int player) {
@@ -127,6 +116,7 @@ GtkWidget* View::createTankDisplay(const Tank& tank) const {
     return hbox;
 }
 
+
 void View::loadAssets() {
     if (GdkPixbuf* originalCell = gdk_pixbuf_new_from_file("../assets/textures/accessible.png", nullptr)) {
         assets["cell"] = gdk_pixbuf_scale_simple(originalCell, CELL_SIZE, CELL_SIZE, GDK_INTERP_BILINEAR);
@@ -168,6 +158,19 @@ void View::connectSignals() {
     g_signal_connect(G_OBJECT(drawingArea), "draw", G_CALLBACK(onDraw), this);
     g_signal_connect(G_OBJECT(drawingArea), "button-press-event", G_CALLBACK(onClick), this);
     gtk_widget_add_events(drawingArea, GDK_BUTTON_PRESS_MASK);
+}
+
+
+gboolean View::onDraw(GtkWidget *widget, cairo_t *cr, gpointer data) {
+    const auto view = static_cast<View*>(data);
+
+    view->drawMap(cr);
+    view->drawTanks(cr);
+    view->updateStatusBar();
+    view->drawBullet(cr);
+    view->drawBulletTrace(cr);
+
+    return FALSE;
 }
 
 void View::drawMap(cairo_t *cr) {
@@ -269,6 +272,26 @@ void View::drawTanks(cairo_t *cr) {
     }
 }
 
+void View::updateStatusBar() const {
+    gtk_container_foreach(GTK_CONTAINER(statusBar), reinterpret_cast<GtkCallback>(gtk_widget_destroy), nullptr);
+
+    for (int player = 0; player < 2; ++player) {
+        GtkWidget* playerContainer = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+
+        GtkWidget* playerLabel = createPlayerLabel(player);
+        gtk_box_pack_start(GTK_BOX(playerContainer), playerLabel, FALSE, FALSE, 0);
+
+        GtkWidget* playerBox = createPlayerBox(player);
+        gtk_widget_set_halign(playerBox, GTK_ALIGN_CENTER);
+        gtk_widget_set_valign(playerBox, GTK_ALIGN_CENTER);
+        gtk_box_pack_start(GTK_BOX(playerContainer), playerBox, TRUE, TRUE, 0);
+
+        gtk_box_pack_start(GTK_BOX(statusBar), playerContainer, TRUE, TRUE, 0);
+    }
+
+    gtk_widget_show_all(statusBar);
+}
+
 void View::drawBullet(cairo_t *cr) const {
     if (bullet) {
         auto [row, column] = bullet->getPosition();
@@ -278,16 +301,20 @@ void View::drawBullet(cairo_t *cr) const {
     }
 }
 
-gboolean View::onDraw(GtkWidget *widget, cairo_t *cr, gpointer data) {
-    const auto view = static_cast<View*>(data);
-
-    view->drawMap(cr);
-    view->drawTanks(cr);
-    view->updateStatusBar();
-    view->drawBullet(cr);
-
-    return FALSE;
+void View::drawBulletTrace(cairo_t *cr) const {
+    if (bullet && bulletTrace) {
+        cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+        const int current = traceDistance - bullet->getDistance();
+        for (int i = 0; i < current; i++) {
+            const auto [row, column] = bulletTrace[i];
+            const double x = column * CELL_SIZE + (CELL_SIZE - TRACE_SIZE) / 2;
+            const double y = row * CELL_SIZE + (CELL_SIZE - TRACE_SIZE) / 2;
+            cairo_rectangle(cr, x, y, TRACE_SIZE, TRACE_SIZE);
+            cairo_fill(cr);
+        }
+    }
 }
+
 
 gboolean View::onClick(GtkWidget *widget, const GdkEventButton *event, gpointer data) {
     auto* view = static_cast<View*>(data);
@@ -297,15 +324,13 @@ gboolean View::onClick(GtkWidget *widget, const GdkEventButton *event, gpointer 
     const auto position = Position(row, column);
 
     if (event->button == 1) { // Left click
-        if (Tank* clickedTank = view->getClickedTank(position)) { // Tank clicked
-            handleSelectTank(clickedTank); // Select tank
+        if (Tank* clickedTank = view->getTankOnPosition(position)) { // Tank clicked
+            view->handleSelectTank(clickedTank); // Select tank
             g_print("Tank selected\n"); // For debugging purposes
 
         } else if (cellClicked(position)) { // Cell clicked
             if (Tank* selectedTank = view->getSelectedTank()) { // There's a selected tank
                 view->handleMoveTank(selectedTank, position); // Move tank
-            } else {
-                g_print("Tank can't be moved because there's no selected tank\n"); // For debugging purposes
             }
         }
 
@@ -319,29 +344,76 @@ gboolean View::onClick(GtkWidget *widget, const GdkEventButton *event, gpointer 
     return TRUE;
 }
 
+void View::handleSelectTank(Tank* tank) const {
+    deselectAllTanks();
+    tank->setSelected(true);
+}
+
+void View::handleMoveTank(Tank* tank, const Position position) const {
+    if (tank->isSelected()) {
+        if (!gridMap->isObstacle(position.row, position.column)
+        && !gridMap->isOccupied(position.row, position.column)) {
+            gridMap->removeTank(tank->getRow(), tank->getColumn());
+            tank->setPosition(position);
+            gridMap->placeTank(position.row, position.column);
+            tank->setSelected(false);
+            update();
+        }
+    }
+}
+
+void View::handleFireBullet(const Position &origin, const Position &target) {
+    bullet = new Bullet(origin, target);
+    traceDistance = bullet->getDistance() - 1;
+    bulletTrace = new Position[traceDistance];
+    g_timeout_add(30, handleMoveBullet, this);
+    update();
+}
+
 gboolean View::handleMoveBullet(gpointer data) {
-    if (auto* view = static_cast<View*>(data); view->bullet) {
+    if (const auto* view = static_cast<View*>(data); view->bullet) {
         if (view->bullet->move()) {
-            delete view->bullet;
-            view->bullet = nullptr;
+            // view->destroyBullet();
+            // view->destroyBulletTrace();
+
+            view->update();
             return FALSE;
         }
+
+        if (view->bulletHitTank(view->bullet)) {
+            Tank* TankHit = view->getTankOnPosition(view->bullet->getPosition());
+            TankHit->applyDamage();
+            // view->destroyBullet();
+            // view->destroyBulletTrace();
+
+            view->update();
+            return FALSE;
+        }
+
+        if (view->BulletHitWall(view->bullet)) {
+            handleBulletBounce(view->bullet);
+        }
+
+        view->addTrace();
         view->update();
+        return TRUE;
     }
 
-    return TRUE;
+    return FALSE;
 }
 
-bool View::cellClicked(const Position position) {
-    return position.row >= 0 && position.row < ROWS && position.column >= 0 && position.column < COLS;
+void View::handleBulletBounce(Bullet* bullet) {
+    auto [x, y] = bullet->getDirection();
+    bullet->setDirection(Direction(-x, -y));
 }
 
-Tank* View::getClickedTank(const Position position) const {
+
+Tank* View::getTankOnPosition(const Position position) const {
     for (int i = 0; i < 8; i++) {
         if (Tank* tank = &tanks[i];
             position.row == tank->getRow() && position.column == tank->getColumn()) {
             return tank;
-        }
+            }
     }
 
     return nullptr;
@@ -352,17 +424,25 @@ Tank* View::getSelectedTank() const {
         if (Tank* tank = &tanks[i];
             tank->isSelected()) {
             return tank;
-        }
+            }
     }
 
     return nullptr;
 }
 
-void View::handleSelectTank(Tank* tank) {
-    if (!tank->isSelected()) {
-        tank->setSelected(true);
-    }
+bool View::cellClicked(const Position position) {
+    return position.row >= 0 && position.row < ROWS && position.column >= 0 && position.column < COLS;
 }
+
+bool View::bulletHitTank(const Bullet* bullet) const {
+    if (auto [row, col] = bullet->getPosition();
+    gridMap->isOccupied(row, col)) {
+        return true;
+    }
+
+    return false;
+}
+
 
 void View::handleMoveTank(Tank* tank, const Position position) const {
     Pathfinder pathfinder(*gridMap);
@@ -394,8 +474,12 @@ void View::MoveTank(Tank* tank, const Position position) const {
             tank->setPosition(position);
             update();
         }
-    }
-}
+
+bool View::BulletHitWall(const Bullet* bullet) const {
+    if (auto [row, col] = bullet->getPosition();
+    gridMap->isObstacle(row, col)) {
+        return true;
+
 
 gboolean View::moveTankStep(gpointer data) {
     auto* moveData = static_cast<MoveData*>(data);
@@ -427,4 +511,26 @@ void View::handleFireBullet(const Position &origin, const Position &target) {
     bullet = new Bullet(origin, target);
     g_timeout_add(30, handleMoveBullet, this);
     update();
+
+
+void View::deselectAllTanks() const {
+    for (int i = 0; i < 8; i++) {
+        tanks[i].setSelected(false);
+    }
+}
+
+void View::destroyBullet() {
+    if (bullet) {
+        delete bullet;
+        bullet = nullptr;
+    }
+}
+
+void View::destroyBulletTrace() {
+    if (bulletTrace) {
+        delete[] bulletTrace;
+        bulletTrace = nullptr;
+        traceDistance = 0;
+
+    }
 }
