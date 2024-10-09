@@ -49,6 +49,7 @@ private:
     GtkWidget* statusBar = nullptr; ///< Status bar of the game
     GridGraph* gridMap = nullptr; ///< Map of the game
     std::map<std::string, GdkPixbuf*> assets; ///< Assets of the game
+    static gboolean moveTankStep(gpointer data);
 
     /**
      * @brief Adds the current bullet position to the bullet trace.
@@ -277,15 +278,24 @@ private:
      */
     void destroyBullet();
 
+    void MoveTank(Tank *tank, Position position) const;
+
     /**
      * @brief Destroys the bullet trace.
      */
     void destroyBulletTrace();
 
     static constexpr int CELL_SIZE = 50; ///< Size of the cell
-    static constexpr int ROWS = 11; ///< Number of rows
-    static constexpr int COLS = 21; ///< Number of columns
+    static constexpr int ROWS = 13; ///< Number of rows
+    static constexpr int COLS = 25; ///< Number of columns
     static constexpr int X_OFFSET = 30; ///< X offset
     static constexpr int Y_OFFSET = 30; ///< Y offset
     static constexpr float TRACE_SIZE = CELL_SIZE * 0.25; ///< Size of the bullet trace
+};
+
+struct MoveData {
+ View* view;
+ Tank* tank;
+ std::vector<int> path;
+ std::size_t currentStep;
 };

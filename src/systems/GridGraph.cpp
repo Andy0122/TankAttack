@@ -1,7 +1,12 @@
 #include "../../include/systems/GridGraph.h"
 #include <cstdlib>
 #include <ctime>
+#include <queue>
 #include <random>
+#include <vector>
+#include <algorithm>
+#include <unordered_set>
+
 
 /**
  * @brief Constructor de la clase Node.
@@ -30,6 +35,17 @@ GridGraph::GridGraph() {
 
     // Inicializar la lista de adyacencia
     adjList.resize(rows * cols);
+
+    safeNodeIdsLeft = {75, 76, 100, 101, 102, 125, 126, 127, 150, 151, 152, 175, 176, 177, 200, 201, 202, 225, 226};
+    safeNodeIdsRight = {98, 99, 122, 123, 124, 147, 148, 149, 172, 173, 174, 197, 198, 199, 222, 223, 224, 248, 249};
+}
+
+/**
+ * @brief Metodo para obtener la lista de adyacencia del grafo.
+ * @return Una referencia constante a la lista de adyacencia.
+ */
+const std::vector<std::vector<int>>& GridGraph::getAdjList() const {
+    return adjList;
 }
 
 /**
@@ -49,6 +65,11 @@ int GridGraph::toIndex(int row, int col) const {
  * Conecta cada nodo con sus vecinos (arriba, abajo, izquierda, derecha) si son accesibles.
  */
 void GridGraph::connectNodes() {
+    // Limpiar la lista de adyacencia antes de reconstruirla
+    for (auto& neighbors : adjList) {
+        neighbors.clear();
+    }
+
     for (int row = 0; row < rows; ++row) {
         for (int col = 0; col < cols; ++col) {
             Node& currentNode = grid[row][col];
@@ -177,17 +198,40 @@ const Node& GridGraph::getNode(int row, int col) const {
  * @return true Si el nodo es seguro.
  * @return false Si el nodo no es seguro.
  */
-bool GridGraph::isSafeNode(int nodeId) {
-    std::vector<int> safeNodes = {63, 64, 86, 107, 128, 148, 147, 85, 84, 105, 106, 127, 126, 125, 124, 123, 102, 103, 104, 83, 82, 144, 145, 146, 167, 166};
+bool GridGraph::isSafeNode(int nodeId) const{
 
-    // Recorrer la lista de nodos seguros y verificar si nodeId está en ella
-    for (int safeNode : safeNodes) {
+    for (int safeNode : safeNodeIdsRight) {
         if (safeNode == nodeId) {
             return true;
         }
     }
+
+    for (int safeNode : safeNodeIdsLeft) {
+        if (safeNode == nodeId) {
+            return true;
+        }
+    }
+
     return false;
 }
+
+struct ObstacleShape {
+    std::vector<std::pair<int, int>> cells; // Posiciones relativas de la forma
+};
+
+static const std::vector<ObstacleShape> predefinedShapes = {
+    // Forma horizontal de longitud 3
+    { { {0, 0}, {0, 1}, {0, 2} } },
+    // Forma vertical de longitud 3
+    { { {0, 0}, {1, 0}, {2, 0} } },
+    // Forma en L
+    { { {0, 0}, {1, 0}, {1, 1} } },
+    // Cuadrado de 2x2
+    { { {0, 0}, {0, 1}, {1, 0}, {1, 1} } },
+    // Forma en T
+    { { {0, -1}, {0, 0}, {0, 1}, {1, 0} } }
+};
+
 
 Position GridGraph::getRandomAccessiblePosition() const {
     std::random_device rd;
@@ -206,35 +250,338 @@ Position GridGraph::getRandomAccessiblePosition() const {
 }
 
 
-/**
- * @brief Genera obstáculos aleatorios en la cuadrícula.
- *
- * Genera zonas inaccesibles aleatorias, respetando los nodos seguros.
- */
 void GridGraph::generateObstacles() {
     // Inicializar random seed
     std::srand(std::time(0));
+    std::mt19937 gen(std::rand());
+    std::uniform_int_distribution<> shapeDis(0, predefinedShapes.size() - 1);
+    std::uniform_int_distribution<> rowDis(0, rows - 1);
+    std::uniform_int_distribution<> colDis(0, cols - 1);
 
-    // Número de obstáculos a generar (puedes ajustar este número según el tamaño de la cuadrícula)
-    int numObstacles = 10 + std::rand() % 10;  // Generar entre 10 y 20 obstáculos
+    // Número de obstáculos a generar
+    int numObstacles = 10 + std::rand() % 10;
 
-    for (int i = 0; i < numObstacles; ++i) {
-        // Seleccionar una posición inicial aleatoria para el obstáculo
-        int startRow = std::rand() % rows;
-        int startCol = std::rand() % cols;
+    int attempts = 0;
+    int maxAttempts = 1000; // Para evitar bucles infinitos
+    int placedObstacles = 0;
 
-        // Tamaño aleatorio del obstáculo
-        int obstacleWidth = 1 + std::rand() % 3;  // Ancho del obstáculo (entre 1 y 3)
-        int obstacleHeight = 1 + std::rand() % 3;  // Alto del obstáculo (entre 1 y 3)
+    while (placedObstacles < numObstacles && attempts < maxAttempts) {
+        attempts++;
 
-        // Generar un obstáculo de forma rectangular
-        for (int row = startRow; row < startRow + obstacleHeight && row < rows; ++row) {
-            for (int col = startCol; col < startCol + obstacleWidth && col < cols; ++col) {
-                int nodeId = row * cols + col;
+        // Seleccionar una forma aleatoria
+        const ObstacleShape& shape = predefinedShapes[shapeDis(gen)];
 
-                // Usar el metodo isSafeNode para verificar si el nodo es seguro antes de hacerlo inaccesible
+        // Seleccionar una posición inicial aleatoria
+        int baseRow = rowDis(gen);
+        int baseCol = colDis(gen);
+
+        // Verificar si la forma cabe en la posición y no interfiere con nodos seguros
+        bool canPlace = true;
+        std::vector<std::pair<int, int>> absolutePositions;
+
+        for (const auto& cell : shape.cells) {
+            int row = baseRow + cell.first;
+            int col = baseCol + cell.second;
+
+            // Verificar límites
+            if (row < 0 || row >= rows || col < 0 || col >= cols) {
+                canPlace = false;
+                break;
+            }
+
+            int nodeId = toIndex(row, col);
+
+            // Verificar si es un nodo seguro
+            if (isSafeNode(nodeId)) {
+                canPlace = false;
+                break;
+            }
+
+            absolutePositions.emplace_back(row, col);
+        }
+
+        if (!canPlace) {
+            continue;
+        }
+
+        // Colocar la forma en la cuadrícula
+        for (const auto& pos : absolutePositions) {
+            grid[pos.first][pos.second].obstacle = false; // Hacer inaccesible
+        }
+
+        placedObstacles++;
+    }
+
+    // Después de generar los obstáculos predefinidos y antes de conectar los nodos
+    ensureObstaclesInLines();
+    fillLargeOpenAreas();
+
+    // Asegurar que los nodos seguros estén conectados entre sí
+    ensureSafeNodesConnectivity();
+
+    // Verificar que no se han creado áreas inaccesibles
+    ensureNoIsolatedAreas();
+
+    // Asegurar que existe al menos un obstáculo entre el extremo izquierdo y derecho
+    ensureObstacleBetweenLeftAndRight();
+
+    // Reconectar los nodos después de modificar la cuadrícula
+    connectNodes();
+}
+
+/**
+ * @brief Devuelve una referencia constante al nodo dado su ID.
+ *
+ * @param id Identificador único del nodo.
+ * @return Referencia constante al nodo.
+ */
+const Node& GridGraph::getNodeById(int id) const {
+    int row = id / cols;
+    int col = id % cols;
+    return grid[row][col];
+}
+
+/**
+ * @brief Devuelve una referencia al nodo dado su ID.
+ *
+ * @param id Identificador único del nodo.
+ * @return Referencia al nodo.
+ */
+Node& GridGraph::getNodeById(int id) {
+    int row = id / cols;
+    int col = id % cols;
+    return grid[row][col];
+}
+
+void GridGraph::ensureSafeNodesConnectivity() {
+    // Realizar BFS desde los nodos seguros de la izquierda
+    std::queue<int> q;
+    std::unordered_set<int> visited;
+
+    // Agregar todos los nodos seguros de la izquierda al inicio del BFS
+    for (int nodeId : safeNodeIdsLeft) {
+        q.push(nodeId);
+        visited.insert(nodeId);
+    }
+
+    bool connected = false;
+
+    while (!q.empty()) {
+        int currentId = q.front();
+        q.pop();
+
+        // Si hemos llegado a un nodo seguro de la derecha, entonces están conectados
+        if (std::find(safeNodeIdsRight.begin(), safeNodeIdsRight.end(), currentId) != safeNodeIdsRight.end()) {
+            connected = true;
+            break;
+        }
+
+        int row = currentId / cols;
+        int col = currentId % cols;
+
+        // Vecinos (arriba, abajo, izquierda, derecha)
+        std::vector<int> neighbors;
+        if (row > 0 && grid[row - 1][col].obstacle) neighbors.push_back(toIndex(row - 1, col));
+        if (row < rows - 1 && grid[row + 1][col].obstacle) neighbors.push_back(toIndex(row + 1, col));
+        if (col > 0 && grid[row][col - 1].obstacle) neighbors.push_back(toIndex(row, col - 1));
+        if (col < cols - 1 && grid[row][col + 1].obstacle) neighbors.push_back(toIndex(row, col + 1));
+
+        for (int neighborId : neighbors) {
+            if (visited.find(neighborId) == visited.end()) {
+                visited.insert(neighborId);
+                q.push(neighborId);
+            }
+        }
+    }
+
+    if (!connected) {
+        // Si no están conectados, necesitamos crear un camino
+        // Tomamos un nodo seguro de la izquierda y uno de la derecha
+        int leftNodeId = safeNodeIdsLeft[0];
+        int rightNodeId = safeNodeIdsRight[0];
+
+        int leftRow = leftNodeId / cols;
+        int leftCol = leftNodeId % cols;
+        int rightRow = rightNodeId / cols;
+        int rightCol = rightNodeId % cols;
+
+        // Crear un camino directo entre los nodos seguros
+        int currentRow = leftRow;
+        int currentCol = leftCol;
+
+        while (currentRow != rightRow || currentCol != rightCol) {
+            if (currentRow < rightRow) currentRow++;
+            else if (currentRow > rightRow) currentRow--;
+            if (currentCol < rightCol) currentCol++;
+            else if (currentCol > rightCol) currentCol--;
+
+            // Verificar que no sea un nodo seguro antes de modificar
+            int nodeId = toIndex(currentRow, currentCol);
+            if (!isSafeNode(nodeId)) {
+                grid[currentRow][currentCol].obstacle = true; // Hacer accesible
+            }
+        }
+    }
+}
+
+void GridGraph::ensureNoIsolatedAreas() {
+    // Realizar BFS desde los nodos seguros para marcar nodos alcanzables
+    std::queue<int> q;
+    std::unordered_set<int> visited;
+
+    // Agregar todos los nodos seguros al inicio del BFS
+    for (int nodeId : safeNodeIdsLeft) {
+        q.push(nodeId);
+        visited.insert(nodeId);
+    }
+    for (int nodeId : safeNodeIdsRight) {
+        q.push(nodeId);
+        visited.insert(nodeId);
+    }
+
+    while (!q.empty()) {
+        int currentId = q.front();
+        q.pop();
+
+        int row = currentId / cols;
+        int col = currentId % cols;
+
+        // Vecinos (arriba, abajo, izquierda, derecha)
+        std::vector<int> neighbors;
+        if (row > 0 && grid[row - 1][col].obstacle) neighbors.push_back(toIndex(row - 1, col));
+        if (row < rows - 1 && grid[row + 1][col].obstacle) neighbors.push_back(toIndex(row + 1, col));
+        if (col > 0 && grid[row][col - 1].obstacle) neighbors.push_back(toIndex(row, col - 1));
+        if (col < cols - 1 && grid[row][col + 1].obstacle) neighbors.push_back(toIndex(row, col + 1));
+
+        for (int neighborId : neighbors) {
+            if (visited.find(neighborId) == visited.end()) {
+                visited.insert(neighborId);
+                q.push(neighborId);
+            }
+        }
+    }
+
+    // Hacer accesibles los nodos no visitados
+    for (int row = 0; row < rows; ++row) {
+        for (int col = 0; col < cols; ++col) {
+            int nodeId = toIndex(row, col);
+            if (grid[row][col].obstacle && visited.find(nodeId) == visited.end()) {
+                grid[row][col].obstacle = true; // Hacer accesible
+            }
+        }
+    }
+}
+
+void GridGraph::ensureObstacleBetweenLeftAndRight() {
+    bool obstacleFound = false;
+
+    for (int row = 0; row < rows; ++row) {
+        for (int col = 1; col < cols - 1; ++col) {
+            if (!grid[row][col].obstacle) {
+                obstacleFound = true;
+                break;
+            }
+        }
+        if (obstacleFound) break;
+    }
+
+    if (!obstacleFound) {
+        // Si no hay obstáculo, colocar uno en una posición aleatoria entre los extremos
+        int randomRow = std::rand() % rows;
+        int randomCol = 1 + std::rand() % (cols - 2); // Evitar las columnas de los extremos
+
+        // Verificar que no sea un nodo seguro
+        int nodeId = toIndex(randomRow, randomCol);
+        if (!isSafeNode(nodeId)) {
+            grid[randomRow][randomCol].obstacle = false; // Colocar obstáculo
+        }
+    }
+}
+
+void GridGraph::ensureObstaclesInLines() {
+    // Asegurar que cada fila tenga al menos un obstáculo
+    for (int row = 0; row < rows; ++row) {
+        bool hasObstacle = false;
+        for (int col = 0; col < cols; ++col) {
+            if (!grid[row][col].obstacle) {
+                hasObstacle = true;
+                break;
+            }
+        }
+        if (!hasObstacle) {
+            // Agregar un obstáculo en una posición aleatoria de la fila, evitando zonas seguras
+            int attempts = 0;
+            const int maxAttempts = cols;
+            while (attempts < maxAttempts) {
+                int col = std::rand() % cols;
+                int nodeId = toIndex(row, col);
                 if (!isSafeNode(nodeId)) {
-                    grid[row][col].obstacle = false;  // Hacer inaccesible
+                    grid[row][col].obstacle = false;
+                    break;
+                }
+                attempts++;
+            }
+        }
+    }
+
+    // Asegurar que cada columna tenga al menos un obstáculo
+    for (int col = 0; col < cols; ++col) {
+        bool hasObstacle = false;
+        for (int row = 0; row < rows; ++row) {
+            if (!grid[row][col].obstacle) {
+                hasObstacle = true;
+                break;
+            }
+        }
+        if (!hasObstacle) {
+            // Agregar un obstáculo en una posición aleatoria de la columna, evitando zonas seguras
+            int attempts = 0;
+            const int maxAttempts = rows;
+            while (attempts < maxAttempts) {
+                int row = std::rand() % rows;
+                int nodeId = toIndex(row, col);
+                if (!isSafeNode(nodeId)) {
+                    grid[row][col].obstacle = false;
+                    break;
+                }
+                attempts++;
+            }
+        }
+    }
+}
+
+void GridGraph::fillLargeOpenAreas() {
+    const int areaSize = 4; // Puedes ajustar este valor a 4 o 5 según tus necesidades
+
+    for (int row = 0; row <= rows - areaSize; ++row) {
+        for (int col = 0; col <= cols - areaSize; ++col) {
+            bool isOpenArea = true;
+
+            // Verificar si el área de areaSize x areaSize está libre de obstáculos
+            for (int i = 0; i < areaSize; ++i) {
+                for (int j = 0; j < areaSize; ++j) {
+                    if (!grid[row + i][col + j].obstacle) {
+                        isOpenArea = false;
+                        break;
+                    }
+                }
+                if (!isOpenArea) break;
+            }
+
+            if (isOpenArea) {
+                // Colocar obstáculos en posiciones aleatorias dentro del área
+                int obstaclesToPlace = areaSize; // Número de obstáculos a colocar
+                int attempts = 0;
+                const int maxAttempts = areaSize * areaSize * 2;
+                while (obstaclesToPlace > 0 && attempts < maxAttempts) {
+                    int i = std::rand() % areaSize;
+                    int j = std::rand() % areaSize;
+                    int nodeId = toIndex(row + i, col + j);
+                    if (grid[row + i][col + j].obstacle && !isSafeNode(nodeId)) {
+                        grid[row + i][col + j].obstacle = false;
+                        obstaclesToPlace--;
+                    }
+                    attempts++;
                 }
             }
         }

@@ -1,4 +1,7 @@
 #include "View.h"
+#include "systems/Pathfinder.h"
+#include <chrono>
+#include <thread>
 
 View::View(GtkWidget *window) {
     GtkWidget* vbox = createVBox(window);
@@ -187,6 +190,69 @@ void View::drawMap(cairo_t *cr) {
         }
     }
 }
+/*
+void View::drawMap(cairo_t *cr) {
+    // Establecer la fuente y el tamaño del texto
+    cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_set_font_size(cr, 12); // Ajusta el tamaño de la fuente según sea necesario
+
+    for (int row = 0; row < ROWS; ++row) {
+        for (int col = 0; col < COLS; ++col) {
+            const Node& node = gridMap->getNode(row, col);
+
+            // Obtener el ID del nodo actual
+            int nodeId = gridMap->toIndex(row, col);
+
+            // Coordenadas y tamaño del cuadrado
+            double x = col * CELL_SIZE;
+            double y = row * CELL_SIZE;
+            double size = CELL_SIZE;
+
+            // Determinar el color de relleno según si el nodo es seguro o no
+            if (gridMap->isSafeNode(nodeId)) {
+                // Nodo seguro: cuadrado verde con borde negro
+                cairo_set_source_rgb(cr, 0.0, 1.0, 0.0); // Color verde
+            } else {
+                // Nodo no seguro: cuadrado rojo con borde negro
+                cairo_set_source_rgb(cr, 1.0, 0.0, 0.0); // Color rojo
+            }
+
+            // Dibujar el cuadrado relleno
+            cairo_rectangle(cr, x, y, size, size);
+            cairo_fill_preserve(cr); // Rellenar y preservar el camino
+
+            // Establecer el color y ancho del borde
+            cairo_set_source_rgb(cr, 0.0, 0.0, 0.0); // Negro
+            cairo_set_line_width(cr, 1.0); // Ancho del borde
+
+            // Dibujar el borde del cuadrado
+            cairo_stroke(cr);
+
+            // Dibujar el número de ID dentro del cuadrado
+            // Establecer el color del texto (negro o blanco, según el fondo)
+            if (gridMap->isSafeNode(nodeId)) {
+                cairo_set_source_rgb(cr, 0.0, 0.0, 0.0); // Texto negro en fondo verde
+            } else {
+                cairo_set_source_rgb(cr, 1.0, 1.0, 1.0); // Texto blanco en fondo rojo
+            }
+
+            // Convertir el nodeId a cadena de texto
+            std::string idText = std::to_string(nodeId);
+
+            // Obtener las dimensiones del texto para centrarlo
+            cairo_text_extents_t extents;
+            cairo_text_extents(cr, idText.c_str(), &extents);
+
+            // Calcular la posición para centrar el texto
+            double textX = x + (size - extents.width) / 2 - extents.x_bearing;
+            double textY = y + (size - extents.height) / 2 - extents.y_bearing;
+
+            // Dibujar el texto
+            cairo_move_to(cr, textX, textY);
+            cairo_show_text(cr, idText.c_str());
+        }
+    }
+}*/
 
 void View::drawTanks(cairo_t *cr) {
     const GdkPixbuf* pixbuf = nullptr;
@@ -377,14 +443,74 @@ bool View::bulletHitTank(const Bullet* bullet) const {
     return false;
 }
 
+
+void View::handleMoveTank(Tank* tank, const Position position) const {
+    Pathfinder pathfinder(*gridMap);
+    int startId = gridMap->toIndex(tank->getRow(), tank->getColumn());
+    int goalId = gridMap->toIndex(position.row, position.column);
+
+    std::vector<int> path = pathfinder.bfs(startId, goalId);
+
+    std::cout << tank->getColor() << std::endl;
+
+    if (path.size() < 2) {
+        tank->setSelected(false);
+        return;
+    }
+
+    // Crear la estructura de datos para el movimiento
+    auto* moveData = new MoveData{const_cast<View*>(this), tank, path, 1};
+
+    // Iniciar el temporizador para mover el tanque
+    g_timeout_add(100, View::moveTankStep, moveData);
+}
+
+void View::MoveTank(Tank* tank, const Position position) const {
+    if (tank->isSelected()) {
+        if (!gridMap->isObstacle(position.row, position.column) && !gridMap->isOccupied(position.row, position.column)) {
+            gridMap->removeTank(tank->getRow(), tank->getColumn());
+            gridMap->placeTank(position.row, position.column);
+
+            tank->setPosition(position);
+            update();
+        }
+
 bool View::BulletHitWall(const Bullet* bullet) const {
     if (auto [row, col] = bullet->getPosition();
     gridMap->isObstacle(row, col)) {
         return true;
+
+
+gboolean View::moveTankStep(gpointer data) {
+    auto* moveData = static_cast<MoveData*>(data);
+    View* view = moveData->view;
+    Tank* tank = moveData->tank;
+    const std::vector<int>& path = moveData->path;
+    std::size_t& currentStep = moveData->currentStep;
+
+    if (currentStep >= path.size()) {
+        // Movimiento completado
+        tank->setSelected(false);
+        delete moveData;
+        return FALSE; // Detener el temporizador
     }
 
-    return false;
+    int id = path[currentStep++];
+    const int row = id / view->gridMap->getCols();
+    const int column = id % view->gridMap->getCols();
+    const auto NewPosition = Position(row, column);
+    view->MoveTank(tank, NewPosition);
+
+    // La interfaz gráfica se actualiza en MoveTank a través de update()
+    // El temporizador continuará hasta que se devuelva FALSE
+
+    return TRUE; // Continuar el temporizador
 }
+
+void View::handleFireBullet(const Position &origin, const Position &target) {
+    bullet = new Bullet(origin, target);
+    g_timeout_add(30, handleMoveBullet, this);
+    update();
 
 
 void View::deselectAllTanks() const {

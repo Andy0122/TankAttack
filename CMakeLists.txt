@@ -29,7 +29,9 @@ add_executable(TankAttack src/main.cpp
         src/Controller.cpp
         include/Position.h
         include/entities/Bullet.h
-        src/entities/Bullet.cpp)
+        src/entities/Bullet.cpp
+        include/systems/Pathfinder.h
+        src/systems/Pathfinder.cpp)
 
 # Linkear las librerías de GTK con tu ejecutable
 target_link_libraries(TankAttack ${GTK_LIBRARIES})
