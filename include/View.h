@@ -222,8 +222,8 @@ private:
     void handleFireBullet(const Position& origin, const Position& target);
 
     static constexpr int CELL_SIZE = 50; ///< Size of the cell
-    static constexpr int ROWS = 11; ///< Number of rows
-    static constexpr int COLS = 21; ///< Number of columns
+    static constexpr int ROWS = 13; ///< Number of rows
+    static constexpr int COLS = 25; ///< Number of columns
     static constexpr int X_OFFSET = 30; ///< X offset
     static constexpr int Y_OFFSET = 30; ///< Y offset
 };

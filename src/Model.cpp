@@ -10,14 +10,14 @@ Model::Model() {
 
     // Lista de pares (ID, Color)
     std::vector<std::pair<int, Color>> tankPositions = {
-        {75, Red},
-        {101, Red},
-        {151, Blue},
-        {175, Blue},
-        {95, Yellow},
-        {119, Yellow},
-        {169, Cian},
-        {195, Cian}
+        {100, Red},
+        {126, Red},
+        {176, Blue},
+        {200, Blue},
+        {124, Yellow},
+        {148, Yellow},
+        {198, Cian},
+        {224, Cian}
     };
 
     for (int i = 0; i < tankPositions.size(); ++i) {
