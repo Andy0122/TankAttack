@@ -3,6 +3,8 @@
 #include <algorithm> // Para std::reverse
 #include <functional>
 #include <limits>
+#include <cstdlib>    // Para rand() y srand()
+#include <ctime>      // Para time()
 
 /**
  * @brief Constructor del Pathfinder.
@@ -104,4 +106,136 @@ std::vector<int> Pathfinder::dijkstra(int startId, int goalId) {
 
     // Si no se encuentra un camino, devolver un vector vacío.
     return {};
+}
+
+
+/**
+ * @brief Verifica si hay línea de vista directa entre dos nodos (sin obstáculos en línea recta).
+ * @param startId Identificador del nodo de inicio.
+ * @param goalId Identificador del nodo objetivo.
+ * @return Un vector con los nodos que forman el camino directo si existe, o vacío si no.
+ */
+std::vector<int> Pathfinder::lineaVista(int startId, int goalId) {
+    int startRow = startId / graph.getCols();
+    int startCol = startId % graph.getCols();
+    int goalRow = goalId / graph.getCols();
+    int goalCol = goalId % graph.getCols();
+
+    std::vector<int> path;
+
+    if (startRow == goalRow) {
+        // Moverse horizontalmente
+        int colIncrement = (goalCol > startCol) ? 1 : -1;
+        for (int col = startCol; col != goalCol + colIncrement; col += colIncrement) {
+            if (graph.isObstacle(startRow, col)) {
+                return {}; // Hay un obstáculo en el camino
+            }
+            path.push_back(graph.toIndex(startRow, col));
+        }
+        return path;
+    } else if (startCol == goalCol) {
+        // Moverse verticalmente
+        int rowIncrement = (goalRow > startRow) ? 1 : -1;
+        for (int row = startRow; row != goalRow + rowIncrement; row += rowIncrement) {
+            if (graph.isObstacle(row, startCol)) {
+                return {}; // Hay un obstáculo en el camino
+            }
+            path.push_back(graph.toIndex(row, startCol));
+        }
+        return path;
+    } else {
+        // No están alineados en fila o columna
+        return {};
+    }
+}
+
+/**
+ * @brief Metodo que intenta moverse al objetivo utilizando línea de vista y movimiento aleatorio si es necesario.
+ * @param startId Identificador del nodo de inicio.
+ * @param goalId Identificador del nodo objetivo.
+ * @return Un vector con los nodos que forman el camino desde el inicio hasta el objetivo.
+ */
+std::vector<int> Pathfinder::randomMovement(int startId, int goalId) {
+    int currentId = startId;
+    std::vector<int> totalPath;
+    int attempts = 0;
+
+    while (attempts < 4) {
+        // Intentar línea de vista
+        std::vector<int> lineaVistaPath = lineaVista(currentId, goalId);
+        if (!lineaVistaPath.empty()) {
+            // Se encontró línea de vista directa
+            // Evitar duplicar el nodo actual si ya está en totalPath
+            if (!totalPath.empty() && totalPath.back() == lineaVistaPath.front()) {
+                lineaVistaPath.erase(lineaVistaPath.begin());
+            }
+            totalPath.insert(totalPath.end(), lineaVistaPath.begin(), lineaVistaPath.end());
+            return totalPath;
+        }
+
+        // No hay línea de vista, realizar movimiento aleatorio
+        std::vector<int> randomPath;
+        int steps = 3 + std::rand() % 5; // Número aleatorio entre 3 y 7
+
+        for (int i = 0; i < steps; ++i) {
+            // Obtener las direcciones posibles
+            std::vector<int> directions;
+            int row = currentId / graph.getCols();
+            int col = currentId % graph.getCols();
+
+            // Arriba
+            if (row > 0 && !graph.isObstacle(row - 1, col)) {
+                directions.push_back(graph.toIndex(row - 1, col));
+            }
+            // Abajo
+            if (row < graph.getRows() - 1 && !graph.isObstacle(row + 1, col)) {
+                directions.push_back(graph.toIndex(row + 1, col));
+            }
+            // Izquierda
+            if (col > 0 && !graph.isObstacle(row, col - 1)) {
+                directions.push_back(graph.toIndex(row, col - 1));
+            }
+            // Derecha
+            if (col < graph.getCols() - 1 && !graph.isObstacle(row, col + 1)) {
+                directions.push_back(graph.toIndex(row, col + 1));
+            }
+
+            if (directions.empty()) {
+                // No hay direcciones disponibles, detenerse
+                break;
+            }
+
+            // Elegir una dirección aleatoria
+            int randIndex = std::rand() % directions.size();
+            int nextId = directions[randIndex];
+            int nextRow = nextId / graph.getCols();
+            int nextCol = nextId % graph.getCols();
+
+            // Verificar si ya visitamos este nodo para evitar ciclos
+            if (!randomPath.empty() && randomPath.back() == nextId) {
+                continue;
+            }
+
+            randomPath.push_back(nextId);
+            currentId = nextId;
+
+            // Si hay un obstáculo en el siguiente movimiento, detenerse (no debería ocurrir)
+            if (graph.isObstacle(nextRow, nextCol)) {
+                break;
+            }
+        }
+
+        // Agregar el camino aleatorio al camino total
+        // Evitar duplicar el nodo actual si ya está en totalPath
+        if (!totalPath.empty() && totalPath.back() == randomPath.front()) {
+            randomPath.erase(randomPath.begin());
+        }
+        totalPath.insert(totalPath.end(), randomPath.begin(), randomPath.end());
+
+        // Intentar línea de vista desde la nueva posición
+        // currentId ya está actualizado
+        attempts++;
+    }
+
+    return totalPath;
 }

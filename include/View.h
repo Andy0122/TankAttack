@@ -193,7 +193,7 @@ private:
     *
     * @param tank Tank* Tank.
     */
-    void handleSelectTank(Tank* tank) const;
+    void handleSelectTank(Tank* tank) ;
 
     /**
     * @brief Handles the movement of a tank.
