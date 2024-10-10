@@ -43,6 +43,15 @@ Model::Model() {
         // Almacenar el tanque en el arreglo
         tanks[i] = tank;
     }
+
+    for (int i = 0; i < 8; ++i) {
+        if (tanks[i].getColor() == Yellow || tanks[i].getColor() == Cian) {
+            tanks[i].setRotationAngle(180.0); // Girar 180 grados
+        } else {
+            tanks[i].setRotationAngle(0.0); // Sin rotación
+        }
+    }
+
 }
 
 GridGraph* Model::getMap() const {

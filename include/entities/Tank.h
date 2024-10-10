@@ -102,11 +102,15 @@ public:
 
     void applyDamage();
 
+    void setRotationAngle(double angle) { rotationAngle = angle; }
+    double getRotationAngle() const { return rotationAngle; }
+
 private:
     int health; ///< The health of the tank (integer value).
     Color color; ///< The color of the tank (as a string).
     int row, column; ///< The cell position of the tank in the grid map.
     bool selected = false; ///< Indicates if the tank is selected.
+    double rotationAngle = 0.0; // Ángulo de rotación en grados
 
     static constexpr int TANK_FULL_HEALTH = 100; ///< The full health of the tank.
 };

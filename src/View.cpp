@@ -257,22 +257,51 @@ void View::drawMap(cairo_t *cr) {
 }*/
 
 void View::drawTanks(cairo_t *cr) {
-    const GdkPixbuf* pixbuf = nullptr;
     for (int i = 0; i < 8; i++) {
-        const auto tank = &tanks[i];
-        if (tank->getColor() == Yellow) {
-            pixbuf = assets["yellow_tank"];
-        } else if (tank->getColor() == Red) {
-            pixbuf = assets["red_tank"];
-        } else if (tank->getColor() == Cian) {
-            pixbuf = assets["cian_tank"];
-        } else if (tank->getColor() == Blue) {
-            pixbuf = assets["blue_tank"];
+        const Tank* tank = &tanks[i];
+        GdkPixbuf* pixbuf = nullptr;
+        switch (tank->getColor()) {
+            case Yellow: pixbuf = assets["yellow_tank"]; break;
+            case Red: pixbuf = assets["red_tank"]; break;
+            case Cian: pixbuf = assets["cian_tank"]; break;
+            case Blue: pixbuf = assets["blue_tank"]; break;
         }
-        gdk_cairo_set_source_pixbuf(cr, pixbuf, tank->getColumn() * CELL_SIZE, tank->getRow() * CELL_SIZE);
+
+        // Rotar el pixbuf según el ángulo del tanque
+        GdkPixbuf* rotated_pixbuf = nullptr;
+        double angle = tank->getRotationAngle();
+        GdkPixbufRotation rotation;
+
+        if (angle == 0.0) {
+            rotation = GDK_PIXBUF_ROTATE_NONE;
+        } else if (angle == 90.0) {
+            rotation = GDK_PIXBUF_ROTATE_CLOCKWISE;
+        } else if (angle == 180.0) {
+            rotation = GDK_PIXBUF_ROTATE_UPSIDEDOWN;
+        } else if (angle == 270.0) {
+            rotation = GDK_PIXBUF_ROTATE_COUNTERCLOCKWISE;
+        } else {
+            rotation = GDK_PIXBUF_ROTATE_NONE;
+        }
+
+        rotated_pixbuf = gdk_pixbuf_rotate_simple(pixbuf, rotation);
+
+        // Dibujar el tanque rotado
+        gdk_cairo_set_source_pixbuf(cr, rotated_pixbuf, tank->getColumn() * CELL_SIZE, tank->getRow() * CELL_SIZE);
         cairo_paint(cr);
+
+        g_object_unref(rotated_pixbuf); // Liberar el pixbuf rotado
+
+        // Dibujar marco rojo si el tanque está seleccionado
+        if (tank->isSelected()) {
+            cairo_set_source_rgb(cr, 1.0, 0.0, 0.0); // Color rojo
+            cairo_set_line_width(cr, 2.0);
+            cairo_rectangle(cr, tank->getColumn() * CELL_SIZE, tank->getRow() * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+            cairo_stroke(cr);
+        }
     }
 }
+
 
 void View::updateStatusBar() const {
     gtk_container_foreach(GTK_CONTAINER(statusBar), reinterpret_cast<GtkCallback>(gtk_widget_destroy), nullptr);
@@ -346,7 +375,7 @@ gboolean View::onClick(GtkWidget *widget, const GdkEventButton *event, gpointer 
     return TRUE;
 }
 
-void View::handleSelectTank(Tank* tank) const {
+void View::handleSelectTank(Tank* tank) {
     deselectAllTanks();
     tank->setSelected(true);
 }
@@ -518,14 +547,42 @@ gboolean View::moveTankStep(gpointer data) {
         return FALSE; // Detener el temporizador
     }
 
-    int id = path[currentStep++];
+    int id = path[currentStep];
     const int row = id / view->gridMap->getCols();
     const int column = id % view->gridMap->getCols();
+
+    // Obtener la posición anterior
+    int prevId;
+    if (currentStep > 0) {
+        prevId = path[currentStep - 1];
+    } else {
+        prevId = view->gridMap->toIndex(tank->getRow(), tank->getColumn());
+    }
+    const int prevRow = prevId / view->gridMap->getCols();
+    const int prevColumn = prevId % view->gridMap->getCols();
+
+    // Calcular la dirección del movimiento
+    int deltaRow = row - prevRow;
+    int deltaCol = column - prevColumn;
+
+    // Actualizar el ángulo de rotación del tanque
+    if (deltaRow == 0 && deltaCol == 1) {
+        // Movimiento hacia la derecha
+        tank->setRotationAngle(0.0); // Sin rotación
+    } else if (deltaRow == 1 && deltaCol == 0) {
+        // Movimiento hacia abajo
+        tank->setRotationAngle(90.0); // Rotación de 90 grados en sentido horario
+    } else if (deltaRow == 0 && deltaCol == -1) {
+        // Movimiento hacia la izquierda
+        tank->setRotationAngle(180.0); // Rotación de 180 grados
+    } else if (deltaRow == -1 && deltaCol == 0) {
+        // Movimiento hacia arriba
+        tank->setRotationAngle(270.0); // Rotación de 270 grados (90 grados antihorario)
+    }
+
+    currentStep++;
     const auto NewPosition = Position(row, column);
     view->MoveTank(tank, NewPosition);
-
-    // La interfaz gráfica se actualiza en MoveTank a través de update()
-    // El temporizador continuará hasta que se devuelva FALSE
 
     return TRUE; // Continuar el temporizador
 }
