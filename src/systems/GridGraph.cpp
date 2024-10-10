@@ -252,8 +252,8 @@ Position GridGraph::getRandomAccessiblePosition() const {
 
 void GridGraph::generateObstacles() {
     // Inicializar random seed
-    std::srand(std::time(0));
-    std::mt19937 gen(std::rand());
+    std::random_device rd;
+    std::mt19937 gen(rd());
     std::uniform_int_distribution<> shapeDis(0, predefinedShapes.size() - 1);
     std::uniform_int_distribution<> rowDis(0, rows - 1);
     std::uniform_int_distribution<> colDis(0, cols - 1);
@@ -312,18 +312,19 @@ void GridGraph::generateObstacles() {
         placedObstacles++;
     }
 
-    // Después de generar los obstáculos predefinidos y antes de conectar los nodos
     ensureObstaclesInLines();
+
+    // Asegurar que existen grandes areas sin ningun obstaculo
     fillLargeOpenAreas();
+
+    // Asegurar que existe al menos un obstáculo entre el extremo izquierdo y derecho
+    ensureObstacleBetweenLeftAndRight();
 
     // Asegurar que los nodos seguros estén conectados entre sí
     ensureSafeNodesConnectivity();
 
     // Verificar que no se han creado áreas inaccesibles
     ensureNoIsolatedAreas();
-
-    // Asegurar que existe al menos un obstáculo entre el extremo izquierdo y derecho
-    ensureObstacleBetweenLeftAndRight();
 
     // Reconectar los nodos después de modificar la cuadrícula
     connectNodes();
@@ -461,16 +462,17 @@ void GridGraph::ensureNoIsolatedAreas() {
         }
     }
 
-    // Hacer accesibles los nodos no visitados
+    // Convertir en obstáculos los nodos accesibles no visitados
     for (int row = 0; row < rows; ++row) {
         for (int col = 0; col < cols; ++col) {
             int nodeId = toIndex(row, col);
             if (grid[row][col].obstacle && visited.find(nodeId) == visited.end()) {
-                grid[row][col].obstacle = true; // Hacer accesible
+                grid[row][col].obstacle = false; // Hacer inaccesible
             }
         }
     }
 }
+
 
 void GridGraph::ensureObstacleBetweenLeftAndRight() {
     bool obstacleFound = false;
@@ -486,17 +488,67 @@ void GridGraph::ensureObstacleBetweenLeftAndRight() {
     }
 
     if (!obstacleFound) {
-        // Si no hay obstáculo, colocar uno en una posición aleatoria entre los extremos
-        int randomRow = std::rand() % rows;
-        int randomCol = 1 + std::rand() % (cols - 2); // Evitar las columnas de los extremos
+        // Intentar colocar un obstáculo sin bloquear la conectividad
+        int attempts = 0;
+        const int maxAttempts = 1000;
+        while (attempts < maxAttempts) {
+            int randomRow = std::rand() % rows;
+            int randomCol = 1 + std::rand() % (cols - 2); // Evitar las columnas de los extremos
 
-        // Verificar que no sea un nodo seguro
-        int nodeId = toIndex(randomRow, randomCol);
-        if (!isSafeNode(nodeId)) {
-            grid[randomRow][randomCol].obstacle = false; // Colocar obstáculo
+            int nodeId = toIndex(randomRow, randomCol);
+            if (!isSafeNode(nodeId)) {
+                // Verificar si al colocar el obstáculo se mantiene la conectividad
+                bool connectivityMaintained = true;
+
+                // Temporariamente colocar el obstáculo
+                grid[randomRow][randomCol].obstacle = false;
+                connectNodes();
+
+                // Verificar la conectividad
+                if (!isConnected(safeNodeIdsLeft[0], safeNodeIdsRight[0])) {
+                    connectivityMaintained = false;
+                }
+
+                // Restaurar el estado original si la conectividad se rompe
+                if (!connectivityMaintained) {
+                    grid[randomRow][randomCol].obstacle = true;
+                } else {
+                    // Obstáculo colocado sin romper la conectividad
+                    break;
+                }
+            }
+            attempts++;
         }
     }
 }
+
+bool GridGraph::isConnected(int startId, int goalId) {
+    std::queue<int> q;
+    std::unordered_set<int> visited;
+
+    q.push(startId);
+    visited.insert(startId);
+
+    while (!q.empty()) {
+        int currentId = q.front();
+        q.pop();
+
+        if (currentId == goalId) {
+            return true;
+        }
+
+        for (int neighborId : adjList[currentId]) {
+            if (visited.find(neighborId) == visited.end()) {
+                visited.insert(neighborId);
+                q.push(neighborId);
+            }
+        }
+    }
+
+    return false;
+}
+
+
 
 void GridGraph::ensureObstaclesInLines() {
     // Asegurar que cada fila tenga al menos un obstáculo

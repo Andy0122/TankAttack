@@ -200,6 +200,8 @@ public:
      */
     void ensureObstacleBetweenLeftAndRight();
 
+    bool isConnected(int startId, int goalId);
+
     /**
      * @brief Asegura que cada línea tenga al menos un obstáculo.
      */

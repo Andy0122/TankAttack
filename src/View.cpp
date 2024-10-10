@@ -349,19 +349,6 @@ void View::handleSelectTank(Tank* tank) const {
     tank->setSelected(true);
 }
 
-void View::handleMoveTank(Tank* tank, const Position position) const {
-    if (tank->isSelected()) {
-        if (!gridMap->isObstacle(position.row, position.column)
-        && !gridMap->isOccupied(position.row, position.column)) {
-            gridMap->removeTank(tank->getRow(), tank->getColumn());
-            tank->setPosition(position);
-            gridMap->placeTank(position.row, position.column);
-            tank->setSelected(false);
-            update();
-        }
-    }
-}
-
 void View::handleFireBullet(const Position &origin, const Position &target) {
     bullet = new Bullet(origin, target);
     traceDistance = bullet->getDistance() - 1;
@@ -474,12 +461,16 @@ void View::MoveTank(Tank* tank, const Position position) const {
             tank->setPosition(position);
             update();
         }
+    }
+}
 
 bool View::BulletHitWall(const Bullet* bullet) const {
     if (auto [row, col] = bullet->getPosition();
     gridMap->isObstacle(row, col)) {
         return true;
-
+    }
+    return false;
+}
 
 gboolean View::moveTankStep(gpointer data) {
     auto* moveData = static_cast<MoveData*>(data);
@@ -507,12 +498,6 @@ gboolean View::moveTankStep(gpointer data) {
     return TRUE; // Continuar el temporizador
 }
 
-void View::handleFireBullet(const Position &origin, const Position &target) {
-    bullet = new Bullet(origin, target);
-    g_timeout_add(30, handleMoveBullet, this);
-    update();
-
-
 void View::deselectAllTanks() const {
     for (int i = 0; i < 8; i++) {
         tanks[i].setSelected(false);
@@ -525,12 +510,10 @@ void View::destroyBullet() {
         bullet = nullptr;
     }
 }
-
-void View::destroyBulletTrace() {
+void View::destroyBulletTrace(){
     if (bulletTrace) {
         delete[] bulletTrace;
         bulletTrace = nullptr;
         traceDistance = 0;
-
     }
 }
