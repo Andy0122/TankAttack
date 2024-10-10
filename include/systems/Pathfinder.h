@@ -36,7 +36,21 @@ public:
 	*/
 	std::vector<int> dijkstra(int startId, int goalId);
 
+	/**
+	 * @brief Verifica si hay línea de vista directa entre dos nodos (sin obstáculos en línea recta).
+	 * @param startId Identificador del nodo de inicio.
+	 * @param goalId Identificador del nodo objetivo.
+	 * @return Un vector con los nodos que forman el camino directo si existe, o vacío si no.
+	 */
+	std::vector<int> lineaVista(int startId, int goalId);
 
+	/**
+	 * @brief Metodo que intenta moverse al objetivo utilizando línea de vista y movimiento aleatorio si es necesario.
+	 * @param startId Identificador del nodo de inicio.
+	 * @param goalId Identificador del nodo objetivo.
+	 * @return Un vector con los nodos que forman el camino desde el inicio hasta el objetivo.
+	 */
+	std::vector<int> randomMovement(int startId, int goalId);
 };
 
 #endif // PATHFINDER_H

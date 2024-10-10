@@ -2,6 +2,8 @@
 #include "systems/Pathfinder.h"
 #include <chrono>
 #include <thread>
+#include <random>
+#include <cmath>
 
 View::View(GtkWidget *window) {
     GtkWidget* vbox = createVBox(window);
@@ -436,9 +438,39 @@ void View::handleMoveTank(Tank* tank, const Position position) const {
     int startId = gridMap->toIndex(tank->getRow(), tank->getColumn());
     int goalId = gridMap->toIndex(position.row, position.column);
 
-    std::vector<int> path = pathfinder.bfs(startId, goalId);
+    int color = tank->getColor();
 
-    std::cout << tank->getColor() << std::endl;
+    // Generar un número aleatorio entre 1 y 10
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dist(1, 10);
+    int randomNumber = dist(gen);
+    std::vector<int> path;
+    if (color == 0 || color == 1) {
+        // Tanque seleccionado: Rojo o amarillo
+        // 50% de probabilidad BFS o 50% movimiento aleatorio
+        if (randomNumber <= 5) {
+            // 50% de probabilidad BFS
+            path = pathfinder.bfs(startId, goalId);
+            std::cout << "Color:" << color << " Algoritmo usado: BFS" << std::endl;
+        } else {
+            // 50% de probabilidad movimiento aleatorio
+            path = pathfinder.randomMovement(startId, goalId);
+            std::cout << "Color:" << color << " Algoritmo usado: movimiento aleatorio" << std::endl;
+        }
+    } else if (color == 2 || color == 3) {
+        // Tanque seleccionado: Celeste o azul
+        // 80% de probabilidad Dijkstra o 20% movimiento aleatorio
+        if (randomNumber <= 8) {
+            // 80% de probabilidad Dijkstra
+            path = pathfinder.dijkstra(startId, goalId);
+            std::cout << "Color:" << color << " Algoritmo usado: Dijkstra" << std::endl;
+        } else {
+            // 20% de probabilidad para Acción D
+            path = pathfinder.randomMovement(startId, goalId);
+            std::cout << "Color:" << color << " Algoritmo usado: movimiento aleatorio" << std::endl;
+        }
+    }
 
     if (path.size() < 2) {
         tank->setSelected(false);
