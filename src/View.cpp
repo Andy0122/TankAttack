@@ -6,6 +6,7 @@
 #include <cmath>
 
 View::View(GtkWidget *window) {
+    this->window = window;
     GtkWidget* vbox = createVBox(window);
 
     // Crear la etiqueta del temporizador con el tiempo inicial (por ejemplo, "05:00")
@@ -770,7 +771,7 @@ void View::showWinnerMessage(int winner) {
 
     // Cerrar la ventana o reiniciar el juego
     gtk_widget_destroy(window);
-    gtk_main_quit();
+
 }
 
 void View::showTieMessage() {
@@ -785,7 +786,7 @@ void View::showTieMessage() {
 
     // Cerrar la ventana o reiniciar el juego
     gtk_widget_destroy(window);
-    gtk_main_quit();
+
 }
 
 int View::determineWinner() {
