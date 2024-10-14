@@ -3,8 +3,8 @@
 
 Tank::Tank() : health(TANK_FULL_HEALTH), color(Color()), row(0), column(0) {}
 
-Tank::Tank(const Color color, const Position position)
-    : health(TANK_FULL_HEALTH), color(color), row(position.row), column(position.column) {}
+Tank::Tank(const Color color, const Position position, int player)
+    : health(TANK_FULL_HEALTH), color(color), row(position.row), column(position.column), player(player) {}
 
 int Tank::getHealth() const {
     return health;

@@ -35,7 +35,7 @@ public:
      * @param color Tank color.
      * @param position Initial tank position.
      */
-    Tank(Color color, Position position);
+    Tank(Color color, Position position, int player);
 
     /**
      * @brief Gets the current health of the tank.
@@ -104,6 +104,7 @@ public:
 
     void setRotationAngle(double angle) { rotationAngle = angle; }
     double getRotationAngle() const { return rotationAngle; }
+    int getPlayer() const { return player; }
 
 private:
     int health; ///< The health of the tank (integer value).
@@ -111,6 +112,7 @@ private:
     int row, column; ///< The cell position of the tank in the grid map.
     bool selected = false; ///< Indicates if the tank is selected.
     double rotationAngle = 0.0; // Ángulo de rotación en grados
+    int player;
 
     static constexpr int TANK_FULL_HEALTH = 100; ///< The full health of the tank.
 };

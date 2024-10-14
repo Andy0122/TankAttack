@@ -7,6 +7,19 @@
 
 View::View(GtkWidget *window) {
     GtkWidget* vbox = createVBox(window);
+
+    // Crear la etiqueta del temporizador con el tiempo inicial (por ejemplo, "05:00")
+    timerLabel = gtk_label_new("05:00");
+
+    // Configurar alineación de la etiqueta
+    gtk_widget_set_halign(timerLabel, GTK_ALIGN_CENTER);
+    gtk_widget_set_valign(timerLabel, GTK_ALIGN_START);
+
+    // Añadir la etiqueta del temporizador al vbox
+    gtk_box_pack_start(GTK_BOX(vbox), timerLabel, FALSE, FALSE, 10);
+
+    startTimer();
+
     GtkWidget* hbox = createHBox(vbox);
     createDrawingArea(hbox);
     createStatusBar(vbox);
@@ -14,6 +27,7 @@ View::View(GtkWidget *window) {
     connectSignals();
     gtk_widget_show_all(window);
 }
+
 
 void View::setGridMap(GridGraph *map) {
     gridMap = map;
@@ -63,9 +77,25 @@ void View::createStatusBar(GtkWidget *vbox) {
     gtk_box_pack_start(GTK_BOX(vbox), statusBar, TRUE, TRUE, 0);
 }
 
-GtkWidget* View::createPlayerLabel(const int player) {
+GtkWidget* View::createPlayerLabel(int player) {
     const std::string labelText = "Player " + std::to_string(player + 1);
-    return gtk_label_new(labelText.c_str());
+    GtkWidget* label = gtk_label_new(labelText.c_str());
+    playerLabels[player] = label; // Almacenar el label en el arreglo
+    return label;
+}
+
+void View::updatePlayerLabels() {
+    for (int i = 0; i < 2; ++i) {
+        if (i == currentPlayer) {
+            // Resaltar el jugador en turno (por ejemplo, cambiar color a verde)
+            GdkRGBA color;
+            gdk_rgba_parse(&color, "green");
+            gtk_widget_override_color(playerLabels[i], GTK_STATE_FLAG_NORMAL, &color);
+        } else {
+            // Restablecer el color del jugador que no está en turno
+            gtk_widget_override_color(playerLabels[i], GTK_STATE_FLAG_NORMAL, nullptr);
+        }
+    }
 }
 
 GtkWidget* View::createPlayerBox(const int player) const {
@@ -169,6 +199,7 @@ gboolean View::onDraw(GtkWidget *widget, cairo_t *cr, gpointer data) {
     view->drawMap(cr);
     view->drawTanks(cr);
     view->updateStatusBar();
+    view->updatePlayerLabels();
     view->drawBullet(cr);
     view->drawBulletTrace(cr);
 
@@ -303,7 +334,7 @@ void View::drawTanks(cairo_t *cr) {
 }
 
 
-void View::updateStatusBar() const {
+void View::updateStatusBar(){
     gtk_container_foreach(GTK_CONTAINER(statusBar), reinterpret_cast<GtkCallback>(gtk_widget_destroy), nullptr);
 
     for (int player = 0; player < 2; ++player) {
@@ -350,6 +381,10 @@ void View::drawBulletTrace(cairo_t *cr) const {
 gboolean View::onClick(GtkWidget *widget, const GdkEventButton *event, gpointer data) {
     auto* view = static_cast<View*>(data);
 
+    if (view->gameOver) {
+        return FALSE; // No permitir acciones si el juego ha terminado
+    }
+
     const int row = event->y / CELL_SIZE; // Y position
     const int column = event->x / CELL_SIZE; // X position
     const auto position = Position(row, column);
@@ -366,9 +401,10 @@ gboolean View::onClick(GtkWidget *widget, const GdkEventButton *event, gpointer 
         }
 
     } else if (event->button == 3) { // Right click
-        if (Tank* selectedTank = view->getSelectedTank()) { // There's a selected tank
-            view->handleFireBullet(Position(selectedTank->getRow(), selectedTank->getColumn()), position); // Fire bullet
-            selectedTank->setSelected(false); // Deselect tank
+        if (Tank* selectedTank = view->getSelectedTank()) { // Hay un tanque seleccionado
+            view->handleFireBullet(Position(selectedTank->getRow(), selectedTank->getColumn()), position); // Disparar bala
+            selectedTank->setSelected(false); // Deseleccionar tanque
+            view->update(); // Actualizar la interfaz gráfica
         }
     }
 
@@ -376,8 +412,13 @@ gboolean View::onClick(GtkWidget *widget, const GdkEventButton *event, gpointer 
 }
 
 void View::handleSelectTank(Tank* tank) {
+    if (tank->getPlayer() != currentPlayer) {
+        // No permitir seleccionar tanques del jugador que no está en turno
+        return;
+    }
     deselectAllTanks();
     tank->setSelected(true);
+    update();
 }
 
 void View::handleFireBullet(const Position &origin, const Position &target) {
@@ -385,11 +426,25 @@ void View::handleFireBullet(const Position &origin, const Position &target) {
     traceDistance = bullet->getDistance() - 1;
     bulletTrace = new Position[traceDistance];
     g_timeout_add(30, handleMoveBullet, this);
+
+    // Decrementar acciones restantes
+    actionsRemaining--;
+
+    // Verificar si se debe cambiar de turno
+    if (actionsRemaining <= 0) {
+        endTurn();
+    }
+
     update();
 }
 
 gboolean View::handleMoveBullet(gpointer data) {
-    if (const auto* view = static_cast<View*>(data); view->bullet) {
+    if (auto* view = static_cast<View*>(data); view->bullet) {
+
+        if (view->gameOver) {
+            return FALSE; // No continuar si el juego ha terminado
+        }
+
         if (view->bullet->move()) {
             // view->destroyBullet();
             // view->destroyBulletTrace();
@@ -399,10 +454,18 @@ gboolean View::handleMoveBullet(gpointer data) {
         }
 
         if (view->bulletHitTank(view->bullet)) {
-            Tank* TankHit = view->getTankOnPosition(view->bullet->getPosition());
-            TankHit->applyDamage();
-            // view->destroyBullet();
-            // view->destroyBulletTrace();
+            Tank* tankHit = view->getTankOnPosition(view->bullet->getPosition());
+            tankHit->applyDamage();
+
+            // Verificar si el tanque ha sido destruido
+            if (tankHit->getHealth() <= 0) {
+                // Verificar si todos los tanques del jugador han sido destruidos
+                if (view->areAllTanksDestroyed(tankHit->getPlayer())) {
+                    // Finalizar el juego
+                    view->endGameDueToDestruction(tankHit->getPlayer());
+                    return FALSE; // Detener el movimiento de la bala
+                }
+            }
 
             view->update();
             return FALSE;
@@ -462,7 +525,7 @@ bool View::bulletHitTank(const Bullet* bullet) const {
 }
 
 
-void View::handleMoveTank(Tank* tank, const Position position) const {
+void View::handleMoveTank(Tank* tank, const Position position)  {
     Pathfinder pathfinder(*gridMap);
     int startId = gridMap->toIndex(tank->getRow(), tank->getColumn());
     int goalId = gridMap->toIndex(position.row, position.column);
@@ -503,7 +566,16 @@ void View::handleMoveTank(Tank* tank, const Position position) const {
 
     if (path.size() < 2) {
         tank->setSelected(false);
+        update();
         return;
+    }
+
+    // Decrementar acciones restantes
+    actionsRemaining--;
+
+    // Verificar si se debe cambiar de turno
+    if (actionsRemaining <= 0) {
+        endTurn();
     }
 
     // Crear la estructura de datos para el movimiento
@@ -542,7 +614,8 @@ gboolean View::moveTankStep(gpointer data) {
 
     if (currentStep >= path.size()) {
         // Movimiento completado
-        tank->setSelected(false);
+        tank->setSelected(false); // Deseleccionar el tanque al finalizar el movimiento
+        view->update(); // Actualizar la interfaz gráfica
         delete moveData;
         return FALSE; // Detener el temporizador
     }
@@ -606,3 +679,139 @@ void View::destroyBulletTrace(){
         traceDistance = 0;
     }
 }
+
+// Implementación de startTimer()
+void View::startTimer() {
+    // Configurar una función que se llame cada segundo
+    g_timeout_add_seconds(1, updateTimer, this);
+}
+
+// Implementación de updateTimer()
+gboolean View::updateTimer(gpointer data) {
+    auto* view = static_cast<View*>(data);
+
+    if (view->remaining_time > 0) {
+        --(view->remaining_time);
+
+        // Calcular minutos y segundos
+        int minutes = view->remaining_time / 60;
+        int seconds = view->remaining_time % 60;
+
+        // Formatear el tiempo como MM:SS
+        char buffer[6];
+        snprintf(buffer, sizeof(buffer), "%02d:%02d", minutes, seconds);
+
+        // Actualizar la etiqueta del temporizador directamente
+        gtk_label_set_text(GTK_LABEL(view->timerLabel), buffer);
+
+        return TRUE; // Continuar el temporizador
+    } else {
+        // El temporizador ha llegado a cero, finalizar el juego
+        view->endGameDueToTime();
+        return FALSE; // Detener el temporizador
+    }
+}
+
+void View::endTurn() {
+    // Cambiar al siguiente jugador
+    currentPlayer = (currentPlayer + 1) % 2;
+    actionsRemaining = 1; // Restablecer acciones (o el valor que corresponda)
+    updatePlayerLabels();
+    update(); // Actualizar la interfaz gráfica
+}
+
+void View::setActionsPerTurn(int actions) {
+    actionsRemaining = actions;
+}
+
+void View::endGameDueToTime() {
+    if (gameOver) return; // Evitar llamadas múltiples
+    gameOver = true;
+
+    int winner = determineWinner();
+    if (winner == -1) {
+        showTieMessage();
+    } else {
+        showWinnerMessage(winner);
+    }
+}
+
+
+bool View::areAllTanksDestroyed(int player) {
+    for (int i = 0; i < 8; ++i) {
+        Tank& tank = tanks[i];
+        if (tank.getPlayer() == player && tank.getHealth() > 0) {
+            // Aún queda al menos un tanque de este jugador
+            return false;
+        }
+    }
+    return true; // Todos los tanques de este jugador han sido destruidos
+}
+
+void View::endGameDueToDestruction(int losingPlayer) {
+    if (gameOver) return; // Evitar llamadas múltiples
+    gameOver = true;
+
+    int winner = (losingPlayer == 0) ? 1 : 0;
+    showWinnerMessage(winner);
+}
+void View::showWinnerMessage(int winner) {
+    // Crear un mensaje con el ganador
+    std::string message = "¡El jugador " + std::to_string(winner + 1) + " ha ganado!";
+
+    // Mostrar un diálogo con el mensaje
+    GtkWidget* dialog = gtk_message_dialog_new(GTK_WINDOW(window),
+                                               GTK_DIALOG_DESTROY_WITH_PARENT,
+                                               GTK_MESSAGE_INFO,
+                                               GTK_BUTTONS_OK,
+                                               "%s", message.c_str());
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
+
+    // Cerrar la ventana o reiniciar el juego
+    gtk_widget_destroy(window);
+    gtk_main_quit();
+}
+
+void View::showTieMessage() {
+    // Mostrar un diálogo indicando que hay un empate
+    GtkWidget* dialog = gtk_message_dialog_new(GTK_WINDOW(window),
+                                               GTK_DIALOG_DESTROY_WITH_PARENT,
+                                               GTK_MESSAGE_INFO,
+                                               GTK_BUTTONS_OK,
+                                               "¡El juego ha terminado en empate!");
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
+
+    // Cerrar la ventana o reiniciar el juego
+    gtk_widget_destroy(window);
+    gtk_main_quit();
+}
+
+int View::determineWinner() {
+    int tanksPlayer0 = 0;
+    int tanksPlayer1 = 0;
+
+    for (int i = 0; i < 8; ++i) {
+        Tank& tank = tanks[i];
+        if (tank.getHealth() > 0) {
+            if (tank.getPlayer() == 0) {
+                tanksPlayer0++;
+            } else if (tank.getPlayer() == 1) {
+                tanksPlayer1++;
+            }
+        }
+    }
+
+    if (tanksPlayer0 > tanksPlayer1) {
+        return 0; // Gana el jugador 1
+    } else if (tanksPlayer1 > tanksPlayer0) {
+        return 1; // Gana el jugador 2
+    } else {
+        // Empate
+        return -1;
+    }
+}
+
+
+

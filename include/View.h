@@ -50,6 +50,27 @@ private:
     GridGraph* gridMap = nullptr; ///< Map of the game
     std::map<std::string, GdkPixbuf*> assets; ///< Assets of the game
     static gboolean moveTankStep(gpointer data);
+    GtkWidget* timerLabel = nullptr; // Etiqueta para mostrar el temporizador
+    int remaining_time = 300; // Tiempo restante en segundos (5 minutos)
+    void startTimer();
+    static gboolean updateTimer(gpointer data);
+    int currentPlayer = 0; // 0 para Player 1, 1 para Player 2
+    int actionsRemaining = 1; // Acciones restantes en el turno actual
+    GtkWidget* playerLabels[2]; // Arreglo para los labels de los jugadores
+    void endTurn();
+    void setActionsPerTurn(int actions);
+    void endGameDueToTime();
+
+    bool areAllTanksDestroyed(int player);
+
+    void endGameDueToDestruction(int losingPlayer);
+
+    void showWinnerMessage(int winner);
+
+    void showTieMessage();
+
+    int determineWinner();
+
 
     /**
      * @brief Adds the current bullet position to the bullet trace.
@@ -94,7 +115,9 @@ private:
      * @param player int Player.
      * @return GtkWidget* Player label.
      */
-    [[nodiscard]] static GtkWidget* createPlayerLabel(int player);
+    [[nodiscard]] GtkWidget* createPlayerLabel(int player);
+
+    void updatePlayerLabels();
 
     /**
      * @brief Creates the player box.
@@ -161,7 +184,7 @@ private:
      /**
      * @brief Updates the status bar.
      */
-     void updateStatusBar() const;
+     void updateStatusBar();
 
     /**
      * @brief Draws the bullet of the game.
@@ -201,7 +224,7 @@ private:
     * @param tank Tank* Tank.
     * @param position Position Position.
     */
-    void handleMoveTank(Tank* tank, Position position) const;
+    void handleMoveTank(Tank* tank, Position position);
 
     /**
     * @brief Handles the fire of a bullet.
@@ -291,6 +314,8 @@ private:
     static constexpr int X_OFFSET = 30; ///< X offset
     static constexpr int Y_OFFSET = 30; ///< Y offset
     static constexpr float TRACE_SIZE = CELL_SIZE * 0.25; ///< Size of the bullet trace
+    GtkWidget* window; // Ventana principal
+    bool gameOver = false;
 };
 
 struct MoveData {
