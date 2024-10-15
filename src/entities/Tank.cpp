@@ -51,3 +51,10 @@ void Tank::applyDamage() {
     }
 }
 
+bool Tank::isDestroyed() const {
+    return destroyed;
+}
+
+void Tank::destroy() {
+    destroyed = true;
+}

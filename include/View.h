@@ -8,6 +8,7 @@
 #include "entities/Tank.h"
 #include "systems/GridGraph.h"
 
+struct Explosion;
 /**
  * @brief Clase que maneja la vista del juego.
  */
@@ -58,6 +59,7 @@ private:
     GtkWidget* timerLabel = nullptr;     ///< Etiqueta para mostrar el temporizador
     GtkWidget* playerLabels[2];          ///< Arreglo de etiquetas para los jugadores
     std::map<std::string, GdkPixbuf*> assets; ///< Recursos gráficos del juego
+    std::vector<Explosion> explosions; ///< Lista de explosiones en curso
 
     // Variables de mecánicas del juego
     int remaining_time = 300;            ///< Tiempo restante en segundos (5 minutos)
@@ -391,6 +393,22 @@ private:
      * @brief Destruye el rastro de la bala.
      */
     void destroyBulletTrace();
+
+    // Explociones
+    /**
+   * @brief Anima las explosiones en curso.
+   *
+   * @param data Puntero a la instancia de View.
+   * @return gboolean TRUE si hay explosiones activas.
+   */
+    static gboolean animateExplosions(gpointer data);
+
+    /**
+   * @brief Dibuja las explosiones en curso.
+   *
+   * @param cr cairo_t* Contexto de Cairo.
+   */
+    void drawExplosions(cairo_t* cr);
 };
 
 // Estructura para los datos de movimiento del tanque
@@ -399,4 +417,9 @@ struct MoveData {
     Tank* tank;                ///< Puntero al tanque
     std::vector<int> path;     ///< Ruta a seguir
     std::size_t currentStep;   ///< Paso actual en la ruta
+};
+
+struct Explosion {
+ Position position;  ///< Posición de la explosión
+ int currentFrame;   ///< Cuadro actual de la animación
 };

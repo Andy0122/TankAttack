@@ -102,6 +102,17 @@ public:
 
     void applyDamage();
 
+    /**
+    * @brief Verifica si el tanque ha sido destruido.
+    * @return True si el tanque está destruido.
+    */
+    bool isDestroyed() const;
+
+    /**
+     * @brief Marca el tanque como destruido.
+     */
+    void destroy();
+
     void setRotationAngle(double angle) { rotationAngle = angle; }
     double getRotationAngle() const { return rotationAngle; }
     int getPlayer() const { return player; }
@@ -111,8 +122,9 @@ private:
     Color color; ///< The color of the tank (as a string).
     int row, column; ///< The cell position of the tank in the grid map.
     bool selected = false; ///< Indicates if the tank is selected.
-    double rotationAngle = 0.0; // Ángulo de rotación en grados
+    double rotationAngle = 0.0; // Angulo de rotación en grados
     int player;
+    bool destroyed = false; ///< Indica si el tanque ha sido destruido.
 
     static constexpr int TANK_FULL_HEALTH = 100; ///< The full health of the tank.
 };

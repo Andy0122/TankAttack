@@ -185,6 +185,18 @@ void View::loadAssets() {
         assets["bullet"] = gdk_pixbuf_scale_simple(bullet, CELL_SIZE / 2, CELL_SIZE / 2, GDK_INTERP_BILINEAR);
         g_object_unref(bullet);
     }
+
+    // Cargar las imágenes de explosión
+    for (int i = 1; i <= 7; ++i) {
+        std::string key = "explosion_" + std::to_string(i);
+        std::string filename = "../assets/explosion/explosion_" + std::to_string(i) + ".png";
+
+        if (GdkPixbuf* explosionImage = gdk_pixbuf_new_from_file(filename.c_str(), nullptr)) {
+            // Ajustar el tamaño al tamaño de la celda
+            assets[key] = gdk_pixbuf_scale_simple(explosionImage, CELL_SIZE, CELL_SIZE, GDK_INTERP_BILINEAR);
+            g_object_unref(explosionImage);
+        }
+    }
 }
 
 void View::connectSignals() {
@@ -199,6 +211,7 @@ gboolean View::onDraw(GtkWidget *widget, cairo_t *cr, gpointer data) {
 
     view->drawMap(cr);
     view->drawTanks(cr);
+    view->drawExplosions(cr);
     view->updateStatusBar();
     view->updatePlayerLabels();
     view->drawBullet(cr);
@@ -291,6 +304,12 @@ void View::drawMap(cairo_t *cr) {
 void View::drawTanks(cairo_t *cr) {
     for (int i = 0; i < 8; i++) {
         const Tank* tank = &tanks[i];
+
+        // Saltar tanques destruidos
+        if (tank->isDestroyed()) {
+            continue;
+        }
+
         GdkPixbuf* pixbuf = nullptr;
         switch (tank->getColor()) {
             case Yellow: pixbuf = assets["yellow_tank"]; break;
@@ -383,29 +402,31 @@ gboolean View::onClick(GtkWidget *widget, const GdkEventButton *event, gpointer 
     auto* view = static_cast<View*>(data);
 
     if (view->gameOver) {
-        return FALSE; // No permitir acciones si el juego ha terminado
+        return FALSE;
     }
 
-    const int row = event->y / CELL_SIZE; // Y position
-    const int column = event->x / CELL_SIZE; // X position
+    const int row = event->y / CELL_SIZE;
+    const int column = event->x / CELL_SIZE;
     const auto position = Position(row, column);
 
-    if (event->button == 1) { // Left click
-        if (Tank* clickedTank = view->getTankOnPosition(position)) { // Tank clicked
-            view->handleSelectTank(clickedTank); // Select tank
-            g_print("Tank selected\n"); // For debugging purposes
-
-        } else if (cellClicked(position)) { // Cell clicked
-            if (Tank* selectedTank = view->getSelectedTank()) { // There's a selected tank
-                view->handleMoveTank(selectedTank, position); // Move tank
+    if (event->button == 1) {
+        if (Tank* clickedTank = view->getTankOnPosition(position)) {
+            view->handleSelectTank(clickedTank);
+            g_print("Tank selected\n");
+        } else if (cellClicked(position)) {
+            if (Tank* selectedTank = view->getSelectedTank()) {
+                view->handleMoveTank(selectedTank, position);
             }
         }
 
-    } else if (event->button == 3) { // Right click
-        if (Tank* selectedTank = view->getSelectedTank()) { // Hay un tanque seleccionado
-            view->handleFireBullet(Position(selectedTank->getRow(), selectedTank->getColumn()), position); // Disparar bala
-            selectedTank->setSelected(false); // Deseleccionar tanque
-            view->update(); // Actualizar la interfaz gráfica
+    } else if (event->button == 3) {
+        if (Tank* selectedTank = view->getSelectedTank()) {
+            if (selectedTank->isDestroyed()) {
+                return TRUE;
+            }
+            view->handleFireBullet(Position(selectedTank->getRow(), selectedTank->getColumn()), position);
+            selectedTank->setSelected(false);
+            view->update();
         }
     }
 
@@ -413,8 +434,8 @@ gboolean View::onClick(GtkWidget *widget, const GdkEventButton *event, gpointer 
 }
 
 void View::handleSelectTank(Tank* tank) {
-    if (tank->getPlayer() != currentPlayer) {
-        // No permitir seleccionar tanques del jugador que no está en turno
+    if (tank->getPlayer() != currentPlayer || tank->isDestroyed()) {
+        // No permitir seleccionar tanques del otro jugador o que estén destruidos
         return;
     }
     deselectAllTanks();
@@ -440,16 +461,16 @@ void View::handleFireBullet(const Position &origin, const Position &target) {
 }
 
 gboolean View::handleMoveBullet(gpointer data) {
-    if (auto* view = static_cast<View*>(data); view->bullet) {
+    auto* view = static_cast<View*>(data);
+    if (view->bullet) {
 
         if (view->gameOver) {
-            return FALSE; // No continuar si el juego ha terminado
+            return FALSE;
         }
 
         if (view->bullet->move()) {
-            // view->destroyBullet();
-            // view->destroyBulletTrace();
-
+            view->destroyBullet();
+            view->destroyBulletTrace();
             view->update();
             return FALSE;
         }
@@ -458,16 +479,32 @@ gboolean View::handleMoveBullet(gpointer data) {
             Tank* tankHit = view->getTankOnPosition(view->bullet->getPosition());
             tankHit->applyDamage();
 
-            // Verificar si el tanque ha sido destruido
-            if (tankHit->getHealth() <= 0) {
+            if (tankHit->getHealth() <= 0 && !tankHit->isDestroyed()) {
+                tankHit->destroy(); // Marcar el tanque como destruido
+                view->gridMap->removeTank(tankHit->getRow(), tankHit->getColumn()); // Remover del mapa
+
+                // Iniciar la explosión en la posición del tanque
+                Explosion explosion;
+                int row = tankHit->getRow();
+                int column = tankHit->getColumn();
+                explosion.position = Position(row, column);
+                explosion.currentFrame = 0;
+                view->explosions.push_back(explosion);
+
+                // Iniciar el temporizador para animar la explosión
+                g_timeout_add(100, View::animateExplosions, view);
+
                 // Verificar si todos los tanques del jugador han sido destruidos
                 if (view->areAllTanksDestroyed(tankHit->getPlayer())) {
                     // Finalizar el juego
                     view->endGameDueToDestruction(tankHit->getPlayer());
-                    return FALSE; // Detener el movimiento de la bala
+                    view->update();
+                    return FALSE;
                 }
             }
 
+            view->destroyBullet();
+            view->destroyBulletTrace();
             view->update();
             return FALSE;
         }
@@ -492,10 +529,11 @@ void View::handleBulletBounce(Bullet* bullet) {
 
 Tank* View::getTankOnPosition(const Position position) const {
     for (int i = 0; i < 8; i++) {
-        if (Tank* tank = &tanks[i];
+        Tank* tank = &tanks[i];
+        if (!tank->isDestroyed() &&
             position.row == tank->getRow() && position.column == tank->getColumn()) {
             return tank;
-            }
+        }
     }
 
     return nullptr;
@@ -527,6 +565,9 @@ bool View::bulletHitTank(const Bullet* bullet) const {
 
 
 void View::handleMoveTank(Tank* tank, const Position position)  {
+    if (tank->isDestroyed()) {
+        return;
+    }
     Pathfinder pathfinder(*gridMap);
     int startId = gridMap->toIndex(tank->getRow(), tank->getColumn());
     int goalId = gridMap->toIndex(position.row, position.column);
@@ -741,7 +782,7 @@ void View::endGameDueToTime() {
 bool View::areAllTanksDestroyed(int player) {
     for (int i = 0; i < 8; ++i) {
         Tank& tank = tanks[i];
-        if (tank.getPlayer() == player && tank.getHealth() > 0) {
+        if (tank.getPlayer() == player && !tank.isDestroyed()) {
             // Aún queda al menos un tanque de este jugador
             return false;
         }
@@ -795,7 +836,7 @@ int View::determineWinner() {
 
     for (int i = 0; i < 8; ++i) {
         Tank& tank = tanks[i];
-        if (tank.getHealth() > 0) {
+        if (!tank.isDestroyed()) {
             if (tank.getPlayer() == 0) {
                 tanksPlayer0++;
             } else if (tank.getPlayer() == 1) {
@@ -811,6 +852,42 @@ int View::determineWinner() {
     } else {
         // Empate
         return -1;
+    }
+}
+
+
+gboolean View::animateExplosions(gpointer data) {
+    auto* view = static_cast<View*>(data);
+
+    bool anyActive = false;
+
+    for (auto it = view->explosions.begin(); it != view->explosions.end(); ) {
+        it->currentFrame++;
+
+        if (it->currentFrame >= 7) {
+            // Animación terminada, eliminar explosión
+            it = view->explosions.erase(it);
+        } else {
+            anyActive = true;
+            ++it;
+        }
+    }
+
+    view->update();
+
+    return anyActive ? TRUE : FALSE;
+}
+
+void View::drawExplosions(cairo_t *cr) {
+    for (const auto& explosion : explosions) {
+        std::string key = "explosion_" + std::to_string(explosion.currentFrame + 1);
+        GdkPixbuf* pixbuf = assets[key];
+
+        int row = explosion.position.row;
+        int column = explosion.position.column;
+
+        gdk_cairo_set_source_pixbuf(cr, pixbuf, column * CELL_SIZE, row * CELL_SIZE);
+        cairo_paint(cr);
     }
 }
 
