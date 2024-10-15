@@ -34,8 +34,16 @@ Model::Model() {
             continue;
         }
 
-        // Crear el tanque
-        Tank tank(color, Position(row, col));
+        int playerNumber;
+        if (color == Red || color == Blue) {
+            playerNumber = 0;
+        } else if (color == Yellow || color == Cian) {
+            playerNumber = 1;
+        }
+
+        // Crear e inicializar el objeto tank con el constructor adecuado
+        Tank tank(color, Position(row, col), playerNumber);
+
 
         // Colocar el tanque en el mapa
         map->placeTank(row, col);
