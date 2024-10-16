@@ -7,6 +7,7 @@
 #include "entities/Bullet.h"
 #include "entities/Tank.h"
 #include "systems/GridGraph.h"
+#include "systems/SoundManager.h"
 
 struct Explosion;
 /**
@@ -409,6 +410,11 @@ private:
    * @param cr cairo_t* Contexto de Cairo.
    */
     void drawExplosions(cairo_t* cr);
+
+    //Sounds
+    SoundManager soundManager;  ///< Administrador de sonidos
+    int moveSoundChannel = -1;  ///< Canal de sonido para el movimiento
+    void initSound();           ///< Inicializa los sonidos
 };
 
 // Estructura para los datos de movimiento del tanque

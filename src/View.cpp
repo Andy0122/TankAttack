@@ -4,6 +4,7 @@
 #include <thread>
 #include <random>
 #include <cmath>
+#include "systems/SoundManager.h"
 
 View::View(GtkWidget *window) {
     this->window = window;
@@ -27,6 +28,7 @@ View::View(GtkWidget *window) {
     loadAssets();
     connectSignals();
     gtk_widget_show_all(window);
+    initSound();
 }
 
 
@@ -449,6 +451,9 @@ void View::handleFireBullet(const Position &origin, const Position &target) {
     bulletTrace = new Position[traceDistance];
     g_timeout_add(30, handleMoveBullet, this);
 
+    // Reproducir efecto de sonido de disparo
+    soundManager.playSoundEffect("fire");
+
     // Decrementar acciones restantes
     actionsRemaining--;
 
@@ -479,6 +484,9 @@ gboolean View::handleMoveBullet(gpointer data) {
             Tank* tankHit = view->getTankOnPosition(view->bullet->getPosition());
             tankHit->applyDamage();
 
+            // Reproducir efecto de sonido de impacto
+            view->soundManager.playSoundEffect("impact");
+
             if (tankHit->getHealth() <= 0 && !tankHit->isDestroyed()) {
                 tankHit->destroy(); // Marcar el tanque como destruido
                 view->gridMap->removeTank(tankHit->getRow(), tankHit->getColumn()); // Remover del mapa
@@ -490,6 +498,9 @@ gboolean View::handleMoveBullet(gpointer data) {
                 explosion.position = Position(row, column);
                 explosion.currentFrame = 0;
                 view->explosions.push_back(explosion);
+
+                // Reproducir efecto de sonido de explosión
+                view->soundManager.playSoundEffect("explosion");
 
                 // Iniciar el temporizador para animar la explosión
                 g_timeout_add(100, View::animateExplosions, view);
@@ -620,6 +631,9 @@ void View::handleMoveTank(Tank* tank, const Position position)  {
         endTurn();
     }
 
+    // Reproducir efecto de sonido de movimiento en bucle
+    moveSoundChannel = soundManager.playSoundEffect("move", -1);
+
     // Crear la estructura de datos para el movimiento
     auto* moveData = new MoveData{const_cast<View*>(this), tank, path, 1};
 
@@ -658,6 +672,13 @@ gboolean View::moveTankStep(gpointer data) {
         // Movimiento completado
         tank->setSelected(false); // Deseleccionar el tanque al finalizar el movimiento
         view->update(); // Actualizar la interfaz gráfica
+
+        // Detener el efecto de sonido de movimiento
+        if (view->moveSoundChannel != -1) {
+            view->soundManager.stopSoundEffect("move");
+            view->moveSoundChannel = -1;
+        }
+
         delete moveData;
         return FALSE; // Detener el temporizador
     }
@@ -770,6 +791,9 @@ void View::endGameDueToTime() {
     if (gameOver) return; // Evitar llamadas múltiples
     gameOver = true;
 
+    // Reproducir efecto de sonido de fin de juego
+    soundManager.playSoundEffect("game_over");
+
     int winner = determineWinner();
     if (winner == -1) {
         showTieMessage();
@@ -793,6 +817,11 @@ bool View::areAllTanksDestroyed(int player) {
 void View::endGameDueToDestruction(int losingPlayer) {
     if (gameOver) return; // Evitar llamadas múltiples
     gameOver = true;
+
+    soundManager.stopBackgroundMusic();
+
+    // Reproducir efecto de sonido de fin de juego
+    soundManager.playSoundEffect("game_over");
 
     int winner = (losingPlayer == 0) ? 1 : 0;
     showWinnerMessage(winner);
@@ -889,6 +918,18 @@ void View::drawExplosions(cairo_t *cr) {
         gdk_cairo_set_source_pixbuf(cr, pixbuf, column * CELL_SIZE, row * CELL_SIZE);
         cairo_paint(cr);
     }
+}
+
+void View::initSound() {
+    // Reproducir música de fondo
+    soundManager.playBackgroundMusic("../assets/sounds/background_music.mp3");
+
+    // Cargar efectos de sonido
+    soundManager.loadSoundEffect("fire", "../assets/sounds/fire.wav");
+    soundManager.loadSoundEffect("impact", "../assets/sounds/impact.wav");
+    soundManager.loadSoundEffect("explosion", "../assets/sounds/explosion.wav");
+    soundManager.loadSoundEffect("move", "../assets/sounds/move.wav");
+    soundManager.loadSoundEffect("game_over", "../assets/sounds/game_over.wav");
 }
 
 
