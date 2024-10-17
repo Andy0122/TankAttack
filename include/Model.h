@@ -1,8 +1,14 @@
 #pragma once
 
+#include "entities/Player.h"
 #include "entities/Tank.h"
 #include "systems/GridGraph.h"
 
+struct TankData {
+    int id;
+    Color color;
+    int player;
+};
 
 /**
  * @brief Model class
@@ -27,5 +33,6 @@ public:
 
 private:
     GridGraph* map; ///< Map of the game
-    Tank* tanks; ///< Array tank
+    Player* players; ///< Array of players
+    Tank* tanks; ///< Array of tanks
 };

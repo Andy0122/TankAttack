@@ -1,15 +1,7 @@
 #include "entities/Player.h"
 #include <random>
 
-Player::Player() : tanks(nullptr), powerUp(NONE) {}
-
-void Player::setTanks(Tank* tanks) {
-    this->tanks = tanks;
-}
-
-Tank* Player::getTanks() const {
-    return tanks;
-}
+Player::Player() : powerUp(NONE) {}
 
 POWER_UP Player::getPowerUp() const {
     return powerUp;

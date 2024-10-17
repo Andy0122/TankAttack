@@ -1,9 +1,9 @@
 #include "entities/Tank.h"
 
 
-Tank::Tank() : health(TANK_FULL_HEALTH), color(Color()), row(0), column(0) {}
+Tank::Tank() : health(TANK_FULL_HEALTH), color(Color()), row(0), column(0), player(nullptr) {}
 
-Tank::Tank(const Color color, const Position position, int player)
+Tank::Tank(const Color color, const Position position, Player* player)
     : health(TANK_FULL_HEALTH), color(color), row(position.row), column(position.column), player(player) {}
 
 int Tank::getHealth() const {
