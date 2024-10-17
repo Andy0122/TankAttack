@@ -31,8 +31,18 @@ public:
     */
     [[nodiscard]] Tank* getTanks() const;
 
+    [[nodiscard]] Player* getPlayers() const;
+
 private:
-    GridGraph* map; ///< Map of the game
-    Player* players; ///< Array of players
-    Tank* tanks; ///< Array of tanks
+    GridGraph* map = nullptr; ///< Map of the game
+    Player* players = nullptr; ///< Array of players
+    Tank* tanks = nullptr; ///< Array of tanks
+
+    void createMap();
+
+    void createPlayers();
+
+    void createTanks();
+
+    void placeTanksOnMap() const;
 };

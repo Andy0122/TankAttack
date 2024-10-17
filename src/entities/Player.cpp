@@ -1,7 +1,11 @@
 #include "entities/Player.h"
 #include <random>
 
-Player::Player() : powerUp(NONE) {}
+Player::Player(const int id) : id(id), powerUp(NONE) {}
+
+int Player::getId() const {
+    return id;
+}
 
 POWER_UP Player::getPowerUp() const {
     return powerUp;

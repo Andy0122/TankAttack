@@ -7,13 +7,16 @@ enum POWER_UP {
 
 class Player {
 public:
-    Player();
+    explicit Player(int id);
+
+    [[nodiscard]] int getId() const;
 
     [[nodiscard]] POWER_UP getPowerUp() const;
 
     void generatePowerUp();
 
 private:
+    int id;
     POWER_UP powerUp;
 };
 

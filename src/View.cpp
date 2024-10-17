@@ -6,6 +6,8 @@
 #include <cmath>
 #include "systems/SoundManager.h"
 
+// TODO: Implement Player class on View.cpp
+
 View::View(GtkWidget *window) {
     this->window = window;
     GtkWidget* vbox = createVBox(window);
@@ -38,6 +40,10 @@ void View::setGridMap(GridGraph *map) {
 
 void View::setTanks(Tank* tanks) {
     this->tanks = tanks;
+}
+
+void View::setPlayers(Player* players) {
+    this->players = players;
 }
 
 void View::update() const {
@@ -436,7 +442,7 @@ gboolean View::onClick(GtkWidget *widget, const GdkEventButton *event, gpointer 
 }
 
 void View::handleSelectTank(Tank* tank) {
-    if (tank->getPlayer() != currentPlayer || tank->isDestroyed()) {
+    if (tank->getPlayer()->getId() != currentPlayer || tank->isDestroyed()) {
         // No permitir seleccionar tanques del otro jugador o que estén destruidos
         return;
     }
@@ -506,12 +512,12 @@ gboolean View::handleMoveBullet(gpointer data) {
                 g_timeout_add(100, View::animateExplosions, view);
 
                 // Verificar si todos los tanques del jugador han sido destruidos
-                if (view->areAllTanksDestroyed(tankHit->getPlayer())) {
-                    // Finalizar el juego
-                    view->endGameDueToDestruction(tankHit->getPlayer());
-                    view->update();
-                    return FALSE;
-                }
+                // if (view->areAllTanksDestroyed(tankHit->getPlayer())) {
+                //     // Finalizar el juego
+                //     view->endGameDueToDestruction(tankHit->getPlayer());
+                //     view->update();
+                //     return FALSE;
+                // }
             }
 
             view->destroyBullet();
@@ -806,7 +812,7 @@ void View::endGameDueToTime() {
 bool View::areAllTanksDestroyed(int player) {
     for (int i = 0; i < 8; ++i) {
         Tank& tank = tanks[i];
-        if (tank.getPlayer() == player && !tank.isDestroyed()) {
+        if (tank.getPlayer()->getId() == player && !tank.isDestroyed()) {
             // Aún queda al menos un tanque de este jugador
             return false;
         }
@@ -868,7 +874,7 @@ int View::determineWinner() {
         if (!tank.isDestroyed()) {
             if (tank.getPlayer() == 0) {
                 tanksPlayer0++;
-            } else if (tank.getPlayer() == 1) {
+            } else if (tank.getPlayer()->getId() == 1) {
                 tanksPlayer1++;
             }
         }

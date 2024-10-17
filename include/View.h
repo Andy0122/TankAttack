@@ -38,6 +38,8 @@ public:
      */
     void setTanks(Tank* tanks);
 
+    void setPlayers(Player* players);
+
     /**
      * @brief Actualiza la interfaz gráfica del juego.
      */
@@ -46,6 +48,7 @@ public:
 private:
     // Variables miembro
     // Estado del juego
+    Player* players = nullptr;            ///< Arreglo de jugadores del juego
     Tank* tanks = nullptr;               ///< Arreglo de tanques del juego
     Bullet* bullet = nullptr;            ///< Bala actual en el juego
     Position* bulletTrace = nullptr;     ///< Rastreo del movimiento de la bala

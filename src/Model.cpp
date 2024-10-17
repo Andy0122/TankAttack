@@ -2,14 +2,44 @@
 
 Model::Model() {
     // Create the map
+    createMap();
+
+    // Create players
+    createPlayers();
+
+    // Set tanks positions
+    createTanks();
+
+    // Place Tanks on the map
+    placeTanksOnMap();
+}
+
+GridGraph* Model::getMap() const {
+    return map;
+}
+
+Tank* Model::getTanks() const {
+    return tanks;
+}
+
+Player* Model::getPlayers() const {
+    return players;
+}
+
+void Model::createMap() {
     map = new GridGraph();
     map->generateObstacles();
     map->connectNodes();
+}
 
-    // Create players
-    players = new Player[2];
+void Model::createPlayers() {
+    players = new Player[2] {
+        Player(0),
+        Player(1)
+    };
+}
 
-    // Set tanks positions
+void Model::createTanks() {
     tanks = new Tank[8] {
         Tank(Red, Position(100 / map->getCols(), 100 % map->getCols()), &players[0]),
         Tank(Red, Position(126 / map->getCols(), 126 % map->getCols()), &players[0]),
@@ -21,12 +51,6 @@ Model::Model() {
         Tank(Cian, Position(224 / map->getCols(), 224 % map->getCols()), &players[1])
     };
 
-    // Place Tanks on the map
-    for (int i = 0; i < 8; ++i) {
-        map->placeTank(tanks[i].getRow(), tanks[i].getColumn());
-    }
-
-    // Set rotation angle for tanks
     for (int i = 0; i < 8; ++i) {
         if (tanks[i].getColor() == Red || tanks[i].getColor() == Blue) {
             tanks[i].setRotationAngle(0.0);
@@ -36,10 +60,9 @@ Model::Model() {
     }
 }
 
-GridGraph* Model::getMap() const {
-    return map;
+void Model::placeTanksOnMap() const {
+    for (int i = 0; i < 8; ++i) {
+        map->placeTank(tanks[i].getRow(), tanks[i].getColumn());
+    }
 }
 
-Tank* Model::getTanks() const {
-    return tanks;
-}
