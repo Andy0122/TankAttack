@@ -212,6 +212,7 @@ public:
      */
     void fillLargeOpenAreas();
 
+    [[nodiscard]] bool isValid(int row, int column) const;
 
 };
 

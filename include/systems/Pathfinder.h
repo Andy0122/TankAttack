@@ -4,6 +4,11 @@
 #include <vector>
 #include "GridGraph.h"
 
+struct cell {
+	int parent_i, parent_j;
+	double f, g, h;
+};
+
 /**
  * @brief Clase encargada de los algoritmos de búsqueda de caminos en el GridGraph.
  */
@@ -51,6 +56,8 @@ public:
 	 * @return Un vector con los nodos que forman el camino desde el inicio hasta el objetivo.
 	 */
 	std::vector<int> randomMovement(int startId, int goalId);
+
+	std::vector<int> aStar(int startId, int goalId);
 };
 
 #endif // PATHFINDER_H

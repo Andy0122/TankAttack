@@ -22,8 +22,9 @@ public:
      *
      * @param origin The position where the bullet is created.
      * @param target The position where the bullet is aimed.
+     * @param attackPower If the attack power is activated.
      */
-    Bullet(Position origin, Position target, bool maxDamage);
+    Bullet(Position origin, Position target, bool attackPower);
 
     /**
      * @brief Destroys the bullet.
@@ -81,6 +82,7 @@ private:
     Position target; ///< The position where the bullet is aimed.
     Direction direction{}; ///< The direction of the bullet.
     bool maxDamage; ///< If the bullet applies max damage.
+    bool attackPrecision; ///< If the bullet applies attack precision.
     int distance; ///< The distance the bullet has to travel.
     int speed = 1; ///< The speed of the bullet.
     float bounceAngle = 0.0; ///< The angle of the bounce.

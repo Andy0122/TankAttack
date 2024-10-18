@@ -4,7 +4,12 @@
 #include <functional>
 #include <limits>
 #include <cstdlib>    // Para rand() y srand()
+#include <cstring>
 #include <ctime>      // Para time()
+#include <float.h>
+#include <bits/stdc++.h>
+
+using namespace  std;
 
 /**
  * @brief Constructor del Pathfinder.
@@ -238,4 +243,304 @@ std::vector<int> Pathfinder::randomMovement(int startId, int goalId) {
     }
 
     return totalPath;
+}
+
+typedef std::pair<int, int> Pair;
+typedef std::pair<double, std::pair<int, int> > pPair;
+
+bool isDestination(int row, int col, Pair dest) {
+    return row == dest.first && col == dest.second;
+}
+
+double calculateHValue(int row, int col, Pair dest) {
+    return ((double)sqrt((row - dest.first) * (row - dest.first) + (col - dest.second) * (col - dest.second)));
+}
+
+std::vector<int> Pathfinder::aStar(int startId, int goalId) {
+    if (graph.isValid(startId / graph.getCols(), startId % graph.getCols())) {
+        printf("Start node is invalid\n");
+        return {};
+    }
+
+    if (graph.isValid(goalId / graph.getCols(), goalId % graph.getCols())) {
+        printf("Goal node is invalid\n");
+        return {};
+    }
+
+    if (graph.isObstacle(startId / graph.getCols(), startId % graph.getCols())
+        || graph.isObstacle(goalId / graph.getCols(), goalId % graph.getCols())) {
+        printf("Start node is an obstacle\n");
+        return {};
+    }
+
+    if (startId == goalId) {
+        printf("Start node is the goal node\n");
+        return {};
+    }
+
+    bool closedList[graph.getRows()][graph.getCols()];
+    memset(closedList, false, sizeof(closedList));
+
+    cell cellDetails[graph.getRows()][graph.getCols()];
+
+    int i, j;
+
+    for (i = 0; i < graph.getRows(); i++) {
+        for (j = 0; j < graph.getCols(); j++) {
+            cellDetails[i][j].f = FLT_MAX;
+            cellDetails[i][j].g = FLT_MAX;
+            cellDetails[i][j].h = FLT_MAX;
+            cellDetails[i][j].parent_i = -1;
+            cellDetails[i][j].parent_j = -1;
+        }
+    }
+
+    i = startId / graph.getCols();
+    j = startId % graph.getCols();
+    cellDetails[i][j].f = 0.0;
+    cellDetails[i][j].g = 0.0;
+    cellDetails[i][j].h = 0.0;
+    cellDetails[i][j].parent_i = i;
+    cellDetails[i][j].parent_j = j;
+
+    set<pPair> openList;
+
+    openList.insert(make_pair(0.0, make_pair(1, j)));
+
+    bool foundDest = false;
+
+    vector<int> path;
+    while (!openList.empty()) {
+        pPair p = *openList.begin();
+
+        openList.erase(openList.begin());
+
+        i = p.second.first;
+        j = p.second.second;
+        closedList[i][j] = true;
+
+        double gNew, hNew, fNew;
+
+        //----------- 1st Successor (North) ------------
+
+        if (graph.isValid(i - 1, j)) {
+            path.push_back(graph.toIndex(i - 1, j));
+            if (isDestination(i - 1, j, {goalId / graph.getCols(), goalId % graph.getCols()})) {
+                cellDetails[i - 1][j].parent_i = i;
+                cellDetails[i - 1][j].parent_j = j;
+                printf("The destination cell is found\n");
+                foundDest = true;
+                return path;
+
+            } else if (!closedList[i - 1][j] && !graph.isObstacle(i - 1, j)) {
+                gNew = cellDetails[i][j].g + 1.0;
+                hNew = calculateHValue(i - 1, j, {goalId / graph.getCols(), goalId % graph.getCols()});
+                fNew = gNew + hNew;
+
+                if (cellDetails[i - 1][j].f == FLT_MAX || cellDetails[i - 1][j].f > fNew) {
+                    openList.insert(make_pair(fNew, make_pair(i - 1, j)));
+
+                    cellDetails[i - 1][j].f = fNew;
+                    cellDetails[i - 1][j].g = gNew;
+                    cellDetails[i - 1][j].h = hNew;
+                    cellDetails[i - 1][j].parent_i = i;
+                    cellDetails[i - 1][j].parent_j = j;
+                }
+            }
+        }
+
+        //----------- 2nd Successor (South) ------------
+        if (graph.isValid(i + 1, j)) {
+            path.push_back(graph.toIndex(i + 1, j));
+            if (isDestination(i + 1, j, {goalId / graph.getCols(), goalId % graph.getCols()})) {
+                cellDetails[i + 1][j].parent_i = i;
+                cellDetails[i + 1][j].parent_j = j;
+                printf("The destination cell is found\n");
+                foundDest = true;
+                return path;
+
+            } else if (!closedList[i + 1][j] && !graph.isObstacle(i + 1, j)) {
+                gNew = cellDetails[i][j].g + 1.0;
+                hNew = calculateHValue(i + 1, j, Pair(goalId / graph.getCols(), goalId % graph.getCols()));
+                fNew = gNew + hNew;
+
+                if (cellDetails[i + 1][j].f == FLT_MAX || cellDetails[i + 1][j].f > fNew) {
+                    openList.insert(make_pair(fNew, make_pair(i + 1, j)));
+
+                    cellDetails[i + 1][j].f = fNew;
+                    cellDetails[i + 1][j].g = gNew;
+                    cellDetails[i + 1][j].h = hNew;
+                    cellDetails[i + 1][j].parent_i = i;
+                    cellDetails[i + 1][j].parent_j = j;
+                }
+            }
+        }
+
+        //----------- 3rd Successor (East) ------------
+        if (graph.isValid(i, j + 1)) {
+            path.push_back(graph.toIndex(i, j + 1));
+            if (isDestination(i, j + 1, {goalId / graph.getCols(), goalId % graph.getCols()})) {
+                cellDetails[i][j + 1].parent_i = i;
+                cellDetails[i][j + 1].parent_j = j;
+                printf("The destination cell is found\n");
+                foundDest = true;
+                return path;
+
+            } else if (!closedList[i][j + 1] && !graph.isObstacle(i, j + 1)) {
+                gNew = cellDetails[i][j].g + 1.0;
+                hNew = calculateHValue(i, j + 1, Pair(goalId / graph.getCols(), goalId % graph.getCols()));
+                fNew = gNew + hNew;
+
+                if (cellDetails[i][j + 1].f == FLT_MAX || cellDetails[i][j + 1].f > fNew) {
+                    openList.insert(make_pair(fNew, make_pair(i, j + 1)));
+
+                    cellDetails[i][j + 1].f = fNew;
+                    cellDetails[i][j + 1].g = gNew;
+                    cellDetails[i][j + 1].h = hNew;
+                    cellDetails[i][j + 1].parent_i = i;
+                    cellDetails[i][j + 1].parent_j = j;
+                }
+            }
+        }
+
+        //----------- 4th Successor (West) ------------
+        if (graph.isValid(i, j - 1)) {
+            path.push_back(graph.toIndex(i, j - 1));
+            if (isDestination(i, j - 1, {goalId / graph.getCols(), goalId % graph.getCols()})) {
+                cellDetails[i][j - 1].parent_i = i;
+                cellDetails[i][j - 1].parent_j = j;
+                printf("The destination cell is found\n");
+                foundDest = true;
+                return path;
+
+            } else if (!closedList[i][j - 1] && !graph.isObstacle(i, j - 1)) {
+                gNew = cellDetails[i][j].g + 1.0;
+                hNew = calculateHValue(i, j - 1, Pair(goalId / graph.getCols(), goalId % graph.getCols()));
+                fNew = gNew + hNew;
+
+                if (cellDetails[i][j - 1].f == FLT_MAX || cellDetails[i][j - 1].f > fNew) {
+                    openList.insert(make_pair(fNew, make_pair(i, j - 1)));
+
+                    cellDetails[i][j - 1].f = fNew;
+                    cellDetails[i][j - 1].g = gNew;
+                    cellDetails[i][j - 1].h = hNew;
+                    cellDetails[i][j - 1].parent_i = i;
+                    cellDetails[i][j - 1].parent_j = j;
+                }
+            }
+        }
+
+        //----------- 5th Successor (North-East) ------------
+        if (graph.isValid(i - 1, j + 1)) {
+            path.push_back(graph.toIndex(i - 1, j + 1));
+            if (isDestination(i - 1, j + 1, {goalId / graph.getCols(), goalId % graph.getCols()})) {
+                cellDetails[i - 1][j + 1].parent_i = i;
+                cellDetails[i - 1][j + 1].parent_j = j;
+                printf("The destination cell is found\n");
+                foundDest = true;
+                return path;
+
+            } else if (!closedList[i - 1][j + 1] && !graph.isObstacle(i - 1, j + 1)) {
+                gNew = cellDetails[i][j].g + 1.0;
+                hNew = calculateHValue(i - 1, j + 1, Pair(goalId / graph.getCols(), goalId % graph.getCols()));
+                fNew = gNew + hNew;
+
+                if (cellDetails[i - 1][j + 1].f == FLT_MAX || cellDetails[i - 1][j + 1].f > fNew) {
+                    openList.insert(make_pair(fNew, make_pair(i - 1, j + 1)));
+
+                    cellDetails[i - 1][j + 1].f = fNew;
+                    cellDetails[i - 1][j + 1].g = gNew;
+                    cellDetails[i - 1][j + 1].h = hNew;
+                    cellDetails[i - 1][j + 1].parent_i = i;
+                    cellDetails[i - 1][j + 1].parent_j = j;
+                }
+            }
+        }
+
+        //----------- 6th Successor (North-West)
+        if (graph.isValid(i - 1, j - 1)) {
+            path.push_back(graph.toIndex(i - 1, j - 1));
+            if (isDestination(i - 1, j - 1, {goalId / graph.getCols(), goalId % graph.getCols()})) {
+                cellDetails[i - 1][j - 1].parent_i = i;
+                cellDetails[i - 1][j - 1].parent_j = j;
+                printf("The destination cell is found\n");
+                foundDest = true;
+                return path;
+
+            } else if (!closedList[i - 1][j - 1] && !graph.isObstacle(i - 1, j - 1)) {
+                gNew = cellDetails[i][j].g + 1.0;
+                hNew = calculateHValue(i - 1, j - 1, Pair(goalId / graph.getCols(), goalId % graph.getCols()));
+                fNew = gNew + hNew;
+
+                if (cellDetails[i - 1][j - 1].f == FLT_MAX || cellDetails[i - 1][j - 1].f > fNew) {
+                    openList.insert(make_pair(fNew, make_pair(i - 1, j - 1)));
+
+                    cellDetails[i - 1][j - 1].f = fNew;
+                    cellDetails[i - 1][j - 1].g = gNew;
+                    cellDetails[i - 1][j - 1].h = hNew;
+                    cellDetails[i - 1][j - 1].parent_i = i;
+                    cellDetails[i - 1][j - 1].parent_j = j;
+                }
+            }
+        }
+
+        //----------- 7th Successor (South-East)
+        if (graph.isValid(i + 1, j + 1)) {
+            path.push_back(graph.toIndex(i + 1, j + 1));
+            if (isDestination(i + 1, j + 1, {goalId / graph.getCols(), goalId % graph.getCols()})) {
+                cellDetails[i + 1][j + 1].parent_i = i;
+                cellDetails[i + 1][j + 1].parent_j = j;
+                printf("The destination cell is found\n");
+                foundDest = true;
+                return path;
+
+            } else if (!closedList[i + 1][j + 1] && !graph.isObstacle(i + 1, j + 1)) {
+                gNew = cellDetails[i][j].g + 1.0;
+                hNew = calculateHValue(i + 1, j + 1, Pair(goalId / graph.getCols(), goalId % graph.getCols()));
+                fNew = gNew + hNew;
+
+                if (cellDetails[i + 1][j + 1].f == FLT_MAX || cellDetails[i + 1][j + 1].f > fNew) {
+                    openList.insert(make_pair(fNew, make_pair(i + 1, j + 1)));
+
+                    cellDetails[i + 1][j + 1].f = fNew;
+                    cellDetails[i + 1][j + 1].g = gNew;
+                    cellDetails[i + 1][j + 1].h = hNew;
+                    cellDetails[i + 1][j + 1].parent_i = i;
+                    cellDetails[i + 1][j + 1].parent_j = j;
+                }
+            }
+        }
+
+        //----------- 8th Successor (South-West)
+        if (graph.isValid(i + 1, j - 1)) {
+            path.push_back(graph.toIndex(i + 1, j - 1));
+            if (isDestination(i + 1, j - 1, {goalId / graph.getCols(), goalId % graph.getCols()})) {
+                cellDetails[i + 1][j - 1].parent_i = i;
+                cellDetails[i + 1][j - 1].parent_j = j;
+                printf("The destination cell is found\n");
+                foundDest = true;
+                return path;
+
+            } else if (!closedList[i + 1][j - 1] && !graph.isObstacle(i + 1, j - 1)) {
+                gNew = cellDetails[i][j].g + 1.0;
+                hNew = calculateHValue(i + 1, j - 1, Pair(goalId / graph.getCols(), goalId % graph.getCols()));
+                fNew = gNew + hNew;
+
+                if (cellDetails[i + 1][j - 1].f == FLT_MAX || cellDetails[i + 1][j - 1].f > fNew) {
+                    openList.insert(make_pair(fNew, make_pair(i + 1, j - 1)));
+
+                    cellDetails[i + 1][j - 1].f = fNew;
+                    cellDetails[i + 1][j - 1].g = gNew;
+                    cellDetails[i + 1][j - 1].h = hNew;
+                    cellDetails[i + 1][j - 1].parent_i = i;
+                    cellDetails[i + 1][j - 1].parent_j = j;
+                }
+            }
+        }
+    }
+
+    if (foundDest == false) {
+        printf("Failed to find the destination cell\n");
+    }
+    return {};
 }
