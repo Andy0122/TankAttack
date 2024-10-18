@@ -102,7 +102,7 @@ public:
      */
     void setSelected(bool newState);
 
-    void applyDamage();
+    void applyDamage(bool maxDamage);
 
     /**
     * @brief Verifica si el tanque ha sido destruido.

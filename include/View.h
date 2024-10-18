@@ -62,6 +62,7 @@ private:
     GtkWidget* statusBar = nullptr;      ///< Barra de estado del juego
     GtkWidget* timerLabel = nullptr;     ///< Etiqueta para mostrar el temporizador
     GtkWidget* playerLabels[2];          ///< Arreglo de etiquetas para los jugadores
+    GtkWidget* powerUpLabels[2];    ///< Etiqueta para mostrar el poder obtenido
     std::map<std::string, GdkPixbuf*> assets; ///< Recursos gráficos del juego
     std::vector<Explosion> explosions; ///< Lista de explosiones en curso
 
@@ -221,6 +222,8 @@ private:
      */
     [[nodiscard]] GtkWidget* createTankDisplay(const Tank& tank) const;
 
+    [[nodiscard]] GtkWidget* createPowerUpLabel(int player);
+
     // Métodos de configuración
     /**
      * @brief Carga los recursos gráficos del juego.
@@ -292,7 +295,7 @@ private:
      *
      * @param tank Puntero al tanque seleccionado.
      */
-    void handleSelectTank(Tank* tank);
+    void handleSelectTank(Tank* tank) const;
 
     /**
      * @brief Maneja el movimiento de un tanque.
@@ -413,6 +416,8 @@ private:
    * @param cr cairo_t* Contexto de Cairo.
    */
     void drawExplosions(cairo_t* cr);
+
+    static gboolean grantPowerUp(gpointer data);
 
     //Sounds
     SoundManager soundManager;  ///< Administrador de sonidos

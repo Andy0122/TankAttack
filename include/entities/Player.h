@@ -1,6 +1,8 @@
 #ifndef PLAYER_H
 #define PLAYER_H
 
+#include <string>
+
 enum POWER_UP {
     DOUBLE_TURN, MOVEMENT_PRECISION, ATTACK_PRECISION, ATTACK_POWER, NONE
 };
@@ -12,6 +14,8 @@ public:
     [[nodiscard]] int getId() const;
 
     [[nodiscard]] POWER_UP getPowerUp() const;
+
+    std::string getPowerUpName() const;
 
     void generatePowerUp();
 

@@ -1,8 +1,8 @@
 #include "entities/Bullet.h"
 #include <cmath>
 
-Bullet::Bullet(const Position origin, const Position target)
-    : position(origin), target(target) {
+Bullet::Bullet(const Position origin, const Position target, const bool maxDamage)
+    : position(origin), target(target), maxDamage(maxDamage) {
     calculateDirection(origin, target);
     distance = calculateDistance();
 }
@@ -17,6 +17,10 @@ Direction Bullet::getDirection() const {
 
 int Bullet::getDistance() const {
     return distance;
+}
+
+bool Bullet::getMaxDamage() const {
+    return maxDamage;
 }
 
 void Bullet::setDirection(const Direction newDirection) {
