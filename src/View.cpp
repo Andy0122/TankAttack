@@ -6,6 +6,7 @@
 #include <cmath>
 #include "systems/SoundManager.h"
 
+
 View::View(GtkWidget *window) {
     this->window = window;
     GtkWidget* vbox = createVBox(window);
@@ -39,6 +40,11 @@ void View::setGridMap(GridGraph *map) {
 void View::setTanks(Tank* tanks) {
     this->tanks = tanks;
 }
+
+void View::setPlayers(Player* players) {
+    this->players = players;
+}
+
 
 void View::update() const {
     gtk_widget_queue_draw(drawingArea);
@@ -149,6 +155,12 @@ GtkWidget* View::createTankDisplay(const Tank& tank) const {
     gtk_box_pack_start(GTK_BOX(hbox), label, FALSE, FALSE, 0);
 
     return hbox;
+}
+
+GtkWidget* View::createPowerUpLabel(const int player) {
+    GtkWidget* label = gtk_label_new(players[player].getPowerUpName().c_str());
+    powerUpLabels[player] = label;
+    return label;
 }
 
 
@@ -312,7 +324,7 @@ void View::drawTanks(cairo_t *cr) {
             continue;
         }
 
-        GdkPixbuf* pixbuf = nullptr;
+        const GdkPixbuf* pixbuf = nullptr;
         switch (tank->getColor()) {
             case Yellow: pixbuf = assets["yellow_tank"]; break;
             case Red: pixbuf = assets["red_tank"]; break;
@@ -322,7 +334,7 @@ void View::drawTanks(cairo_t *cr) {
 
         // Rotar el pixbuf según el ángulo del tanque
         GdkPixbuf* rotated_pixbuf = nullptr;
-        double angle = tank->getRotationAngle();
+        const double angle = tank->getRotationAngle();
         GdkPixbufRotation rotation;
 
         if (angle == 0.0) {
@@ -356,7 +368,7 @@ void View::drawTanks(cairo_t *cr) {
 }
 
 
-void View::updateStatusBar(){
+void View::updateStatusBar() {
     gtk_container_foreach(GTK_CONTAINER(statusBar), reinterpret_cast<GtkCallback>(gtk_widget_destroy), nullptr);
 
     for (int player = 0; player < 2; ++player) {
@@ -369,6 +381,9 @@ void View::updateStatusBar(){
         gtk_widget_set_halign(playerBox, GTK_ALIGN_CENTER);
         gtk_widget_set_valign(playerBox, GTK_ALIGN_CENTER);
         gtk_box_pack_start(GTK_BOX(playerContainer), playerBox, TRUE, TRUE, 0);
+
+        GtkWidget* powerUpLabel = createPowerUpLabel(player);
+        gtk_box_pack_start(GTK_BOX(playerContainer), powerUpLabel, FALSE, FALSE, 0);
 
         gtk_box_pack_start(GTK_BOX(statusBar), playerContainer, TRUE, TRUE, 0);
     }
@@ -435,8 +450,8 @@ gboolean View::onClick(GtkWidget *widget, const GdkEventButton *event, gpointer 
     return TRUE;
 }
 
-void View::handleSelectTank(Tank* tank) {
-    if (tank->getPlayer() != currentPlayer || tank->isDestroyed()) {
+void View::handleSelectTank(Tank* tank) const {
+    if (tank->getPlayer()->getId() != currentPlayer || tank->isDestroyed()) {
         // No permitir seleccionar tanques del otro jugador o que estén destruidos
         return;
     }
@@ -446,7 +461,12 @@ void View::handleSelectTank(Tank* tank) {
 }
 
 void View::handleFireBullet(const Position &origin, const Position &target) {
-    bullet = new Bullet(origin, target);
+    bool maxDamage = false;
+    if (players[currentPlayer].getPowerUp() == ATTACK_POWER) {
+        maxDamage = true;
+    }
+    bullet = new Bullet(origin, target, maxDamage);
+
     traceDistance = bullet->getDistance() - 1;
     bulletTrace = new Position[traceDistance];
     g_timeout_add(30, handleMoveBullet, this);
@@ -482,7 +502,7 @@ gboolean View::handleMoveBullet(gpointer data) {
 
         if (view->bulletHitTank(view->bullet)) {
             Tank* tankHit = view->getTankOnPosition(view->bullet->getPosition());
-            tankHit->applyDamage();
+            tankHit->applyDamage(view->bullet->getMaxDamage());
 
             // Reproducir efecto de sonido de impacto
             view->soundManager.playSoundEffect("impact");
@@ -506,12 +526,12 @@ gboolean View::handleMoveBullet(gpointer data) {
                 g_timeout_add(100, View::animateExplosions, view);
 
                 // Verificar si todos los tanques del jugador han sido destruidos
-                if (view->areAllTanksDestroyed(tankHit->getPlayer())) {
-                    // Finalizar el juego
-                    view->endGameDueToDestruction(tankHit->getPlayer());
-                    view->update();
-                    return FALSE;
-                }
+                // if (view->areAllTanksDestroyed(tankHit->getPlayer())) {
+                //     // Finalizar el juego
+                //     view->endGameDueToDestruction(tankHit->getPlayer());
+                //     view->update();
+                //     return FALSE;
+                // }
             }
 
             view->destroyBullet();
@@ -747,6 +767,17 @@ void View::destroyBulletTrace(){
 void View::startTimer() {
     // Configurar una función que se llame cada segundo
     g_timeout_add_seconds(1, updateTimer, this);
+    g_timeout_add_seconds(20, grantPowerUp, this);
+}
+
+gboolean View::grantPowerUp(gpointer data) {
+    const auto* view = static_cast<View*>(data);
+    for (int i = 0; i < 2; i++) {
+        view->players[i].generatePowerUp();
+    }
+    view->update();
+
+    return TRUE;
 }
 
 // Implementación de updateTimer()
@@ -806,7 +837,7 @@ void View::endGameDueToTime() {
 bool View::areAllTanksDestroyed(int player) {
     for (int i = 0; i < 8; ++i) {
         Tank& tank = tanks[i];
-        if (tank.getPlayer() == player && !tank.isDestroyed()) {
+        if (tank.getPlayer()->getId() == player && !tank.isDestroyed()) {
             // Aún queda al menos un tanque de este jugador
             return false;
         }
@@ -868,7 +899,7 @@ int View::determineWinner() {
         if (!tank.isDestroyed()) {
             if (tank.getPlayer() == 0) {
                 tanksPlayer0++;
-            } else if (tank.getPlayer() == 1) {
+            } else if (tank.getPlayer()->getId() == 1) {
                 tanksPlayer1++;
             }
         }

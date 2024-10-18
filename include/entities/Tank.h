@@ -1,6 +1,7 @@
 #ifndef TANK_H
 #define TANK_H
 
+#include "Player.h"
 #include "Position.h"
 
 
@@ -34,8 +35,9 @@ public:
      *
      * @param color Tank color.
      * @param position Initial tank position.
+     * @param player Player that owns the tank.
      */
-    Tank(Color color, Position position, int player);
+    Tank(Color color, Position position, Player* player);
 
     /**
      * @brief Gets the current health of the tank.
@@ -100,13 +102,13 @@ public:
      */
     void setSelected(bool newState);
 
-    void applyDamage();
+    void applyDamage(bool maxDamage);
 
     /**
     * @brief Verifica si el tanque ha sido destruido.
     * @return True si el tanque está destruido.
     */
-    bool isDestroyed() const;
+    [[nodiscard]] bool isDestroyed() const;
 
     /**
      * @brief Marca el tanque como destruido.
@@ -114,8 +116,8 @@ public:
     void destroy();
 
     void setRotationAngle(double angle) { rotationAngle = angle; }
-    double getRotationAngle() const { return rotationAngle; }
-    int getPlayer() const { return player; }
+    [[nodiscard]] double getRotationAngle() const { return rotationAngle; }
+    [[nodiscard]] Player* getPlayer() const { return player; }
 
 private:
     int health; ///< The health of the tank (integer value).
@@ -123,7 +125,7 @@ private:
     int row, column; ///< The cell position of the tank in the grid map.
     bool selected = false; ///< Indicates if the tank is selected.
     double rotationAngle = 0.0; // Angulo de rotación en grados
-    int player;
+    Player* player;
     bool destroyed = false; ///< Indica si el tanque ha sido destruido.
 
     static constexpr int TANK_FULL_HEALTH = 100; ///< The full health of the tank.

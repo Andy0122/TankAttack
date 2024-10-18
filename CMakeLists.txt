@@ -48,6 +48,8 @@ add_executable(TankAttack
         src/entities/Bullet.cpp
         src/systems/Pathfinder.cpp
         src/systems/SoundManager.cpp
+        include/entities/Player.h
+        src/entities/Player.cpp
         # Añade otros archivos fuente según sea necesario
 )
 

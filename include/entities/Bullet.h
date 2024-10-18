@@ -23,7 +23,7 @@ public:
      * @param origin The position where the bullet is created.
      * @param target The position where the bullet is aimed.
      */
-    Bullet(Position origin, Position target);
+    Bullet(Position origin, Position target, bool maxDamage);
 
     /**
      * @brief Destroys the bullet.
@@ -50,6 +50,8 @@ public:
      * @return The distance the bullet has to travel.
      */
     [[nodiscard]] int getDistance() const;
+
+    [[nodiscard]] bool getMaxDamage() const;
 
     /**
      * @brief Sets the direction of the bullet.
@@ -78,6 +80,7 @@ private:
     Position position; ///< The position of the bullet.
     Position target; ///< The position where the bullet is aimed.
     Direction direction{}; ///< The direction of the bullet.
+    bool maxDamage; ///< If the bullet applies max damage.
     int distance; ///< The distance the bullet has to travel.
     int speed = 1; ///< The speed of the bullet.
     float bounceAngle = 0.0; ///< The angle of the bounce.
