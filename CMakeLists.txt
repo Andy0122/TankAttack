@@ -50,6 +50,8 @@ add_executable(TankAttack
         src/systems/SoundManager.cpp
         include/entities/Player.h
         src/entities/Player.cpp
+        include/data_structures/Queue.h
+        src/data_structures/Queue.cpp
         # Añade otros archivos fuente según sea necesario
 )
 

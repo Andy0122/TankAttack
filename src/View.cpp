@@ -6,6 +6,7 @@
 #include <cmath>
 #include "systems/SoundManager.h"
 
+//TODO: Implement A* movement to bullet, create a move bullet by step function
 
 View::View(GtkWidget *window) {
     this->window = window;
@@ -461,15 +462,29 @@ void View::handleSelectTank(Tank* tank) const {
 }
 
 void View::handleFireBullet(const Position &origin, const Position &target) {
-    bool maxDamage = false;
-    if (players[currentPlayer].getPowerUp() == ATTACK_POWER) {
-        maxDamage = true;
+    const POWER_UP currentPowerUp = players[currentPlayer].getPowerUp();
+
+    // Create bullet
+    bullet = new Bullet(origin, target);
+
+    if (currentPowerUp == ATTACK_POWER) {
+        bullet->setMaxDamage(true);
     }
-    bullet = new Bullet(origin, target, maxDamage);
+
+    // Calculate bullet path
+    const Pathfinder pathfinder(*gridMap);
+    Queue* path;
+
+    if (currentPowerUp == ATTACK_PRECISION) {
+        path = pathfinder.aStar(origin, target);
+    } else {
+        path = pathfinder.lineaVista(origin, target);
+    }
+    bullet->setPath(*path);
 
     traceDistance = bullet->getDistance() - 1;
     bulletTrace = new Position[traceDistance];
-    g_timeout_add(30, handleMoveBullet, this);
+    g_timeout_add(100, handleMoveBullet, this);
 
     // Reproducir efecto de sonido de disparo
     soundManager.playSoundEffect("fire");

@@ -114,44 +114,35 @@ std::vector<int> Pathfinder::dijkstra(int startId, int goalId) {
 }
 
 
-/**
- * @brief Verifica si hay línea de vista directa entre dos nodos (sin obstáculos en línea recta).
- * @param startId Identificador del nodo de inicio.
- * @param goalId Identificador del nodo objetivo.
- * @return Un vector con los nodos que forman el camino directo si existe, o vacío si no.
- */
-std::vector<int> Pathfinder::lineaVista(int startId, int goalId) {
-    int startRow = startId / graph.getCols();
-    int startCol = startId % graph.getCols();
-    int goalRow = goalId / graph.getCols();
-    int goalCol = goalId % graph.getCols();
 
-    std::vector<int> path;
+Queue* Pathfinder::lineaVista(Position start, Position goal) const {
+    auto [startRow, startCol] = start;
+    auto [goalRow, goalCol] = goal;
 
-    if (startRow == goalRow) {
-        // Moverse horizontalmente
-        int colIncrement = (goalCol > startCol) ? 1 : -1;
-        for (int col = startCol; col != goalCol + colIncrement; col += colIncrement) {
+    auto* path = new Queue();
+
+    if (startRow == goalRow) { // Move horizontally
+        const int colIncrement = goalCol > startCol ? 1 : -1;
+        for (int col = startCol + colIncrement; col != goalCol + colIncrement; col += colIncrement) {
             if (graph.isObstacle(startRow, col)) {
-                return {}; // Hay un obstáculo en el camino
+                return nullptr;
             }
-            path.push_back(graph.toIndex(startRow, col));
+            path->push(Position{startRow, col});
         }
         return path;
-    } else if (startCol == goalCol) {
-        // Moverse verticalmente
-        int rowIncrement = (goalRow > startRow) ? 1 : -1;
-        for (int row = startRow; row != goalRow + rowIncrement; row += rowIncrement) {
-            if (graph.isObstacle(row, startCol)) {
-                return {}; // Hay un obstáculo en el camino
-            }
-            path.push_back(graph.toIndex(row, startCol));
-        }
-        return path;
-    } else {
-        // No están alineados en fila o columna
-        return {};
     }
+    if (startCol == goalCol) { // Move vertically
+        const int rowIncrement = goalRow > startRow ? 1 : -1;
+        for (int row = startRow + rowIncrement; row != goalRow + rowIncrement; row += rowIncrement) {
+            if (graph.isObstacle(row, startCol)) {
+                return nullptr;
+            }
+            path->push(Position{row, startCol});
+        }
+        return path;
+    }
+
+    return nullptr;
 }
 
 /**
@@ -167,14 +158,15 @@ std::vector<int> Pathfinder::randomMovement(int startId, int goalId) {
 
     while (attempts < 4) {
         // Intentar línea de vista
-        std::vector<int> lineaVistaPath = lineaVista(currentId, goalId);
-        if (!lineaVistaPath.empty()) {
+        Queue* lineaVistaPath = lineaVista(Position{currentId / graph.getCols()}, Position{goalId % graph.getCols()});
+        if (!lineaVistaPath->empty()) {
             // Se encontró línea de vista directa
             // Evitar duplicar el nodo actual si ya está en totalPath
-            if (!totalPath.empty() && totalPath.back() == lineaVistaPath.front()) {
-                lineaVistaPath.erase(lineaVistaPath.begin());
+            if (!totalPath.empty() && totalPath.back() == graph.toIndex(lineaVistaPath->front().row, lineaVistaPath->front().column)) {
+                lineaVistaPath->pop();
             }
-            totalPath.insert(totalPath.end(), lineaVistaPath.begin(), lineaVistaPath.end());
+            totalPath.insert(totalPath.end(), graph.toIndex(lineaVistaPath->front().row, lineaVistaPath->front().column),
+                graph.toIndex(lineaVistaPath->back().row, lineaVistaPath->back().column));
             return totalPath;
         }
 
@@ -248,34 +240,34 @@ std::vector<int> Pathfinder::randomMovement(int startId, int goalId) {
 typedef std::pair<int, int> Pair;
 typedef std::pair<double, std::pair<int, int> > pPair;
 
-bool isDestination(int row, int col, Pair dest) {
+bool isDestination(const int row, const int col, const Pair &dest) {
     return row == dest.first && col == dest.second;
 }
 
-double calculateHValue(int row, int col, Pair dest) {
+double calculateHValue(const int row, const int col, const Pair &dest) {
     return ((double)sqrt((row - dest.first) * (row - dest.first) + (col - dest.second) * (col - dest.second)));
 }
 
-std::vector<int> Pathfinder::aStar(int startId, int goalId) {
-    if (graph.isValid(startId / graph.getCols(), startId % graph.getCols())) {
+Queue* Pathfinder::aStar(const Position start, const Position goal) const {
+    if (!graph.isValid(start.row, start.column)) {
         printf("Start node is invalid\n");
-        return {};
+        return nullptr;
     }
 
-    if (graph.isValid(goalId / graph.getCols(), goalId % graph.getCols())) {
+    if (!graph.isValid(goal.row, goal.column)) {
         printf("Goal node is invalid\n");
-        return {};
+        return nullptr;
     }
 
-    if (graph.isObstacle(startId / graph.getCols(), startId % graph.getCols())
-        || graph.isObstacle(goalId / graph.getCols(), goalId % graph.getCols())) {
+    if (graph.isObstacle(start.row, start.column)
+        || graph.isObstacle(goal.row, goal.column)) {
         printf("Start node is an obstacle\n");
-        return {};
+        return nullptr;
     }
 
-    if (startId == goalId) {
+    if (start == goal) {
         printf("Start node is the goal node\n");
-        return {};
+        return nullptr;
     }
 
     bool closedList[graph.getRows()][graph.getCols()];
@@ -295,8 +287,8 @@ std::vector<int> Pathfinder::aStar(int startId, int goalId) {
         }
     }
 
-    i = startId / graph.getCols();
-    j = startId % graph.getCols();
+    i = start.row;
+    j = start.column;
     cellDetails[i][j].f = 0.0;
     cellDetails[i][j].g = 0.0;
     cellDetails[i][j].h = 0.0;
@@ -309,14 +301,14 @@ std::vector<int> Pathfinder::aStar(int startId, int goalId) {
 
     bool foundDest = false;
 
-    vector<int> path;
+    auto* path = new Queue();
     while (!openList.empty()) {
-        pPair p = *openList.begin();
+        auto [fst, snd] = *openList.begin();
 
         openList.erase(openList.begin());
 
-        i = p.second.first;
-        j = p.second.second;
+        i = snd.first;
+        j = snd.second;
         closedList[i][j] = true;
 
         double gNew, hNew, fNew;
@@ -324,8 +316,8 @@ std::vector<int> Pathfinder::aStar(int startId, int goalId) {
         //----------- 1st Successor (North) ------------
 
         if (graph.isValid(i - 1, j)) {
-            path.push_back(graph.toIndex(i - 1, j));
-            if (isDestination(i - 1, j, {goalId / graph.getCols(), goalId % graph.getCols()})) {
+            path->push(Position{i - 1, j});
+            if (isDestination(i - 1, j, {goal.row, goal.column})) {
                 cellDetails[i - 1][j].parent_i = i;
                 cellDetails[i - 1][j].parent_j = j;
                 printf("The destination cell is found\n");
@@ -334,7 +326,7 @@ std::vector<int> Pathfinder::aStar(int startId, int goalId) {
 
             } else if (!closedList[i - 1][j] && !graph.isObstacle(i - 1, j)) {
                 gNew = cellDetails[i][j].g + 1.0;
-                hNew = calculateHValue(i - 1, j, {goalId / graph.getCols(), goalId % graph.getCols()});
+                hNew = calculateHValue(i - 1, j, {goal.row, goal.column});
                 fNew = gNew + hNew;
 
                 if (cellDetails[i - 1][j].f == FLT_MAX || cellDetails[i - 1][j].f > fNew) {
@@ -351,8 +343,8 @@ std::vector<int> Pathfinder::aStar(int startId, int goalId) {
 
         //----------- 2nd Successor (South) ------------
         if (graph.isValid(i + 1, j)) {
-            path.push_back(graph.toIndex(i + 1, j));
-            if (isDestination(i + 1, j, {goalId / graph.getCols(), goalId % graph.getCols()})) {
+            path->push(Position{i + 1, j});
+            if (isDestination(i + 1, j, {goal.row, goal.column})) {
                 cellDetails[i + 1][j].parent_i = i;
                 cellDetails[i + 1][j].parent_j = j;
                 printf("The destination cell is found\n");
@@ -361,7 +353,7 @@ std::vector<int> Pathfinder::aStar(int startId, int goalId) {
 
             } else if (!closedList[i + 1][j] && !graph.isObstacle(i + 1, j)) {
                 gNew = cellDetails[i][j].g + 1.0;
-                hNew = calculateHValue(i + 1, j, Pair(goalId / graph.getCols(), goalId % graph.getCols()));
+                hNew = calculateHValue(i + 1, j, Pair(goal.row, goal.column));
                 fNew = gNew + hNew;
 
                 if (cellDetails[i + 1][j].f == FLT_MAX || cellDetails[i + 1][j].f > fNew) {
@@ -378,8 +370,8 @@ std::vector<int> Pathfinder::aStar(int startId, int goalId) {
 
         //----------- 3rd Successor (East) ------------
         if (graph.isValid(i, j + 1)) {
-            path.push_back(graph.toIndex(i, j + 1));
-            if (isDestination(i, j + 1, {goalId / graph.getCols(), goalId % graph.getCols()})) {
+            path->push(Position{i, j + 1});
+            if (isDestination(i, j + 1, {goal.row, goal.column})) {
                 cellDetails[i][j + 1].parent_i = i;
                 cellDetails[i][j + 1].parent_j = j;
                 printf("The destination cell is found\n");
@@ -388,7 +380,7 @@ std::vector<int> Pathfinder::aStar(int startId, int goalId) {
 
             } else if (!closedList[i][j + 1] && !graph.isObstacle(i, j + 1)) {
                 gNew = cellDetails[i][j].g + 1.0;
-                hNew = calculateHValue(i, j + 1, Pair(goalId / graph.getCols(), goalId % graph.getCols()));
+                hNew = calculateHValue(i, j + 1, Pair(goal.row, goal.column));
                 fNew = gNew + hNew;
 
                 if (cellDetails[i][j + 1].f == FLT_MAX || cellDetails[i][j + 1].f > fNew) {
@@ -405,8 +397,8 @@ std::vector<int> Pathfinder::aStar(int startId, int goalId) {
 
         //----------- 4th Successor (West) ------------
         if (graph.isValid(i, j - 1)) {
-            path.push_back(graph.toIndex(i, j - 1));
-            if (isDestination(i, j - 1, {goalId / graph.getCols(), goalId % graph.getCols()})) {
+            path->push(Position{i, j - 1});
+            if (isDestination(i, j - 1, {goal.row, goal.column})) {
                 cellDetails[i][j - 1].parent_i = i;
                 cellDetails[i][j - 1].parent_j = j;
                 printf("The destination cell is found\n");
@@ -415,7 +407,7 @@ std::vector<int> Pathfinder::aStar(int startId, int goalId) {
 
             } else if (!closedList[i][j - 1] && !graph.isObstacle(i, j - 1)) {
                 gNew = cellDetails[i][j].g + 1.0;
-                hNew = calculateHValue(i, j - 1, Pair(goalId / graph.getCols(), goalId % graph.getCols()));
+                hNew = calculateHValue(i, j - 1, Pair(goal.row, goal.column));
                 fNew = gNew + hNew;
 
                 if (cellDetails[i][j - 1].f == FLT_MAX || cellDetails[i][j - 1].f > fNew) {
@@ -432,8 +424,8 @@ std::vector<int> Pathfinder::aStar(int startId, int goalId) {
 
         //----------- 5th Successor (North-East) ------------
         if (graph.isValid(i - 1, j + 1)) {
-            path.push_back(graph.toIndex(i - 1, j + 1));
-            if (isDestination(i - 1, j + 1, {goalId / graph.getCols(), goalId % graph.getCols()})) {
+            path->push(Position{i - 1, j + 1});
+            if (isDestination(i - 1, j + 1, {goal.row, goal.column})) {
                 cellDetails[i - 1][j + 1].parent_i = i;
                 cellDetails[i - 1][j + 1].parent_j = j;
                 printf("The destination cell is found\n");
@@ -442,7 +434,7 @@ std::vector<int> Pathfinder::aStar(int startId, int goalId) {
 
             } else if (!closedList[i - 1][j + 1] && !graph.isObstacle(i - 1, j + 1)) {
                 gNew = cellDetails[i][j].g + 1.0;
-                hNew = calculateHValue(i - 1, j + 1, Pair(goalId / graph.getCols(), goalId % graph.getCols()));
+                hNew = calculateHValue(i - 1, j + 1, Pair(goal.row, goal.column));
                 fNew = gNew + hNew;
 
                 if (cellDetails[i - 1][j + 1].f == FLT_MAX || cellDetails[i - 1][j + 1].f > fNew) {
@@ -459,8 +451,8 @@ std::vector<int> Pathfinder::aStar(int startId, int goalId) {
 
         //----------- 6th Successor (North-West)
         if (graph.isValid(i - 1, j - 1)) {
-            path.push_back(graph.toIndex(i - 1, j - 1));
-            if (isDestination(i - 1, j - 1, {goalId / graph.getCols(), goalId % graph.getCols()})) {
+            path->push(Position{i - 1, j - 1});
+            if (isDestination(i - 1, j - 1, {goal.row, goal.column})) {
                 cellDetails[i - 1][j - 1].parent_i = i;
                 cellDetails[i - 1][j - 1].parent_j = j;
                 printf("The destination cell is found\n");
@@ -469,7 +461,7 @@ std::vector<int> Pathfinder::aStar(int startId, int goalId) {
 
             } else if (!closedList[i - 1][j - 1] && !graph.isObstacle(i - 1, j - 1)) {
                 gNew = cellDetails[i][j].g + 1.0;
-                hNew = calculateHValue(i - 1, j - 1, Pair(goalId / graph.getCols(), goalId % graph.getCols()));
+                hNew = calculateHValue(i - 1, j - 1, Pair(goal.row, goal.column));
                 fNew = gNew + hNew;
 
                 if (cellDetails[i - 1][j - 1].f == FLT_MAX || cellDetails[i - 1][j - 1].f > fNew) {
@@ -486,8 +478,8 @@ std::vector<int> Pathfinder::aStar(int startId, int goalId) {
 
         //----------- 7th Successor (South-East)
         if (graph.isValid(i + 1, j + 1)) {
-            path.push_back(graph.toIndex(i + 1, j + 1));
-            if (isDestination(i + 1, j + 1, {goalId / graph.getCols(), goalId % graph.getCols()})) {
+            path->push(Position{i + 1, j + 1});
+            if (isDestination(i + 1, j + 1, {goal.row, goal.column})) {
                 cellDetails[i + 1][j + 1].parent_i = i;
                 cellDetails[i + 1][j + 1].parent_j = j;
                 printf("The destination cell is found\n");
@@ -496,7 +488,7 @@ std::vector<int> Pathfinder::aStar(int startId, int goalId) {
 
             } else if (!closedList[i + 1][j + 1] && !graph.isObstacle(i + 1, j + 1)) {
                 gNew = cellDetails[i][j].g + 1.0;
-                hNew = calculateHValue(i + 1, j + 1, Pair(goalId / graph.getCols(), goalId % graph.getCols()));
+                hNew = calculateHValue(i + 1, j + 1, Pair(goal.row, goal.column));
                 fNew = gNew + hNew;
 
                 if (cellDetails[i + 1][j + 1].f == FLT_MAX || cellDetails[i + 1][j + 1].f > fNew) {
@@ -513,8 +505,8 @@ std::vector<int> Pathfinder::aStar(int startId, int goalId) {
 
         //----------- 8th Successor (South-West)
         if (graph.isValid(i + 1, j - 1)) {
-            path.push_back(graph.toIndex(i + 1, j - 1));
-            if (isDestination(i + 1, j - 1, {goalId / graph.getCols(), goalId % graph.getCols()})) {
+            path->push(Position{i + 1, j - 1});
+            if (isDestination(i + 1, j - 1, {goal.row, goal.column})) {
                 cellDetails[i + 1][j - 1].parent_i = i;
                 cellDetails[i + 1][j - 1].parent_j = j;
                 printf("The destination cell is found\n");
@@ -523,7 +515,7 @@ std::vector<int> Pathfinder::aStar(int startId, int goalId) {
 
             } else if (!closedList[i + 1][j - 1] && !graph.isObstacle(i + 1, j - 1)) {
                 gNew = cellDetails[i][j].g + 1.0;
-                hNew = calculateHValue(i + 1, j - 1, Pair(goalId / graph.getCols(), goalId % graph.getCols()));
+                hNew = calculateHValue(i + 1, j - 1, Pair(goal.row, goal.column));
                 fNew = gNew + hNew;
 
                 if (cellDetails[i + 1][j - 1].f == FLT_MAX || cellDetails[i + 1][j - 1].f > fNew) {
@@ -542,5 +534,5 @@ std::vector<int> Pathfinder::aStar(int startId, int goalId) {
     if (foundDest == false) {
         printf("Failed to find the destination cell\n");
     }
-    return {};
+    return nullptr;
 }

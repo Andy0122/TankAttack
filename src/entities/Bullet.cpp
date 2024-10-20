@@ -1,8 +1,8 @@
 #include "entities/Bullet.h"
 #include <cmath>
 
-Bullet::Bullet(const Position origin, const Position target, const bool attackPower)
-    : position(origin), target(target), maxDamage(attackPower) {
+Bullet::Bullet(const Position origin, const Position target)
+    : position(origin), target(target) {
     calculateDirection(origin, target);
     distance = calculateDistance();
 }
@@ -27,24 +27,23 @@ void Bullet::setDirection(const Direction newDirection) {
     direction = newDirection;
 }
 
+void Bullet::setMaxDamage(const bool maxDamage) {
+    this->maxDamage = maxDamage;
+}
+
+void Bullet::setPath(Queue& path) {
+    this->path = &path;
+}
+
 bool Bullet::move() {
-    if (distance != 0) {
-        if (attackPrecision) {
-            // A* algorithm
-        } else {
-            // Linear movement
-        }
+    if (!path->empty()) {
+        auto [row, column] = path->front();
+        position.row = row;
+        position.column = column;
 
-        if (position.row != target.row) {
-            position.row += speed * direction.y;
-        }
-        if (position.column != target.column) {
-            position.column += speed * direction.x;
-        }
+        path->pop();
 
-        distance -= 1;
-
-        return distance == 0;
+        return false;
     }
 
     return true;

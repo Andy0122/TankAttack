@@ -2,6 +2,7 @@
 #define BULLET_H
 
 #include "Position.h"
+#include "data_structures/Queue.h"
 
 /**
  * @brief Represents a unitary vector for the direction of the bullet.
@@ -22,9 +23,8 @@ public:
      *
      * @param origin The position where the bullet is created.
      * @param target The position where the bullet is aimed.
-     * @param attackPower If the attack power is activated.
      */
-    Bullet(Position origin, Position target, bool attackPower);
+    Bullet(Position origin, Position target);
 
     /**
      * @brief Destroys the bullet.
@@ -61,6 +61,10 @@ public:
      */
     void setDirection(Direction newDirection);
 
+    void setMaxDamage(bool maxDamage);
+
+    void setPath(Queue& path);
+
     /**
     * @brief Moves the bullet.
     *
@@ -81,8 +85,8 @@ private:
     Position position; ///< The position of the bullet.
     Position target; ///< The position where the bullet is aimed.
     Direction direction{}; ///< The direction of the bullet.
-    bool maxDamage; ///< If the bullet applies max damage.
-    bool attackPrecision; ///< If the bullet applies attack precision.
+    Queue* path = nullptr; ///< The path the bullet has to follow.
+    bool maxDamage = false; ///< If the bullet applies max damage.
     int distance; ///< The distance the bullet has to travel.
     int speed = 1; ///< The speed of the bullet.
     float bounceAngle = 0.0; ///< The angle of the bounce.
