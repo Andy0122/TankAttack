@@ -54,6 +54,10 @@ public:
 
     [[nodiscard]] bool getMaxDamage() const;
 
+    [[nodiscard]] Queue* getPath() const;
+
+    [[nodiscard]] bool reachedTarget() const;
+
     /**
      * @brief Sets the direction of the bullet.
      *

@@ -4,6 +4,7 @@
 #include <string>
 #include <gtk/gtk.h>
 
+#include "data_structures/LinkedList.h"
 #include "entities/Bullet.h"
 #include "entities/Tank.h"
 #include "systems/GridGraph.h"
@@ -51,8 +52,7 @@ private:
     Player* players = nullptr;            ///< Arreglo de jugadores del juego
     Tank* tanks = nullptr;               ///< Arreglo de tanques del juego
     Bullet* bullet = nullptr;            ///< Bala actual en el juego
-    Position* bulletTrace = nullptr;     ///< Rastreo del movimiento de la bala
-    int traceDistance = 0;               ///< Distancia del camino de la bala
+    LinkedList* bulletTrace = nullptr;     ///< Rastreo del movimiento de la bala
     GridGraph* gridMap = nullptr;        ///< Mapa del juego
     bool gameOver = false;               ///< Indicador de fin del juego
 
@@ -312,6 +312,8 @@ private:
      * @param target Posición objetivo.
      */
     void handleFireBullet(const Position& origin, const Position& target);
+
+    void createBullet(const Position& origin, const Position& target, POWER_UP powerUp);
 
     /**
      * @brief Maneja el movimiento de la bala.

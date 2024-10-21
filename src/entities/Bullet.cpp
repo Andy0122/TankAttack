@@ -23,6 +23,14 @@ bool Bullet::getMaxDamage() const {
     return maxDamage;
 }
 
+Queue* Bullet::getPath() const {
+    return path;
+}
+
+bool Bullet::reachedTarget() const {
+    return path->empty();
+}
+
 void Bullet::setDirection(const Direction newDirection) {
     direction = newDirection;
 }

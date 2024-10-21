@@ -52,9 +52,8 @@ void View::update() const {
 }
 
 void View::addTrace() const {
-    if (const int currentIndex = traceDistance + 1 - bullet->getDistance() - 1;
-        0 <= currentIndex && currentIndex < traceDistance) {
-        bulletTrace[currentIndex] = bullet->getPosition();
+    if (bulletTrace) {
+        bulletTrace->append(bullet->getPosition());
     }
 }
 
@@ -227,10 +226,10 @@ gboolean View::onDraw(GtkWidget *widget, cairo_t *cr, gpointer data) {
     view->drawMap(cr);
     view->drawTanks(cr);
     view->drawExplosions(cr);
+    view->drawBulletTrace(cr);
+    view->drawBullet(cr);
     view->updateStatusBar();
     view->updatePlayerLabels();
-    view->drawBullet(cr);
-    view->drawBulletTrace(cr);
 
     return FALSE;
 }
@@ -404,9 +403,8 @@ void View::drawBullet(cairo_t *cr) const {
 void View::drawBulletTrace(cairo_t *cr) const {
     if (bullet && bulletTrace) {
         cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-        const int current = traceDistance - bullet->getDistance();
-        for (int i = 0; i < current; i++) {
-            const auto [row, column] = bulletTrace[i];
+        for (int i = 0; i < bulletTrace->size(); i++) {
+            const auto [row, column] = bulletTrace->at(i);
             const double x = column * CELL_SIZE + (CELL_SIZE - TRACE_SIZE) / 2;
             const double y = row * CELL_SIZE + (CELL_SIZE - TRACE_SIZE) / 2;
             cairo_rectangle(cr, x, y, TRACE_SIZE, TRACE_SIZE);
@@ -464,26 +462,10 @@ void View::handleSelectTank(Tank* tank) const {
 void View::handleFireBullet(const Position &origin, const Position &target) {
     const POWER_UP currentPowerUp = players[currentPlayer].getPowerUp();
 
-    // Create bullet
-    bullet = new Bullet(origin, target);
+    createBullet(origin, target, currentPowerUp);
 
-    if (currentPowerUp == ATTACK_POWER) {
-        bullet->setMaxDamage(true);
-    }
+    bulletTrace = new LinkedList();
 
-    // Calculate bullet path
-    const Pathfinder pathfinder(*gridMap);
-    Queue* path;
-
-    if (currentPowerUp == ATTACK_PRECISION) {
-        path = pathfinder.aStar(origin, target);
-    } else {
-        path = pathfinder.lineaVista(origin, target);
-    }
-    bullet->setPath(*path);
-
-    traceDistance = bullet->getDistance() - 1;
-    bulletTrace = new Position[traceDistance];
     g_timeout_add(100, handleMoveBullet, this);
 
     // Reproducir efecto de sonido de disparo
@@ -500,9 +482,29 @@ void View::handleFireBullet(const Position &origin, const Position &target) {
     update();
 }
 
+void View::createBullet(const Position& origin, const Position& target, const POWER_UP powerUp) {
+    bullet = new Bullet(origin, target);
+
+    if (powerUp == ATTACK_POWER) {
+        bullet->setMaxDamage(true);
+    }
+
+    // Calculate bullet path
+    const Pathfinder pathfinder(*gridMap);
+    Queue* path;
+
+    if (powerUp == ATTACK_PRECISION) {
+        path = pathfinder.aStar(origin, target);
+    } else {
+        path = pathfinder.lineaVista(origin, target);
+    }
+    bullet->setPath(*path);
+}
+
+
 gboolean View::handleMoveBullet(gpointer data) {
     auto* view = static_cast<View*>(data);
-    if (view->bullet) {
+    if (view->bullet && view->bullet->getPath() != nullptr) {
 
         if (view->gameOver) {
             return FALSE;
@@ -559,7 +561,10 @@ gboolean View::handleMoveBullet(gpointer data) {
             handleBulletBounce(view->bullet);
         }
 
-        view->addTrace();
+        if (!view->bullet->reachedTarget()) {
+            view->addTrace();
+        }
+
         view->update();
         return TRUE;
     }
@@ -770,11 +775,11 @@ void View::destroyBullet() {
         bullet = nullptr;
     }
 }
+
 void View::destroyBulletTrace(){
     if (bulletTrace) {
-        delete[] bulletTrace;
+        delete bulletTrace;
         bulletTrace = nullptr;
-        traceDistance = 0;
     }
 }
 

@@ -37,5 +37,5 @@ void Player::generatePowerUp() {
     // std::uniform_int_distribution<> dis(0, 4);
     //
     // powerUp = static_cast<POWER_UP>(dis(gen));
-    powerUp = ATTACK_PRECISION; // Temporal
+    powerUp = ATTACK_POWER; // Temporal
 }
