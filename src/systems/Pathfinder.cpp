@@ -292,7 +292,6 @@ Stack* tracePath(cell cellDetails[][COL], const Position dest) {
         col = temp_col;
     }
 
-    path->push(Position{row, col});
     return path;
     while (!path->empty()) {
         Position p = path->top();
