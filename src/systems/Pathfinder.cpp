@@ -9,7 +9,14 @@
 #include <float.h>
 #include <bits/stdc++.h>
 
+#include "data_structures/Stack.h"
+
 using namespace  std;
+using namespace DATA_STRUCTURES;
+
+#define ROW 13
+#define COL 25
+
 
 /**
  * @brief Constructor del Pathfinder.
@@ -244,41 +251,90 @@ bool isDestination(const int row, const int col, const Pair &dest) {
     return row == dest.first && col == dest.second;
 }
 
-double calculateHValue(const int row, const int col, const Pair &dest) {
-    return ((double)sqrt((row - dest.first) * (row - dest.first) + (col - dest.second) * (col - dest.second)));
+double calculateHValue(const int row, const int col, const Position &dest) {
+    return sqrt((row - dest.row) * (row - dest.row) + (col - dest.column) * (col - dest.column));
 }
 
-Queue* Pathfinder::aStar(const Position start, const Position goal) const {
-    if (!graph.isValid(start.row, start.column)) {
+void convertStackToQueue(Stack& stack, Queue& queue) {
+    while (!stack.empty()) {
+        queue.push(stack.top());
+        stack.pop();
+    }
+}
+
+bool isDestination(int row, int col, Position dest)
+{
+    if (row == dest.row && col == dest.column)
+        return (true);
+    else
+        return (false);
+}
+
+bool isValid(int row, int col)
+{
+    // Returns true if row number and column number
+    // is in range
+    return (row >= 0) && (row < ROW) && (col >= 0)
+           && (col < COL);
+}
+
+Stack* tracePath(cell cellDetails[][COL], const Position dest) {
+    auto [row, col] = dest;
+
+    auto* path = new Stack();
+
+    while (!(cellDetails[row][col].parent_i == row
+            && cellDetails[row][col].parent_j == col)) {
+        path->push(Position{row, col});
+        const int temp_row = cellDetails[row][col].parent_i;
+        const int temp_col = cellDetails[row][col].parent_j;
+        row = temp_row;
+        col = temp_col;
+    }
+
+    path->push(Position{row, col});
+    return path;
+    while (!path->empty()) {
+        Position p = path->top();
+        path->pop();
+        printf("-> (%d, %d)", p.row, p.column);
+    }
+}
+
+//Finish A* algorithm
+Stack* Pathfinder::aStar(const Position src, const Position dest) const {
+    if (!GridGraph::isValid(src.row, src.column)) {
         printf("Start node is invalid\n");
         return nullptr;
     }
 
-    if (!graph.isValid(goal.row, goal.column)) {
+    if (!GridGraph::isValid(dest.row, dest.column)) {
         printf("Goal node is invalid\n");
         return nullptr;
     }
 
-    if (graph.isObstacle(start.row, start.column)
-        || graph.isObstacle(goal.row, goal.column)) {
+    if (graph.isObstacle(src.row, src.column)
+        || graph.isObstacle(dest.row, dest.column)) {
         printf("Start node is an obstacle\n");
         return nullptr;
     }
 
-    if (start == goal) {
-        printf("Start node is the goal node\n");
+    if (src == dest) {
+        printf("Source node is the destination node\n");
         return nullptr;
     }
 
-    bool closedList[graph.getRows()][graph.getCols()];
+    bool closedList[ROW][COL];
     memset(closedList, false, sizeof(closedList));
 
-    cell cellDetails[graph.getRows()][graph.getCols()];
+    // Declare a 2D array of structure to hold the details
+    // of that cell
+    cell cellDetails[ROW][COL];
 
     int i, j;
 
-    for (i = 0; i < graph.getRows(); i++) {
-        for (j = 0; j < graph.getCols(); j++) {
+    for (i = 0; i < ROW; i++) {
+        for (j = 0; j < COL; j++) {
             cellDetails[i][j].f = FLT_MAX;
             cellDetails[i][j].g = FLT_MAX;
             cellDetails[i][j].h = FLT_MAX;
@@ -287,51 +343,104 @@ Queue* Pathfinder::aStar(const Position start, const Position goal) const {
         }
     }
 
-    i = start.row;
-    j = start.column;
+    // Initialising the parameters of the starting node
+    i = src.row, j = src.column;
     cellDetails[i][j].f = 0.0;
     cellDetails[i][j].g = 0.0;
     cellDetails[i][j].h = 0.0;
     cellDetails[i][j].parent_i = i;
     cellDetails[i][j].parent_j = j;
 
+    /*
+     Create an open list having information as-
+     <f, <i, j>>
+     where f = g + h,
+     and i, j are the row and column index of that cell
+     Note that 0 <= i <= ROW-1 & 0 <= j <= COL-1
+     This open list is implemented as a set of pair of
+     pair.*/
     set<pPair> openList;
 
-    openList.insert(make_pair(0.0, make_pair(1, j)));
+    // Put the starting cell on the open list and set its
+    // 'f' as 0
+    openList.insert(make_pair(0.0, make_pair(i, j)));
 
+    // We set this boolean value as false as initially
+    // the destination is not reached.
     bool foundDest = false;
 
-    auto* path = new Queue();
     while (!openList.empty()) {
-        auto [fst, snd] = *openList.begin();
+        pPair p = *openList.begin();
 
+        // Remove this vertex from the open list
         openList.erase(openList.begin());
 
-        i = snd.first;
-        j = snd.second;
+        // Add this vertex to the closed list
+        i = p.second.first;
+        j = p.second.second;
         closedList[i][j] = true;
 
+        /*
+         Generating all the 8 successor of this cell
+
+             N.W   N   N.E
+               \   |   /
+                \  |  /
+             W----Cell----E
+                  / | \
+                /   |  \
+             S.W    S   S.E
+
+         Cell-->Popped Cell (i, j)
+         N -->  North       (i-1, j)
+         S -->  South       (i+1, j)
+         E -->  East        (i, j+1)
+         W -->  West           (i, j-1)
+         N.E--> North-East  (i-1, j+1)
+         N.W--> North-West  (i-1, j-1)
+         S.E--> South-East  (i+1, j+1)
+         S.W--> South-West  (i+1, j-1)*/
+
+        // To store the 'g', 'h' and 'f' of the 8 successors
         double gNew, hNew, fNew;
 
         //----------- 1st Successor (North) ------------
 
-        if (graph.isValid(i - 1, j)) {
-            path->push(Position{i - 1, j});
-            if (isDestination(i - 1, j, {goal.row, goal.column})) {
+        // Only process this cell if this is a valid one
+        if (GridGraph::isValid(i - 1, j) == true) {
+            // If the destination cell is the same as the
+            // current successor
+            if (isDestination(i - 1, j, dest) == true) {
+                // Set the Parent of the destination cell
                 cellDetails[i - 1][j].parent_i = i;
                 cellDetails[i - 1][j].parent_j = j;
                 printf("The destination cell is found\n");
                 foundDest = true;
-                return path;
-
-            } else if (!closedList[i - 1][j] && !graph.isObstacle(i - 1, j)) {
+                return tracePath(cellDetails, dest);;
+            }
+            // If the successor is already on the closed
+            // list or if it is blocked, then ignore it.
+            // Else do the following
+            else if (closedList[i - 1][j] == false
+                     && !graph.isObstacle(i - 1, j)) {
                 gNew = cellDetails[i][j].g + 1.0;
-                hNew = calculateHValue(i - 1, j, {goal.row, goal.column});
+                hNew = calculateHValue(i - 1, j, dest);
                 fNew = gNew + hNew;
 
-                if (cellDetails[i - 1][j].f == FLT_MAX || cellDetails[i - 1][j].f > fNew) {
-                    openList.insert(make_pair(fNew, make_pair(i - 1, j)));
+                // If it isn’t on the open list, add it to
+                // the open list. Make the current square
+                // the parent of this square. Record the
+                // f, g, and h costs of the square cell
+                //                OR
+                // If it is on the open list already, check
+                // to see if this path to that square is
+                // better, using 'f' cost as the measure.
+                if (cellDetails[i - 1][j].f == FLT_MAX
+                    || cellDetails[i - 1][j].f > fNew) {
+                    openList.insert(make_pair(
+                        fNew, make_pair(i - 1, j)));
 
+                    // Update the details of this cell
                     cellDetails[i - 1][j].f = fNew;
                     cellDetails[i - 1][j].g = gNew;
                     cellDetails[i - 1][j].h = hNew;
@@ -342,23 +451,41 @@ Queue* Pathfinder::aStar(const Position start, const Position goal) const {
         }
 
         //----------- 2nd Successor (South) ------------
-        if (graph.isValid(i + 1, j)) {
-            path->push(Position{i + 1, j});
-            if (isDestination(i + 1, j, {goal.row, goal.column})) {
+
+        // Only process this cell if this is a valid one
+        if (isValid(i + 1, j) == true) {
+            // If the destination cell is the same as the
+            // current successor
+            if (isDestination(i + 1, j, dest) == true) {
+                // Set the Parent of the destination cell
                 cellDetails[i + 1][j].parent_i = i;
                 cellDetails[i + 1][j].parent_j = j;
                 printf("The destination cell is found\n");
+                return tracePath(cellDetails, dest);
                 foundDest = true;
-                return path;
-
-            } else if (!closedList[i + 1][j] && !graph.isObstacle(i + 1, j)) {
+            }
+            // If the successor is already on the closed
+            // list or if it is blocked, then ignore it.
+            // Else do the following
+            else if (closedList[i + 1][j] == false
+                     && !graph.isObstacle(i + 1, j)) {
                 gNew = cellDetails[i][j].g + 1.0;
-                hNew = calculateHValue(i + 1, j, Pair(goal.row, goal.column));
+                hNew = calculateHValue(i + 1, j, dest);
                 fNew = gNew + hNew;
 
-                if (cellDetails[i + 1][j].f == FLT_MAX || cellDetails[i + 1][j].f > fNew) {
-                    openList.insert(make_pair(fNew, make_pair(i + 1, j)));
-
+                // If it isn’t on the open list, add it to
+                // the open list. Make the current square
+                // the parent of this square. Record the
+                // f, g, and h costs of the square cell
+                //                OR
+                // If it is on the open list already, check
+                // to see if this path to that square is
+                // better, using 'f' cost as the measure.
+                if (cellDetails[i + 1][j].f == FLT_MAX
+                    || cellDetails[i + 1][j].f > fNew) {
+                    openList.insert(make_pair(
+                        fNew, make_pair(i + 1, j)));
+                    // Update the details of this cell
                     cellDetails[i + 1][j].f = fNew;
                     cellDetails[i + 1][j].g = gNew;
                     cellDetails[i + 1][j].h = hNew;
@@ -369,23 +496,43 @@ Queue* Pathfinder::aStar(const Position start, const Position goal) const {
         }
 
         //----------- 3rd Successor (East) ------------
-        if (graph.isValid(i, j + 1)) {
-            path->push(Position{i, j + 1});
-            if (isDestination(i, j + 1, {goal.row, goal.column})) {
+
+        // Only process this cell if this is a valid one
+        if (isValid(i, j + 1) == true) {
+            // If the destination cell is the same as the
+            // current successor
+            if (isDestination(i, j + 1, dest) == true) {
+                // Set the Parent of the destination cell
                 cellDetails[i][j + 1].parent_i = i;
                 cellDetails[i][j + 1].parent_j = j;
                 printf("The destination cell is found\n");
+                return tracePath(cellDetails, dest);
                 foundDest = true;
-                return path;
+            }
 
-            } else if (!closedList[i][j + 1] && !graph.isObstacle(i, j + 1)) {
+            // If the successor is already on the closed
+            // list or if it is blocked, then ignore it.
+            // Else do the following
+            else if (closedList[i][j + 1] == false
+                     && !graph.isObstacle(i, j + 1)) {
                 gNew = cellDetails[i][j].g + 1.0;
-                hNew = calculateHValue(i, j + 1, Pair(goal.row, goal.column));
+                hNew = calculateHValue(i, j + 1, dest);
                 fNew = gNew + hNew;
 
-                if (cellDetails[i][j + 1].f == FLT_MAX || cellDetails[i][j + 1].f > fNew) {
-                    openList.insert(make_pair(fNew, make_pair(i, j + 1)));
+                // If it isn’t on the open list, add it to
+                // the open list. Make the current square
+                // the parent of this square. Record the
+                // f, g, and h costs of the square cell
+                //                OR
+                // If it is on the open list already, check
+                // to see if this path to that square is
+                // better, using 'f' cost as the measure.
+                if (cellDetails[i][j + 1].f == FLT_MAX
+                    || cellDetails[i][j + 1].f > fNew) {
+                    openList.insert(make_pair(
+                        fNew, make_pair(i, j + 1)));
 
+                    // Update the details of this cell
                     cellDetails[i][j + 1].f = fNew;
                     cellDetails[i][j + 1].g = gNew;
                     cellDetails[i][j + 1].h = hNew;
@@ -396,23 +543,43 @@ Queue* Pathfinder::aStar(const Position start, const Position goal) const {
         }
 
         //----------- 4th Successor (West) ------------
-        if (graph.isValid(i, j - 1)) {
-            path->push(Position{i, j - 1});
-            if (isDestination(i, j - 1, {goal.row, goal.column})) {
+
+        // Only process this cell if this is a valid one
+        if (isValid(i, j - 1) == true) {
+            // If the destination cell is the same as the
+            // current successor
+            if (isDestination(i, j - 1, dest) == true) {
+                // Set the Parent of the destination cell
                 cellDetails[i][j - 1].parent_i = i;
                 cellDetails[i][j - 1].parent_j = j;
                 printf("The destination cell is found\n");
+                return tracePath(cellDetails, dest);
                 foundDest = true;
-                return path;
+            }
 
-            } else if (!closedList[i][j - 1] && !graph.isObstacle(i, j - 1)) {
+            // If the successor is already on the closed
+            // list or if it is blocked, then ignore it.
+            // Else do the following
+            else if (closedList[i][j - 1] == false
+                     && !graph.isObstacle(i, j - 1)) {
                 gNew = cellDetails[i][j].g + 1.0;
-                hNew = calculateHValue(i, j - 1, Pair(goal.row, goal.column));
+                hNew = calculateHValue(i, j - 1, dest);
                 fNew = gNew + hNew;
 
-                if (cellDetails[i][j - 1].f == FLT_MAX || cellDetails[i][j - 1].f > fNew) {
-                    openList.insert(make_pair(fNew, make_pair(i, j - 1)));
+                // If it isn’t on the open list, add it to
+                // the open list. Make the current square
+                // the parent of this square. Record the
+                // f, g, and h costs of the square cell
+                //                OR
+                // If it is on the open list already, check
+                // to see if this path to that square is
+                // better, using 'f' cost as the measure.
+                if (cellDetails[i][j - 1].f == FLT_MAX
+                    || cellDetails[i][j - 1].f > fNew) {
+                    openList.insert(make_pair(
+                        fNew, make_pair(i, j - 1)));
 
+                    // Update the details of this cell
                     cellDetails[i][j - 1].f = fNew;
                     cellDetails[i][j - 1].g = gNew;
                     cellDetails[i][j - 1].h = hNew;
@@ -422,24 +589,45 @@ Queue* Pathfinder::aStar(const Position start, const Position goal) const {
             }
         }
 
-        //----------- 5th Successor (North-East) ------------
-        if (graph.isValid(i - 1, j + 1)) {
-            path->push(Position{i - 1, j + 1});
-            if (isDestination(i - 1, j + 1, {goal.row, goal.column})) {
+        //----------- 5th Successor (North-East)
+        //------------
+
+        // Only process this cell if this is a valid one
+        if (isValid(i - 1, j + 1) == true) {
+            // If the destination cell is the same as the
+            // current successor
+            if (isDestination(i - 1, j + 1, dest) == true) {
+                // Set the Parent of the destination cell
                 cellDetails[i - 1][j + 1].parent_i = i;
                 cellDetails[i - 1][j + 1].parent_j = j;
                 printf("The destination cell is found\n");
+                return tracePath(cellDetails, dest);
                 foundDest = true;
-                return path;
+            }
 
-            } else if (!closedList[i - 1][j + 1] && !graph.isObstacle(i - 1, j + 1)) {
-                gNew = cellDetails[i][j].g + 1.0;
-                hNew = calculateHValue(i - 1, j + 1, Pair(goal.row, goal.column));
+            // If the successor is already on the closed
+            // list or if it is blocked, then ignore it.
+            // Else do the following
+            else if (closedList[i - 1][j + 1] == false
+                     && !graph.isObstacle(i - 1, j + 1)) {
+                gNew = cellDetails[i][j].g + 1.414;
+                hNew = calculateHValue(i - 1, j + 1, dest);
                 fNew = gNew + hNew;
 
-                if (cellDetails[i - 1][j + 1].f == FLT_MAX || cellDetails[i - 1][j + 1].f > fNew) {
-                    openList.insert(make_pair(fNew, make_pair(i - 1, j + 1)));
+                // If it isn’t on the open list, add it to
+                // the open list. Make the current square
+                // the parent of this square. Record the
+                // f, g, and h costs of the square cell
+                //                OR
+                // If it is on the open list already, check
+                // to see if this path to that square is
+                // better, using 'f' cost as the measure.
+                if (cellDetails[i - 1][j + 1].f == FLT_MAX
+                    || cellDetails[i - 1][j + 1].f > fNew) {
+                    openList.insert(make_pair(
+                        fNew, make_pair(i - 1, j + 1)));
 
+                    // Update the details of this cell
                     cellDetails[i - 1][j + 1].f = fNew;
                     cellDetails[i - 1][j + 1].g = gNew;
                     cellDetails[i - 1][j + 1].h = hNew;
@@ -450,23 +638,43 @@ Queue* Pathfinder::aStar(const Position start, const Position goal) const {
         }
 
         //----------- 6th Successor (North-West)
-        if (graph.isValid(i - 1, j - 1)) {
-            path->push(Position{i - 1, j - 1});
-            if (isDestination(i - 1, j - 1, {goal.row, goal.column})) {
+        //------------
+
+        // Only process this cell if this is a valid one
+        if (isValid(i - 1, j - 1) == true) {
+            // If the destination cell is the same as the
+            // current successor
+            if (isDestination(i - 1, j - 1, dest) == true) {
+                // Set the Parent of the destination cell
                 cellDetails[i - 1][j - 1].parent_i = i;
                 cellDetails[i - 1][j - 1].parent_j = j;
                 printf("The destination cell is found\n");
+                return tracePath(cellDetails, dest);
                 foundDest = true;
-                return path;
+            }
 
-            } else if (!closedList[i - 1][j - 1] && !graph.isObstacle(i - 1, j - 1)) {
-                gNew = cellDetails[i][j].g + 1.0;
-                hNew = calculateHValue(i - 1, j - 1, Pair(goal.row, goal.column));
+            // If the successor is already on the closed
+            // list or if it is blocked, then ignore it.
+            // Else do the following
+            else if (closedList[i - 1][j - 1] == false
+                     && !graph.isObstacle(i - 1, j - 1)) {
+                gNew = cellDetails[i][j].g + 1.414;
+                hNew = calculateHValue(i - 1, j - 1, dest);
                 fNew = gNew + hNew;
 
-                if (cellDetails[i - 1][j - 1].f == FLT_MAX || cellDetails[i - 1][j - 1].f > fNew) {
-                    openList.insert(make_pair(fNew, make_pair(i - 1, j - 1)));
-
+                // If it isn’t on the open list, add it to
+                // the open list. Make the current square
+                // the parent of this square. Record the
+                // f, g, and h costs of the square cell
+                //                OR
+                // If it is on the open list already, check
+                // to see if this path to that square is
+                // better, using 'f' cost as the measure.
+                if (cellDetails[i - 1][j - 1].f == FLT_MAX
+                    || cellDetails[i - 1][j - 1].f > fNew) {
+                    openList.insert(make_pair(
+                        fNew, make_pair(i - 1, j - 1)));
+                    // Update the details of this cell
                     cellDetails[i - 1][j - 1].f = fNew;
                     cellDetails[i - 1][j - 1].g = gNew;
                     cellDetails[i - 1][j - 1].h = hNew;
@@ -477,23 +685,44 @@ Queue* Pathfinder::aStar(const Position start, const Position goal) const {
         }
 
         //----------- 7th Successor (South-East)
-        if (graph.isValid(i + 1, j + 1)) {
-            path->push(Position{i + 1, j + 1});
-            if (isDestination(i + 1, j + 1, {goal.row, goal.column})) {
+        //------------
+
+        // Only process this cell if this is a valid one
+        if (isValid(i + 1, j + 1) == true) {
+            // If the destination cell is the same as the
+            // current successor
+            if (isDestination(i + 1, j + 1, dest) == true) {
+                // Set the Parent of the destination cell
                 cellDetails[i + 1][j + 1].parent_i = i;
                 cellDetails[i + 1][j + 1].parent_j = j;
                 printf("The destination cell is found\n");
+                return tracePath(cellDetails, dest);
                 foundDest = true;
-                return path;
+            }
 
-            } else if (!closedList[i + 1][j + 1] && !graph.isObstacle(i + 1, j + 1)) {
-                gNew = cellDetails[i][j].g + 1.0;
-                hNew = calculateHValue(i + 1, j + 1, Pair(goal.row, goal.column));
+            // If the successor is already on the closed
+            // list or if it is blocked, then ignore it.
+            // Else do the following
+            else if (closedList[i + 1][j + 1] == false
+                     && !graph.isObstacle(i + 1, j + 1)) {
+                gNew = cellDetails[i][j].g + 1.414;
+                hNew = calculateHValue(i + 1, j + 1, dest);
                 fNew = gNew + hNew;
 
-                if (cellDetails[i + 1][j + 1].f == FLT_MAX || cellDetails[i + 1][j + 1].f > fNew) {
-                    openList.insert(make_pair(fNew, make_pair(i + 1, j + 1)));
+                // If it isn’t on the open list, add it to
+                // the open list. Make the current square
+                // the parent of this square. Record the
+                // f, g, and h costs of the square cell
+                //                OR
+                // If it is on the open list already, check
+                // to see if this path to that square is
+                // better, using 'f' cost as the measure.
+                if (cellDetails[i + 1][j + 1].f == FLT_MAX
+                    || cellDetails[i + 1][j + 1].f > fNew) {
+                    openList.insert(make_pair(
+                        fNew, make_pair(i + 1, j + 1)));
 
+                    // Update the details of this cell
                     cellDetails[i + 1][j + 1].f = fNew;
                     cellDetails[i + 1][j + 1].g = gNew;
                     cellDetails[i + 1][j + 1].h = hNew;
@@ -504,23 +733,44 @@ Queue* Pathfinder::aStar(const Position start, const Position goal) const {
         }
 
         //----------- 8th Successor (South-West)
-        if (graph.isValid(i + 1, j - 1)) {
-            path->push(Position{i + 1, j - 1});
-            if (isDestination(i + 1, j - 1, {goal.row, goal.column})) {
+        //------------
+
+        // Only process this cell if this is a valid one
+        if (isValid(i + 1, j - 1) == true) {
+            // If the destination cell is the same as the
+            // current successor
+            if (isDestination(i + 1, j - 1, dest) == true) {
+                // Set the Parent of the destination cell
                 cellDetails[i + 1][j - 1].parent_i = i;
                 cellDetails[i + 1][j - 1].parent_j = j;
                 printf("The destination cell is found\n");
+                return tracePath(cellDetails, dest);
                 foundDest = true;
-                return path;
+            }
 
-            } else if (!closedList[i + 1][j - 1] && !graph.isObstacle(i + 1, j - 1)) {
-                gNew = cellDetails[i][j].g + 1.0;
-                hNew = calculateHValue(i + 1, j - 1, Pair(goal.row, goal.column));
+            // If the successor is already on the closed
+            // list or if it is blocked, then ignore it.
+            // Else do the following
+            else if (closedList[i + 1][j - 1] == false
+                     && !graph.isObstacle(i + 1, j - 1)) {
+                gNew = cellDetails[i][j].g + 1.414;
+                hNew = calculateHValue(i + 1, j - 1, dest);
                 fNew = gNew + hNew;
 
-                if (cellDetails[i + 1][j - 1].f == FLT_MAX || cellDetails[i + 1][j - 1].f > fNew) {
-                    openList.insert(make_pair(fNew, make_pair(i + 1, j - 1)));
+                // If it isn’t on the open list, add it to
+                // the open list. Make the current square
+                // the parent of this square. Record the
+                // f, g, and h costs of the square cell
+                //                OR
+                // If it is on the open list already, check
+                // to see if this path to that square is
+                // better, using 'f' cost as the measure.
+                if (cellDetails[i + 1][j - 1].f == FLT_MAX
+                    || cellDetails[i + 1][j - 1].f > fNew) {
+                    openList.insert(make_pair(
+                        fNew, make_pair(i + 1, j - 1)));
 
+                    // Update the details of this cell
                     cellDetails[i + 1][j - 1].f = fNew;
                     cellDetails[i + 1][j - 1].g = gNew;
                     cellDetails[i + 1][j - 1].h = hNew;
@@ -531,8 +781,13 @@ Queue* Pathfinder::aStar(const Position start, const Position goal) const {
         }
     }
 
-    if (foundDest == false) {
-        printf("Failed to find the destination cell\n");
-    }
+    // When the destination cell is not found and the open
+    // list is empty, then we conclude that we failed to
+    // reach the destination cell. This may happen when the
+    // there is no way to destination cell (due to
+    // blockages)
+    if (foundDest == false)
+        printf("Failed to find the Destination Cell\n");
+
     return nullptr;
 }

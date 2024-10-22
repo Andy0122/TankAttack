@@ -1,6 +1,8 @@
 #include "entities/Bullet.h"
 #include <cmath>
 
+using namespace DATA_STRUCTURES;
+
 Bullet::Bullet(const Position origin, const Position target)
     : position(origin), target(target) {
     calculateDirection(origin, target);
@@ -41,6 +43,14 @@ void Bullet::setMaxDamage(const bool maxDamage) {
 
 void Bullet::setPath(Queue& path) {
     this->path = &path;
+}
+
+void Bullet::setPath(Stack& path) {
+    this->path = new Queue(); // Initialize the path queue
+    while (!path.empty()) {
+        this->path->push(path.top());
+        path.pop();
+    }
 }
 
 bool Bullet::move() {

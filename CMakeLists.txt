@@ -54,6 +54,8 @@ add_executable(TankAttack
         src/data_structures/Queue.cpp
         include/data_structures/LinkedList.h
         src/data_structures/LinkedList.cpp
+        include/data_structures/Stack.h
+        src/data_structures/Stack.cpp
         # Añade otros archivos fuente según sea necesario
 )
 

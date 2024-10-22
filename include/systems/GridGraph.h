@@ -29,8 +29,8 @@ public:
 class GridGraph {
 private:
     // Constantes
-    static const int rows = 13; ///< Número predefinido de filas en la cuadrícula.
-    static const int cols = 25; ///< Número predefinido de columnas en la cuadrícula.
+    static constexpr int rows = 13; ///< Número predefinido de filas en la cuadrícula.
+    static constexpr int cols = 25; ///< Número predefinido de columnas en la cuadrícula.
 
     // Miembros privados
     std::vector<std::vector<Node>> grid;  ///< Matriz que contiene los nodos del grafo.
@@ -212,7 +212,7 @@ public:
      */
     void fillLargeOpenAreas();
 
-    [[nodiscard]] bool isValid(int row, int column) const;
+    [[nodiscard]] static bool isValid(int row, int column) ;
 
 };
 

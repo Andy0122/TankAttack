@@ -52,7 +52,7 @@ private:
     Player* players = nullptr;            ///< Arreglo de jugadores del juego
     Tank* tanks = nullptr;               ///< Arreglo de tanques del juego
     Bullet* bullet = nullptr;            ///< Bala actual en el juego
-    LinkedList* bulletTrace = nullptr;     ///< Rastreo del movimiento de la bala
+    DATA_STRUCTURES::LinkedList* bulletTrace = nullptr;     ///< Rastreo del movimiento de la bala
     GridGraph* gridMap = nullptr;        ///< Mapa del juego
     bool gameOver = false;               ///< Indicador de fin del juego
 

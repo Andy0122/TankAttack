@@ -6,7 +6,8 @@
 #include <cmath>
 #include "systems/SoundManager.h"
 
-//TODO: Implement A* movement to bullet, create a move bullet by step function
+using namespace DATA_STRUCTURES;
+//TODO: Refactored code
 
 View::View(GtkWidget *window) {
     this->window = window;
@@ -494,11 +495,10 @@ void View::createBullet(const Position& origin, const Position& target, const PO
     Queue* path;
 
     if (powerUp == ATTACK_PRECISION) {
-        path = pathfinder.aStar(origin, target);
+        bullet->setPath(*pathfinder.aStar(origin, target));
     } else {
-        path = pathfinder.lineaVista(origin, target);
+        bullet->setPath(*pathfinder.lineaVista(origin, target));
     }
-    bullet->setPath(*path);
 }
 
 

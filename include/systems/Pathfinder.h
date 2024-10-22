@@ -4,6 +4,7 @@
 #include <vector>
 #include "GridGraph.h"
 #include "data_structures/Queue.h"
+#include "data_structures/Stack.h"
 
 struct cell {
 	int parent_i, parent_j;
@@ -48,7 +49,7 @@ public:
 	 * @param goal Goal position.
 	 * @return A pointer to queue with the found path or nullptr if there is no linear path.
 	 */
-	[[nodiscard]] Queue* lineaVista(Position start, Position goal) const;
+	[[nodiscard]] DATA_STRUCTURES::Queue* lineaVista(Position start, Position goal) const;
 
 	/**
 	 * @brief Metodo que intenta moverse al objetivo utilizando línea de vista y movimiento aleatorio si es necesario.
@@ -58,7 +59,7 @@ public:
 	 */
 	std::vector<int> randomMovement(int startId, int goalId);
 
-	[[nodiscard]] Queue* aStar(Position start, Position goal) const;
+	[[nodiscard]] DATA_STRUCTURES::Stack* aStar(Position src, Position dest) const;
 };
 
 #endif // PATHFINDER_H

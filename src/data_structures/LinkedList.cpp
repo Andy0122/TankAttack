@@ -1,5 +1,7 @@
 #include "data_structures/LinkedList.h"
 
+using namespace DATA_STRUCTURES;
+
 LinkedList::LinkedList() : head(nullptr), tail(nullptr), length(0) {}
 
 LinkedList::~LinkedList() {

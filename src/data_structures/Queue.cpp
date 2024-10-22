@@ -1,5 +1,7 @@
 #include "data_structures/Queue.h"
 
+using namespace DATA_STRUCTURES;
+
 Queue::Queue() : head(nullptr), tail(nullptr), length(0) {}
 
 Queue::~Queue() {

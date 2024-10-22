@@ -3,6 +3,7 @@
 
 #include "Position.h"
 #include "data_structures/Queue.h"
+#include "data_structures/Stack.h"
 
 /**
  * @brief Represents a unitary vector for the direction of the bullet.
@@ -54,7 +55,7 @@ public:
 
     [[nodiscard]] bool getMaxDamage() const;
 
-    [[nodiscard]] Queue* getPath() const;
+    [[nodiscard]] DATA_STRUCTURES::Queue* getPath() const;
 
     [[nodiscard]] bool reachedTarget() const;
 
@@ -67,7 +68,9 @@ public:
 
     void setMaxDamage(bool maxDamage);
 
-    void setPath(Queue& path);
+    void setPath(DATA_STRUCTURES::Queue& path);
+
+    void setPath(DATA_STRUCTURES::Stack& path);
 
     /**
     * @brief Moves the bullet.
@@ -89,7 +92,8 @@ private:
     Position position; ///< The position of the bullet.
     Position target; ///< The position where the bullet is aimed.
     Direction direction{}; ///< The direction of the bullet.
-    Queue* path = nullptr; ///< The path the bullet has to follow.
+    DATA_STRUCTURES::Queue* path = nullptr; ///< The path the bullet has to follow.
+    DATA_STRUCTURES::Stack* precisePath = nullptr; ///< The precise path the bullet has to follow.
     bool maxDamage = false; ///< If the bullet applies max damage.
     int distance; ///< The distance the bullet has to travel.
     int speed = 1; ///< The speed of the bullet.

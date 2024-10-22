@@ -1,7 +1,7 @@
 #include "entities/Player.h"
 #include <random>
 
-Player::Player(const int id) : id(id), powerUp(NONE) {}
+Player::Player(const int id) : id(id), powerUp(ATTACK_PRECISION) {}
 
 int Player::getId() const {
     return id;
@@ -37,5 +37,5 @@ void Player::generatePowerUp() {
     // std::uniform_int_distribution<> dis(0, 4);
     //
     // powerUp = static_cast<POWER_UP>(dis(gen));
-    powerUp = ATTACK_POWER; // Temporal
+    powerUp = ATTACK_PRECISION; // Temporal
 }
