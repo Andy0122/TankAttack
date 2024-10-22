@@ -3,6 +3,13 @@
 
 #include <vector>
 #include "GridGraph.h"
+#include "data_structures/Queue.h"
+#include "data_structures/Stack.h"
+
+struct cell {
+	int parent_i, parent_j;
+	double f, g, h;
+};
 
 /**
  * @brief Clase encargada de los algoritmos de búsqueda de caminos en el GridGraph.
@@ -37,12 +44,12 @@ public:
 	std::vector<int> dijkstra(int startId, int goalId);
 
 	/**
-	 * @brief Verifica si hay línea de vista directa entre dos nodos (sin obstáculos en línea recta).
-	 * @param startId Identificador del nodo de inicio.
-	 * @param goalId Identificador del nodo objetivo.
-	 * @return Un vector con los nodos que forman el camino directo si existe, o vacío si no.
+	 * @brief Search for a direct path between two positions.
+	 * @param start Start position.
+	 * @param goal Goal position.
+	 * @return A pointer to queue with the found path or nullptr if there is no linear path.
 	 */
-	std::vector<int> lineaVista(int startId, int goalId);
+	[[nodiscard]] DATA_STRUCTURES::Queue* lineaVista(Position start, Position goal) const;
 
 	/**
 	 * @brief Metodo que intenta moverse al objetivo utilizando línea de vista y movimiento aleatorio si es necesario.
@@ -51,6 +58,8 @@ public:
 	 * @return Un vector con los nodos que forman el camino desde el inicio hasta el objetivo.
 	 */
 	std::vector<int> randomMovement(int startId, int goalId);
+
+	[[nodiscard]] DATA_STRUCTURES::Stack* aStar(Position src, Position dest) const;
 };
 
 #endif // PATHFINDER_H

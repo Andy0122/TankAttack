@@ -1,9 +1,9 @@
 #include "entities/Tank.h"
 
 
-Tank::Tank() : health(TANK_FULL_HEALTH), color(Color()), row(0), column(0) {}
+Tank::Tank() : health(TANK_FULL_HEALTH), color(Color()), row(0), column(0), player(nullptr) {}
 
-Tank::Tank(const Color color, const Position position, int player)
+Tank::Tank(const Color color, const Position position, Player* player)
     : health(TANK_FULL_HEALTH), color(color), row(position.row), column(position.column), player(player) {}
 
 int Tank::getHealth() const {
@@ -43,8 +43,10 @@ void Tank::setSelected(const bool newState) {
     selected = newState;
 }
 
-void Tank::applyDamage() {
-    if (color == Cian || color == Blue) {
+void Tank::applyDamage(const bool maxDamage) {
+    if (maxDamage) {
+        health -= TANK_FULL_HEALTH;
+    } else if (color == Cian || color == Blue) {
         health -= static_cast<int>(TANK_FULL_HEALTH * 0.25);
     } else {
         health -= static_cast<int>(TANK_FULL_HEALTH * 0.5);

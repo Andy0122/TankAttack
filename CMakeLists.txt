@@ -1,37 +1,67 @@
-cmake_minimum_required(VERSION 3.29)
+cmake_minimum_required(VERSION 3.10)
 project(TankAttack)
 
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Buscar las librerías de GTK
+# Buscar las librerías usando PkgConfig
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GTK REQUIRED gtk+-3.0)
+pkg_check_modules(SDL2 REQUIRED sdl2)
+pkg_check_modules(SDL2MIXER REQUIRED SDL2_mixer)
 
-# Incluir los directorios de GTK
-include_directories(${GTK_INCLUDE_DIRS})
+# Verificar que las bibliotecas se encontraron
+if(NOT SDL2MIXER_FOUND)
+    message(FATAL_ERROR "SDL2_mixer no encontrado. Por favor, instala libsdl2-mixer-dev.")
+endif()
 
-# Linkear las librerías de GTK
-link_directories(${GTK_LIBRARY_DIRS})
+# Incluir los directorios
+include_directories(
+        ${GTK_INCLUDE_DIRS}
+        ${SDL2_INCLUDE_DIRS}
+        ${SDL2MIXER_INCLUDE_DIRS}
+        include
+)
 
-# Evitar que se usen -Wl,-rpath
-add_definitions(${GTK_CFLAGS_OTHER})
+# Linkear los directorios
+link_directories(
+        ${GTK_LIBRARY_DIRS}
+        ${SDL2_LIBRARY_DIRS}
+        ${SDL2MIXER_LIBRARY_DIRS}
+)
 
-include_directories(include)
+# Añadir definiciones
+add_definitions(
+        ${GTK_CFLAGS_OTHER}
+        ${SDL2_CFLAGS_OTHER}
+        ${SDL2MIXER_CFLAGS_OTHER}
+)
 
-
-add_executable(TankAttack src/main.cpp
+# Añadir tu ejecutable y archivos fuente
+add_executable(TankAttack
+        src/main.cpp
         src/entities/Tank.cpp
-        include/entities/Tank.h
-        include/systems/GridGraph.h
         src/systems/GridGraph.cpp
         src/Model.cpp
         src/View.cpp
         src/Controller.cpp
-        include/Position.h
-        include/entities/Bullet.h
         src/entities/Bullet.cpp
-        include/systems/Pathfinder.h
-        src/systems/Pathfinder.cpp)
+        src/systems/Pathfinder.cpp
+        src/systems/SoundManager.cpp
+        include/entities/Player.h
+        src/entities/Player.cpp
+        include/data_structures/Queue.h
+        src/data_structures/Queue.cpp
+        include/data_structures/LinkedList.h
+        src/data_structures/LinkedList.cpp
+        include/data_structures/Stack.h
+        src/data_structures/Stack.cpp
+        # Añade otros archivos fuente según sea necesario
+)
 
-# Linkear las librerías de GTK con tu ejecutable
-target_link_libraries(TankAttack ${GTK_LIBRARIES})
+# Linkear las bibliotecas
+target_link_libraries(TankAttack
+        ${GTK_LIBRARIES}
+        ${SDL2_LIBRARIES}
+        ${SDL2MIXER_LIBRARIES}
+)
