@@ -46,7 +46,7 @@ void Player::generatePowerUp() {
 
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(0, 3); // Exclude NONE
+    std::uniform_int_distribution<> dis(0, 3);
 
     powerUp = static_cast<POWER_UP>(dis(gen));
 }

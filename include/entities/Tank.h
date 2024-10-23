@@ -68,6 +68,13 @@ public:
     [[nodiscard]] int getColumn() const;
 
     /**
+    * @brief Sets the position of the tank.
+    *
+    * @param newPosition New position where the tank will be placed.
+    */
+    void setPosition(Position newPosition);
+
+    /**
      * @brief Checks if the tank is selected.
      *
      * @return True if the tank is selected, false otherwise.
@@ -87,13 +94,6 @@ public:
     * @param newColor New color value to set.
     */
     void setColor(Color newColor);
-
-    /**
-    * @brief Sets the position of the tank.
-    *
-    * @param newPosition New position where the tank will be placed.
-    */
-    void setPosition(Position newPosition);
 
     /**
      * @brief Sets the selected state of the tank.

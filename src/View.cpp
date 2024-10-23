@@ -600,9 +600,9 @@ gboolean View::handleMoveBullet(gpointer data) {
             return FALSE;
         }
 
-        if (view->BulletHitWall(view->bullet)) {
-            handleBulletBounce(view->bullet);
-        }
+        // if (view->BulletHitWall(view->bullet)) {
+        //     handleBulletBounce(view->bullet);
+        // }
 
         if (!view->bullet->reachedTarget()) {
             view->addTrace();
@@ -615,10 +615,10 @@ gboolean View::handleMoveBullet(gpointer data) {
     return FALSE;
 }
 
-void View::handleBulletBounce(Bullet* bullet) {
-    auto [x, y] = bullet->getDirection();
-    bullet->setDirection(Direction(-x, -y));
-}
+// void View::handleBulletBounce(Bullet* bullet) {
+//     auto [x, y] = bullet->getDirection();
+//     bullet->setDirection(Direction(-x, -y));
+// }
 
 
 Tank* View::getTankOnPosition(const Position position) const {

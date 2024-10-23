@@ -332,7 +332,7 @@ private:
      *
      * @param bullet Puntero a la bala.
      */
-    static void handleBulletBounce(Bullet* bullet);
+    // static void handleBulletBounce(Bullet* bullet);
 
     // Métodos de datos del juego
     /**
