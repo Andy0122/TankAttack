@@ -1,7 +1,7 @@
 #include "entities/Player.h"
 #include <random>
 
-Player::Player(const int id) : id(id), powerUp(NONE) {}
+Player::Player(const int id) : id(id), powerUp(NONE), powerUpActive(false) {}
 
 int Player::getId() const {
     return id;
@@ -27,15 +27,26 @@ std::string Player::getPowerUpName() const {
     return "None";
 }
 
+bool Player::getPowerUpActive() const {
+    return powerUpActive;
+}
+
+void Player::setPowerUpActive(const bool active) {
+    powerUpActive = active;
+}
+
+void Player::erasePowerUp() {
+    powerUp = NONE;
+}
+
 void Player::generatePowerUp() {
     if (powerUp != NONE) {
         return;
     }
 
-    // std::random_device rd;
-    // std::mt19937 gen(rd());
-    // std::uniform_int_distribution<> dis(0, 4);
-    //
-    // powerUp = static_cast<POWER_UP>(dis(gen));
-    powerUp = ATTACK_PRECISION; // Temporal
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0, 3); // Exclude NONE
+
+    powerUp = static_cast<POWER_UP>(dis(gen));
 }
