@@ -4,6 +4,7 @@
 #include <string>
 #include <gtk/gtk.h>
 
+#include "data_structures/LinkedList.h"
 #include "entities/Bullet.h"
 #include "entities/Tank.h"
 #include "systems/GridGraph.h"
@@ -38,6 +39,8 @@ public:
      */
     void setTanks(Tank* tanks);
 
+    void setPlayers(Player* players);
+
     /**
      * @brief Actualiza la interfaz gráfica del juego.
      */
@@ -46,10 +49,10 @@ public:
 private:
     // Variables miembro
     // Estado del juego
+    Player* players = nullptr;            ///< Arreglo de jugadores del juego
     Tank* tanks = nullptr;               ///< Arreglo de tanques del juego
     Bullet* bullet = nullptr;            ///< Bala actual en el juego
-    Position* bulletTrace = nullptr;     ///< Rastreo del movimiento de la bala
-    int traceDistance = 0;               ///< Distancia del camino de la bala
+    DATA_STRUCTURES::LinkedList* bulletTrace = nullptr;     ///< Rastreo del movimiento de la bala
     GridGraph* gridMap = nullptr;        ///< Mapa del juego
     bool gameOver = false;               ///< Indicador de fin del juego
 
@@ -59,6 +62,7 @@ private:
     GtkWidget* statusBar = nullptr;      ///< Barra de estado del juego
     GtkWidget* timerLabel = nullptr;     ///< Etiqueta para mostrar el temporizador
     GtkWidget* playerLabels[2];          ///< Arreglo de etiquetas para los jugadores
+    GtkWidget* powerUpLabels[2];    ///< Etiqueta para mostrar el poder obtenido
     std::map<std::string, GdkPixbuf*> assets; ///< Recursos gráficos del juego
     std::vector<Explosion> explosions; ///< Lista de explosiones en curso
 
@@ -218,6 +222,8 @@ private:
      */
     [[nodiscard]] GtkWidget* createTankDisplay(const Tank& tank) const;
 
+    [[nodiscard]] GtkWidget* createPowerUpLabel(int player);
+
     // Métodos de configuración
     /**
      * @brief Carga los recursos gráficos del juego.
@@ -284,12 +290,16 @@ private:
      */
     static gboolean onClick(GtkWidget* widget, const GdkEventButton* event, gpointer data);
 
+    static gboolean onKeyPress(GtkWidget* widget, GdkEventKey* event, gpointer data);
+
+    void handlePowerUpActivation();
+
     /**
      * @brief Maneja la selección de un tanque.
      *
      * @param tank Puntero al tanque seleccionado.
      */
-    void handleSelectTank(Tank* tank);
+    void handleSelectTank(Tank* tank) const;
 
     /**
      * @brief Maneja el movimiento de un tanque.
@@ -306,6 +316,8 @@ private:
      * @param target Posición objetivo.
      */
     void handleFireBullet(const Position& origin, const Position& target);
+
+    void createBullet(const Position& origin, const Position& target, POWER_UP powerUp);
 
     /**
      * @brief Maneja el movimiento de la bala.
@@ -410,6 +422,8 @@ private:
    * @param cr cairo_t* Contexto de Cairo.
    */
     void drawExplosions(cairo_t* cr);
+
+    static gboolean grantPowerUp(gpointer data);
 
     //Sounds
     SoundManager soundManager;  ///< Administrador de sonidos

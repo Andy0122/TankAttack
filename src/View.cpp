@@ -6,6 +6,9 @@
 #include <cmath>
 #include "systems/SoundManager.h"
 
+using namespace DATA_STRUCTURES;
+//TODO: Refactored code
+
 View::View(GtkWidget *window) {
     this->window = window;
     GtkWidget* vbox = createVBox(window);
@@ -40,14 +43,18 @@ void View::setTanks(Tank* tanks) {
     this->tanks = tanks;
 }
 
+void View::setPlayers(Player* players) {
+    this->players = players;
+}
+
+
 void View::update() const {
     gtk_widget_queue_draw(drawingArea);
 }
 
 void View::addTrace() const {
-    if (const int currentIndex = traceDistance + 1 - bullet->getDistance() - 1;
-        0 <= currentIndex && currentIndex < traceDistance) {
-        bulletTrace[currentIndex] = bullet->getPosition();
+    if (bulletTrace) {
+        bulletTrace->append(bullet->getPosition());
     }
 }
 
@@ -73,6 +80,8 @@ void View::createDrawingArea(GtkWidget *hbox) {
     drawingArea = gtk_drawing_area_new();
     gtk_widget_set_size_request(drawingArea, COLS * CELL_SIZE, ROWS * CELL_SIZE);
     gtk_box_pack_start(GTK_BOX(hbox), drawingArea, FALSE, FALSE, 0);
+    gtk_widget_set_can_focus(drawingArea, TRUE); // Ensure the widget can receive focus
+    gtk_widget_add_events(drawingArea, GDK_KEY_PRESS_MASK); // Add key press events
 }
 
 void View::createStatusBar(GtkWidget *vbox) {
@@ -151,6 +160,19 @@ GtkWidget* View::createTankDisplay(const Tank& tank) const {
     return hbox;
 }
 
+GtkWidget* View::createPowerUpLabel(const int player) {
+    GtkWidget* label = gtk_label_new(players[player].getPowerUpName().c_str());
+    powerUpLabels[player] = label;
+
+    GdkRGBA fontColor;
+
+    players[player].getPowerUpActive() ? gdk_rgba_parse(&fontColor, "red") : gdk_rgba_parse(&fontColor, "white");
+
+    gtk_widget_override_color(label, GTK_STATE_FLAG_NORMAL, &fontColor);
+
+    return label;
+}
+
 
 void View::loadAssets() {
     if (GdkPixbuf* originalCell = gdk_pixbuf_new_from_file("../assets/textures/accessible.png", nullptr)) {
@@ -204,7 +226,8 @@ void View::loadAssets() {
 void View::connectSignals() {
     g_signal_connect(G_OBJECT(drawingArea), "draw", G_CALLBACK(onDraw), this);
     g_signal_connect(G_OBJECT(drawingArea), "button-press-event", G_CALLBACK(onClick), this);
-    gtk_widget_add_events(drawingArea, GDK_BUTTON_PRESS_MASK);
+    g_signal_connect(G_OBJECT(drawingArea), "key-press-event", G_CALLBACK(onKeyPress), this);
+    gtk_widget_add_events(drawingArea, GDK_KEY_PRESS_MASK | GDK_BUTTON_PRESS_MASK);
 }
 
 
@@ -214,10 +237,10 @@ gboolean View::onDraw(GtkWidget *widget, cairo_t *cr, gpointer data) {
     view->drawMap(cr);
     view->drawTanks(cr);
     view->drawExplosions(cr);
+    view->drawBulletTrace(cr);
+    view->drawBullet(cr);
     view->updateStatusBar();
     view->updatePlayerLabels();
-    view->drawBullet(cr);
-    view->drawBulletTrace(cr);
 
     return FALSE;
 }
@@ -312,7 +335,7 @@ void View::drawTanks(cairo_t *cr) {
             continue;
         }
 
-        GdkPixbuf* pixbuf = nullptr;
+        const GdkPixbuf* pixbuf = nullptr;
         switch (tank->getColor()) {
             case Yellow: pixbuf = assets["yellow_tank"]; break;
             case Red: pixbuf = assets["red_tank"]; break;
@@ -322,7 +345,7 @@ void View::drawTanks(cairo_t *cr) {
 
         // Rotar el pixbuf según el ángulo del tanque
         GdkPixbuf* rotated_pixbuf = nullptr;
-        double angle = tank->getRotationAngle();
+        const double angle = tank->getRotationAngle();
         GdkPixbufRotation rotation;
 
         if (angle == 0.0) {
@@ -356,7 +379,7 @@ void View::drawTanks(cairo_t *cr) {
 }
 
 
-void View::updateStatusBar(){
+void View::updateStatusBar() {
     gtk_container_foreach(GTK_CONTAINER(statusBar), reinterpret_cast<GtkCallback>(gtk_widget_destroy), nullptr);
 
     for (int player = 0; player < 2; ++player) {
@@ -369,6 +392,9 @@ void View::updateStatusBar(){
         gtk_widget_set_halign(playerBox, GTK_ALIGN_CENTER);
         gtk_widget_set_valign(playerBox, GTK_ALIGN_CENTER);
         gtk_box_pack_start(GTK_BOX(playerContainer), playerBox, TRUE, TRUE, 0);
+
+        GtkWidget* powerUpLabel = createPowerUpLabel(player);
+        gtk_box_pack_start(GTK_BOX(playerContainer), powerUpLabel, FALSE, FALSE, 0);
 
         gtk_box_pack_start(GTK_BOX(statusBar), playerContainer, TRUE, TRUE, 0);
     }
@@ -388,9 +414,8 @@ void View::drawBullet(cairo_t *cr) const {
 void View::drawBulletTrace(cairo_t *cr) const {
     if (bullet && bulletTrace) {
         cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-        const int current = traceDistance - bullet->getDistance();
-        for (int i = 0; i < current; i++) {
-            const auto [row, column] = bulletTrace[i];
+        for (int i = 0; i < bulletTrace->size(); i++) {
+            const auto [row, column] = bulletTrace->at(i);
             const double x = column * CELL_SIZE + (CELL_SIZE - TRACE_SIZE) / 2;
             const double y = row * CELL_SIZE + (CELL_SIZE - TRACE_SIZE) / 2;
             cairo_rectangle(cr, x, y, TRACE_SIZE, TRACE_SIZE);
@@ -414,7 +439,6 @@ gboolean View::onClick(GtkWidget *widget, const GdkEventButton *event, gpointer 
     if (event->button == 1) {
         if (Tank* clickedTank = view->getTankOnPosition(position)) {
             view->handleSelectTank(clickedTank);
-            g_print("Tank selected\n");
         } else if (cellClicked(position)) {
             if (Tank* selectedTank = view->getSelectedTank()) {
                 view->handleMoveTank(selectedTank, position);
@@ -435,8 +459,33 @@ gboolean View::onClick(GtkWidget *widget, const GdkEventButton *event, gpointer 
     return TRUE;
 }
 
-void View::handleSelectTank(Tank* tank) {
-    if (tank->getPlayer() != currentPlayer || tank->isDestroyed()) {
+gboolean View::onKeyPress(GtkWidget* widget, GdkEventKey* event, gpointer data) {
+    auto* view = static_cast<View*>(data);
+    if (event->keyval == GDK_KEY_Shift_L || event->keyval == GDK_KEY_Shift_R) {
+        view->handlePowerUpActivation();
+    }
+
+    return FALSE;
+}
+
+void View::handlePowerUpActivation() {
+    Player& player = players[currentPlayer];
+
+    if (player.getPowerUp() == NONE) {
+        return;
+    }
+
+    player.setPowerUpActive(true);
+
+    actionsRemaining--;
+
+    if (actionsRemaining <= 0) {
+        endTurn();
+    }
+}
+
+void View::handleSelectTank(Tank* tank) const {
+    if (tank->getPlayer()->getId() != currentPlayer || tank->isDestroyed()) {
         // No permitir seleccionar tanques del otro jugador o que estén destruidos
         return;
     }
@@ -446,10 +495,20 @@ void View::handleSelectTank(Tank* tank) {
 }
 
 void View::handleFireBullet(const Position &origin, const Position &target) {
-    bullet = new Bullet(origin, target);
-    traceDistance = bullet->getDistance() - 1;
-    bulletTrace = new Position[traceDistance];
-    g_timeout_add(30, handleMoveBullet, this);
+    POWER_UP currentPowerUp;
+    if (players[currentPlayer].getPowerUpActive()) {
+        currentPowerUp = players[currentPlayer].getPowerUp();
+        players[currentPlayer].setPowerUpActive(false);
+        players[currentPlayer].erasePowerUp();
+    } else {
+        currentPowerUp = NONE;
+    }
+
+    createBullet(origin, target, currentPowerUp);
+
+    bulletTrace = new LinkedList();
+
+    g_timeout_add(100, handleMoveBullet, this);
 
     // Reproducir efecto de sonido de disparo
     soundManager.playSoundEffect("fire");
@@ -465,9 +524,30 @@ void View::handleFireBullet(const Position &origin, const Position &target) {
     update();
 }
 
+void View::createBullet(const Position& origin, const Position& target, const POWER_UP powerUp) {
+    bullet = new Bullet(origin, target);
+
+    if (powerUp == ATTACK_POWER) {
+        bullet->setMaxDamage(true);
+    }
+
+    // Calculate bullet path
+    const Pathfinder pathfinder(*gridMap);
+    Queue* path;
+
+    if (powerUp == ATTACK_PRECISION) {
+        bullet->setPath(*pathfinder.aStar(origin, target));
+        players[currentPlayer].setPowerUpActive(false);
+        players[currentPlayer].erasePowerUp();
+    } else {
+        bullet->setPath(*pathfinder.lineaVista(origin, target));
+    }
+}
+
+
 gboolean View::handleMoveBullet(gpointer data) {
     auto* view = static_cast<View*>(data);
-    if (view->bullet) {
+    if (view->bullet && view->bullet->getPath() != nullptr) {
 
         if (view->gameOver) {
             return FALSE;
@@ -482,7 +562,7 @@ gboolean View::handleMoveBullet(gpointer data) {
 
         if (view->bulletHitTank(view->bullet)) {
             Tank* tankHit = view->getTankOnPosition(view->bullet->getPosition());
-            tankHit->applyDamage();
+            tankHit->applyDamage(view->bullet->getMaxDamage());
 
             // Reproducir efecto de sonido de impacto
             view->soundManager.playSoundEffect("impact");
@@ -506,12 +586,12 @@ gboolean View::handleMoveBullet(gpointer data) {
                 g_timeout_add(100, View::animateExplosions, view);
 
                 // Verificar si todos los tanques del jugador han sido destruidos
-                if (view->areAllTanksDestroyed(tankHit->getPlayer())) {
-                    // Finalizar el juego
-                    view->endGameDueToDestruction(tankHit->getPlayer());
-                    view->update();
-                    return FALSE;
-                }
+                // if (view->areAllTanksDestroyed(tankHit->getPlayer())) {
+                //     // Finalizar el juego
+                //     view->endGameDueToDestruction(tankHit->getPlayer());
+                //     view->update();
+                //     return FALSE;
+                // }
             }
 
             view->destroyBullet();
@@ -524,7 +604,10 @@ gboolean View::handleMoveBullet(gpointer data) {
             handleBulletBounce(view->bullet);
         }
 
-        view->addTrace();
+        if (!view->bullet->reachedTarget()) {
+            view->addTrace();
+        }
+
         view->update();
         return TRUE;
     }
@@ -591,32 +674,54 @@ void View::handleMoveTank(Tank* tank, const Position position)  {
     std::uniform_int_distribution<> dist(1, 10);
     int randomNumber = dist(gen);
     std::vector<int> path;
-    if (color == 0 || color == 1) {
-        // Tanque seleccionado: Rojo o amarillo
-        // 50% de probabilidad BFS o 50% movimiento aleatorio
-        if (randomNumber <= 5) {
-            // 50% de probabilidad BFS
-            path = pathfinder.bfs(startId, goalId);
-            std::cout << "Color:" << color << " Algoritmo usado: BFS" << std::endl;
-        } else {
-            // 50% de probabilidad movimiento aleatorio
-            path = pathfinder.randomMovement(startId, goalId);
-            std::cout << "Color:" << color << " Algoritmo usado: movimiento aleatorio" << std::endl;
+    if (players[currentPlayer].getPowerUpActive() && players[currentPlayer].getPowerUp() == MOVEMENT_PRECISION) {
+        if (color == 0 || color == 1) {
+            if (randomNumber <= 9) {
+                path = pathfinder.bfs(startId, goalId);
+                std::cout << "Color:" << color << " Algoritmo usado: BFS" << std::endl;
+            } else {
+                path = pathfinder.randomMovement(startId, goalId);
+                std::cout << "Color:" << color << " Algoritmo usado: movimiento aleatorio" << std::endl;
+            }
+        } else if (color == 2 || color == 3) {
+            if (randomNumber <= 9) {
+                path = pathfinder.dijkstra(startId, goalId);
+                std::cout << "Color:" << color << " Algoritmo usado: Dijkstra" << std::endl;
+            } else {
+                path = pathfinder.randomMovement(startId, goalId);
+                std::cout << "Color:" << color << " Algoritmo usado: movimiento aleatorio" << std::endl;
+            }
         }
-    } else if (color == 2 || color == 3) {
-        // Tanque seleccionado: Celeste o azul
-        // 80% de probabilidad Dijkstra o 20% movimiento aleatorio
-        if (randomNumber <= 8) {
-            // 80% de probabilidad Dijkstra
-            path = pathfinder.dijkstra(startId, goalId);
-            std::cout << "Color:" << color << " Algoritmo usado: Dijkstra" << std::endl;
-        } else {
-            // 20% de probabilidad para Acción D
-            path = pathfinder.randomMovement(startId, goalId);
-            std::cout << "Color:" << color << " Algoritmo usado: movimiento aleatorio" << std::endl;
+
+        players[currentPlayer].setPowerUpActive(false);
+        players[currentPlayer].erasePowerUp();
+    } else {
+        if (color == 0 || color == 1) {
+            // Tanque seleccionado: Rojo o amarillo
+            // 50% de probabilidad BFS o 50% movimiento aleatorio
+            if (randomNumber <= 5) {
+                // 50% de probabilidad BFS
+                path = pathfinder.bfs(startId, goalId);
+                std::cout << "Color:" << color << " Algoritmo usado: BFS" << std::endl;
+            } else {
+                // 50% de probabilidad movimiento aleatorio
+                path = pathfinder.randomMovement(startId, goalId);
+                std::cout << "Color:" << color << " Algoritmo usado: movimiento aleatorio" << std::endl;
+            }
+        } else if (color == 2 || color == 3) {
+            // Tanque seleccionado: Celeste o azul
+            // 80% de probabilidad Dijkstra o 20% movimiento aleatorio
+            if (randomNumber <= 8) {
+                // 80% de probabilidad Dijkstra
+                path = pathfinder.dijkstra(startId, goalId);
+                std::cout << "Color:" << color << " Algoritmo usado: Dijkstra" << std::endl;
+            } else {
+                // 20% de probabilidad para Acción D
+                path = pathfinder.randomMovement(startId, goalId);
+                std::cout << "Color:" << color << " Algoritmo usado: movimiento aleatorio" << std::endl;
+            }
         }
     }
-
     if (path.size() < 2) {
         tank->setSelected(false);
         update();
@@ -735,11 +840,11 @@ void View::destroyBullet() {
         bullet = nullptr;
     }
 }
+
 void View::destroyBulletTrace(){
     if (bulletTrace) {
-        delete[] bulletTrace;
+        delete bulletTrace;
         bulletTrace = nullptr;
-        traceDistance = 0;
     }
 }
 
@@ -747,6 +852,17 @@ void View::destroyBulletTrace(){
 void View::startTimer() {
     // Configurar una función que se llame cada segundo
     g_timeout_add_seconds(1, updateTimer, this);
+    g_timeout_add_seconds(20, grantPowerUp, this);
+}
+
+gboolean View::grantPowerUp(gpointer data) {
+    const auto* view = static_cast<View*>(data);
+    for (int i = 0; i < 2; i++) {
+        view->players[i].generatePowerUp();
+    }
+    view->update();
+
+    return TRUE;
 }
 
 // Implementación de updateTimer()
@@ -778,7 +894,16 @@ gboolean View::updateTimer(gpointer data) {
 void View::endTurn() {
     // Cambiar al siguiente jugador
     currentPlayer = (currentPlayer + 1) % 2;
-    actionsRemaining = 1; // Restablecer acciones (o el valor que corresponda)
+
+    if (const Player& player = players[currentPlayer];
+        player.getPowerUpActive() && player.getPowerUp() == DOUBLE_TURN) {
+        actionsRemaining = 2;
+        players[currentPlayer].setPowerUpActive(false);
+        players[currentPlayer].erasePowerUp();
+    } else {
+        actionsRemaining = 1;
+    }
+
     updatePlayerLabels();
     update(); // Actualizar la interfaz gráfica
 }
@@ -806,7 +931,7 @@ void View::endGameDueToTime() {
 bool View::areAllTanksDestroyed(int player) {
     for (int i = 0; i < 8; ++i) {
         Tank& tank = tanks[i];
-        if (tank.getPlayer() == player && !tank.isDestroyed()) {
+        if (tank.getPlayer()->getId() == player && !tank.isDestroyed()) {
             // Aún queda al menos un tanque de este jugador
             return false;
         }
@@ -868,7 +993,7 @@ int View::determineWinner() {
         if (!tank.isDestroyed()) {
             if (tank.getPlayer() == 0) {
                 tanksPlayer0++;
-            } else if (tank.getPlayer() == 1) {
+            } else if (tank.getPlayer()->getId() == 1) {
                 tanksPlayer1++;
             }
         }

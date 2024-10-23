@@ -1,65 +1,17 @@
 #include "Model.h"
 
 Model::Model() {
-    map = new GridGraph();
-    map->generateObstacles();
-    map->connectNodes();
+    // Create the map
+    createMap();
 
-    // Definir los tanques y sus posiciones
-    tanks = new Tank[8];
+    // Create players
+    createPlayers();
 
-    // Lista de pares (ID, Color)
-    std::vector<std::pair<int, Color>> tankPositions = {
-        {100, Red},
-        {126, Red},
-        {176, Blue},
-        {200, Blue},
-        {124, Yellow},
-        {148, Yellow},
-        {198, Cian},
-        {224, Cian}
-    };
+    // Set tanks positions
+    createTanks();
 
-    for (int i = 0; i < tankPositions.size(); ++i) {
-        int id = tankPositions[i].first;
-        Color color = tankPositions[i].second;
-
-        // Convertir ID a coordenadas (row, col)
-        int row = id / map->getCols();
-        int col = id % map->getCols();
-
-        // Verificar si la posición es accesible y no está ocupada
-        if (map->isObstacle(row, col) || map->isOccupied(row, col)) {
-            std::cerr << "La posición (" << row << ", " << col << ") no es válida para colocar el tanque." << std::endl;
-            continue;
-        }
-
-        int playerNumber;
-        if (color == Red || color == Blue) {
-            playerNumber = 0;
-        } else if (color == Yellow || color == Cian) {
-            playerNumber = 1;
-        }
-
-        // Crear e inicializar el objeto tank con el constructor adecuado
-        Tank tank(color, Position(row, col), playerNumber);
-
-
-        // Colocar el tanque en el mapa
-        map->placeTank(row, col);
-
-        // Almacenar el tanque en el arreglo
-        tanks[i] = tank;
-    }
-
-    for (int i = 0; i < 8; ++i) {
-        if (tanks[i].getColor() == Yellow || tanks[i].getColor() == Cian) {
-            tanks[i].setRotationAngle(180.0); // Girar 180 grados
-        } else {
-            tanks[i].setRotationAngle(0.0); // Sin rotación
-        }
-    }
-
+    // Place Tanks on the map
+    placeTanksOnMap();
 }
 
 GridGraph* Model::getMap() const {
@@ -69,3 +21,48 @@ GridGraph* Model::getMap() const {
 Tank* Model::getTanks() const {
     return tanks;
 }
+
+Player* Model::getPlayers() const {
+    return players;
+}
+
+void Model::createMap() {
+    map = new GridGraph();
+    map->generateObstacles();
+    map->connectNodes();
+}
+
+void Model::createPlayers() {
+    players = new Player[2] {
+        Player(0),
+        Player(1)
+    };
+}
+
+void Model::createTanks() {
+    tanks = new Tank[8] {
+        Tank(Red, Position(100 / map->getCols(), 100 % map->getCols()), &players[0]),
+        Tank(Red, Position(126 / map->getCols(), 126 % map->getCols()), &players[0]),
+        Tank(Blue, Position(176 / map->getCols(), 176 % map->getCols()), &players[0]),
+        Tank(Blue, Position(200 / map->getCols(), 200 % map->getCols()), &players[0]),
+        Tank(Yellow, Position(124 / map->getCols(), 124 % map->getCols()), &players[1]),
+        Tank(Yellow, Position(148 / map->getCols(), 148 % map->getCols()), &players[1]),
+        Tank(Cian, Position(198 / map->getCols(), 198 % map->getCols()), &players[1]),
+        Tank(Cian, Position(224 / map->getCols(), 224 % map->getCols()), &players[1])
+    };
+
+    for (int i = 0; i < 8; ++i) {
+        if (tanks[i].getColor() == Red || tanks[i].getColor() == Blue) {
+            tanks[i].setRotationAngle(0.0);
+        } else {
+            tanks[i].setRotationAngle(180.0);
+        }
+    }
+}
+
+void Model::placeTanksOnMap() const {
+    for (int i = 0; i < 8; ++i) {
+        map->placeTank(tanks[i].getRow(), tanks[i].getColumn());
+    }
+}
+

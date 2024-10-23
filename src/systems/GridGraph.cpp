@@ -639,3 +639,7 @@ void GridGraph::fillLargeOpenAreas() {
         }
     }
 }
+
+bool GridGraph::isValid(const int row, const int column) {
+    return row >= 0 && row < rows && column >= 0 && column < cols;
+}
