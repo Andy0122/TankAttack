@@ -290,6 +290,10 @@ private:
      */
     static gboolean onClick(GtkWidget* widget, const GdkEventButton* event, gpointer data);
 
+    static gboolean onKeyPress(GtkWidget* widget, GdkEventKey* event, gpointer data);
+
+    void handlePowerUpActivation();
+
     /**
      * @brief Maneja la selección de un tanque.
      *

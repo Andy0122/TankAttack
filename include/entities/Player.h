@@ -15,13 +15,20 @@ public:
 
     [[nodiscard]] POWER_UP getPowerUp() const;
 
-    std::string getPowerUpName() const;
+    [[nodiscard]] std::string getPowerUpName() const;
+
+    [[nodiscard]] bool getPowerUpActive() const;
+
+    void setPowerUpActive(bool active);
+
+    void erasePowerUp();
 
     void generatePowerUp();
 
 private:
     int id;
     POWER_UP powerUp;
+    bool powerUpActive;
 };
 
 

@@ -80,6 +80,8 @@ void View::createDrawingArea(GtkWidget *hbox) {
     drawingArea = gtk_drawing_area_new();
     gtk_widget_set_size_request(drawingArea, COLS * CELL_SIZE, ROWS * CELL_SIZE);
     gtk_box_pack_start(GTK_BOX(hbox), drawingArea, FALSE, FALSE, 0);
+    gtk_widget_set_can_focus(drawingArea, TRUE); // Ensure the widget can receive focus
+    gtk_widget_add_events(drawingArea, GDK_KEY_PRESS_MASK); // Add key press events
 }
 
 void View::createStatusBar(GtkWidget *vbox) {
@@ -161,6 +163,13 @@ GtkWidget* View::createTankDisplay(const Tank& tank) const {
 GtkWidget* View::createPowerUpLabel(const int player) {
     GtkWidget* label = gtk_label_new(players[player].getPowerUpName().c_str());
     powerUpLabels[player] = label;
+
+    GdkRGBA fontColor;
+
+    players[player].getPowerUpActive() ? gdk_rgba_parse(&fontColor, "red") : gdk_rgba_parse(&fontColor, "white");
+
+    gtk_widget_override_color(label, GTK_STATE_FLAG_NORMAL, &fontColor);
+
     return label;
 }
 
@@ -217,7 +226,8 @@ void View::loadAssets() {
 void View::connectSignals() {
     g_signal_connect(G_OBJECT(drawingArea), "draw", G_CALLBACK(onDraw), this);
     g_signal_connect(G_OBJECT(drawingArea), "button-press-event", G_CALLBACK(onClick), this);
-    gtk_widget_add_events(drawingArea, GDK_BUTTON_PRESS_MASK);
+    g_signal_connect(G_OBJECT(drawingArea), "key-press-event", G_CALLBACK(onKeyPress), this);
+    gtk_widget_add_events(drawingArea, GDK_KEY_PRESS_MASK | GDK_BUTTON_PRESS_MASK);
 }
 
 
@@ -429,7 +439,6 @@ gboolean View::onClick(GtkWidget *widget, const GdkEventButton *event, gpointer 
     if (event->button == 1) {
         if (Tank* clickedTank = view->getTankOnPosition(position)) {
             view->handleSelectTank(clickedTank);
-            g_print("Tank selected\n");
         } else if (cellClicked(position)) {
             if (Tank* selectedTank = view->getSelectedTank()) {
                 view->handleMoveTank(selectedTank, position);
@@ -450,6 +459,31 @@ gboolean View::onClick(GtkWidget *widget, const GdkEventButton *event, gpointer 
     return TRUE;
 }
 
+gboolean View::onKeyPress(GtkWidget* widget, GdkEventKey* event, gpointer data) {
+    auto* view = static_cast<View*>(data);
+    if (event->keyval == GDK_KEY_Shift_L || event->keyval == GDK_KEY_Shift_R) {
+        view->handlePowerUpActivation();
+    }
+
+    return FALSE;
+}
+
+void View::handlePowerUpActivation() {
+    Player& player = players[currentPlayer];
+
+    if (player.getPowerUp() == NONE) {
+        return;
+    }
+
+    player.setPowerUpActive(true);
+
+    actionsRemaining--;
+
+    if (actionsRemaining <= 0) {
+        endTurn();
+    }
+}
+
 void View::handleSelectTank(Tank* tank) const {
     if (tank->getPlayer()->getId() != currentPlayer || tank->isDestroyed()) {
         // No permitir seleccionar tanques del otro jugador o que estén destruidos
@@ -461,7 +495,13 @@ void View::handleSelectTank(Tank* tank) const {
 }
 
 void View::handleFireBullet(const Position &origin, const Position &target) {
-    const POWER_UP currentPowerUp = players[currentPlayer].getPowerUp();
+    POWER_UP currentPowerUp;
+    if (players[currentPlayer].getPowerUpActive()) {
+        currentPowerUp = players[currentPlayer].getPowerUp();
+        players[currentPlayer].erasePowerUp();
+    } else {
+        currentPowerUp = NONE;
+    }
 
     createBullet(origin, target, currentPowerUp);
 
@@ -829,7 +869,14 @@ gboolean View::updateTimer(gpointer data) {
 void View::endTurn() {
     // Cambiar al siguiente jugador
     currentPlayer = (currentPlayer + 1) % 2;
-    actionsRemaining = 1; // Restablecer acciones (o el valor que corresponda)
+
+    if (const Player& player = players[currentPlayer];
+        player.getPowerUpActive() && player.getPowerUp() == DOUBLE_TURN) {
+        actionsRemaining = 2;
+    } else {
+        actionsRemaining = 1;
+    }
+
     updatePlayerLabels();
     update(); // Actualizar la interfaz gráfica
 }
