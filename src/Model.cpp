@@ -6,6 +6,7 @@ Model::Model() {
 
     // Create players
     createPlayers();
+    setCurrentPlayer(&players[0]);
 
     // Set tanks positions
     createTanks();
@@ -24,6 +25,14 @@ Tank* Model::getTanks() const {
 
 Player* Model::getPlayers() const {
     return players;
+}
+
+Player* Model::getCurrentPlayer() const {
+    return currentPlayer;
+}
+
+void Model::setCurrentPlayer(Player* player) {
+    currentPlayer = player;
 }
 
 void Model::createMap() {

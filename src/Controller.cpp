@@ -11,3 +11,11 @@ GridGraph* Controller::getMap() const {
 Tank* Controller::getTanks() const {
     return model->getTanks();
 }
+
+Player* Controller::getPlayers() const {
+    return model->getPlayers();
+}
+
+Player* Controller::getCurrentPlayer() const {
+    return model->getCurrentPlayer();
+}

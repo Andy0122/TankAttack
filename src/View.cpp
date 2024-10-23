@@ -6,6 +6,7 @@
 #include <cmath>
 #include "systems/SoundManager.h"
 
+using namespace std;
 using namespace DATA_STRUCTURES;
 //TODO: Refactored code
 
@@ -96,90 +97,6 @@ void View::createStatusBar(GtkWidget *vbox) {
     gtk_box_pack_start(GTK_BOX(vbox), statusBar, TRUE, TRUE, 0);
 }
 
-GtkWidget* View::createPlayerLabel(int player) {
-    const std::string labelText = "Player " + std::to_string(player + 1);
-    GtkWidget* label = gtk_label_new(labelText.c_str());
-    playerLabels[player] = label; // Almacenar el label en el arreglo
-    return label;
-}
-
-void View::updatePlayerLabels() {
-    for (int i = 0; i < 2; ++i) {
-        if (i == currentPlayer) {
-            // Resaltar el jugador en turno (por ejemplo, cambiar color a verde)
-            GdkRGBA color;
-            gdk_rgba_parse(&color, "green");
-            gtk_widget_override_color(playerLabels[i], GTK_STATE_FLAG_NORMAL, &color);
-        } else {
-            // Restablecer el color del jugador que no está en turno
-            gtk_widget_override_color(playerLabels[i], GTK_STATE_FLAG_NORMAL, nullptr);
-        }
-    }
-}
-
-GtkWidget* View::createPlayerBox(const int player) const {
-    GtkWidget* playerBox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
-
-    for (int col = 0; col < 2; ++col) {
-        GtkWidget* colBox = createTankBox(player, col);
-        gtk_box_pack_start(GTK_BOX(playerBox), colBox, FALSE, FALSE, 0);
-
-        if (col == 0) {
-            GtkWidget* separator = gtk_separator_new(GTK_ORIENTATION_VERTICAL);
-            gtk_box_pack_start(GTK_BOX(playerBox), separator, FALSE, FALSE, 10);
-        }
-    }
-
-    return playerBox;
-}
-
-GtkWidget* View::createTankBox(const int player, const int col) const {
-    GtkWidget* colBox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
-
-    for (int tankIndex = 0; tankIndex < 2; ++tankIndex) {
-        const int tankId = player * 4 + col * 2 + tankIndex;
-        const Tank& tank = tanksList[tankId];
-        GtkWidget* hbox = createTankDisplay(tank);
-        gtk_box_pack_start(GTK_BOX(colBox), hbox, FALSE, FALSE, 0);
-    }
-
-    return colBox;
-}
-
-GtkWidget* View::createTankDisplay(const Tank& tank) const {
-    GtkWidget* hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
-
-    GdkPixbuf* pixbuf = nullptr;
-    switch (tank.getColor()) {
-        case Yellow: pixbuf = assets.at("yellow_tank"); break;
-        case Red: pixbuf = assets.at("red_tank"); break;
-        case Cian: pixbuf = assets.at("cian_tank"); break;
-        case Blue: pixbuf = assets.at("blue_tank"); break;
-    }
-
-    GtkWidget* image = gtk_image_new_from_pixbuf(pixbuf);
-    gtk_box_pack_start(GTK_BOX(hbox), image, FALSE, FALSE, 0);
-
-    const std::string healthText = "Health: " + std::to_string(tank.getHealth());
-    GtkWidget* label = gtk_label_new(healthText.c_str());
-    gtk_box_pack_start(GTK_BOX(hbox), label, FALSE, FALSE, 0);
-
-    return hbox;
-}
-
-GtkWidget* View::createPowerUpLabel(const int player) {
-    GtkWidget* label = gtk_label_new(playersList[player].getPowerUpName().c_str());
-    powerUpLabels[player] = label;
-
-    GdkRGBA fontColor;
-
-    playersList[player].getPowerUpActive() ? gdk_rgba_parse(&fontColor, "red") : gdk_rgba_parse(&fontColor, "white");
-
-    gtk_widget_override_color(label, GTK_STATE_FLAG_NORMAL, &fontColor);
-
-    return label;
-}
-
 
 void View::loadAssets() {
     if (GdkPixbuf* originalCell = gdk_pixbuf_new_from_file("../assets/textures/accessible.png", nullptr)) {
@@ -217,13 +134,13 @@ void View::loadAssets() {
         g_object_unref(bullet);
     }
 
-    // Cargar las imágenes de explosión
+    // Load explosion images
     for (int i = 1; i <= 7; ++i) {
-        std::string key = "explosion_" + std::to_string(i);
-        std::string filename = "../assets/explosion/explosion_" + std::to_string(i) + ".png";
+        string key = "explosion_" + to_string(i);
+        string filename = "../assets/explosion/explosion_" + to_string(i) + ".png";
 
         if (GdkPixbuf* explosionImage = gdk_pixbuf_new_from_file(filename.c_str(), nullptr)) {
-            // Ajustar el tamaño al tamaño de la celda
+            // Resize the image
             assets[key] = gdk_pixbuf_scale_simple(explosionImage, CELL_SIZE, CELL_SIZE, GDK_INTERP_BILINEAR);
             g_object_unref(explosionImage);
         }
@@ -243,11 +160,10 @@ gboolean View::onDraw(GtkWidget *widget, cairo_t *cr, gpointer data) {
 
     view->drawMap(cr);
     view->drawTanks(cr);
+    view->drawStatusBar();
     // view->drawExplosions(cr);
     // view->drawBulletTrace(cr);
     // view->drawBullet(cr);
-    // view->updateStatusBar();
-    // view->updatePlayerLabels();
 
     return FALSE;
 }
@@ -279,71 +195,6 @@ GdkPixbuf* View::selectCellImage(const Node& node) {
 
     return pixbuf;
 }
-
-
-/*
-void View::drawMap(cairo_t *cr) {
-    // Establecer la fuente y el tamaño del texto
-    cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
-    cairo_set_font_size(cr, 12); // Ajusta el tamaño de la fuente según sea necesario
-
-    for (int row = 0; row < ROWS; ++row) {
-        for (int col = 0; col < COLS; ++col) {
-            const Node& node = gridMap->getNode(row, col);
-
-            // Obtener el ID del nodo actual
-            int nodeId = gridMap->toIndex(row, col);
-
-            // Coordenadas y tamaño del cuadrado
-            double x = col * CELL_SIZE;
-            double y = row * CELL_SIZE;
-            double size = CELL_SIZE;
-
-            // Determinar el color de relleno según si el nodo es seguro o no
-            if (gridMap->isSafeNode(nodeId)) {
-                // Nodo seguro: cuadrado verde con borde negro
-                cairo_set_source_rgb(cr, 0.0, 1.0, 0.0); // Color verde
-            } else {
-                // Nodo no seguro: cuadrado rojo con borde negro
-                cairo_set_source_rgb(cr, 1.0, 0.0, 0.0); // Color rojo
-            }
-
-            // Dibujar el cuadrado relleno
-            cairo_rectangle(cr, x, y, size, size);
-            cairo_fill_preserve(cr); // Rellenar y preservar el camino
-
-            // Establecer el color y ancho del borde
-            cairo_set_source_rgb(cr, 0.0, 0.0, 0.0); // Negro
-            cairo_set_line_width(cr, 1.0); // Ancho del borde
-
-            // Dibujar el borde del cuadrado
-            cairo_stroke(cr);
-
-            // Dibujar el número de ID dentro del cuadrado
-            // Establecer el color del texto (negro o blanco, según el fondo)
-            if (gridMap->isSafeNode(nodeId)) {
-                cairo_set_source_rgb(cr, 0.0, 0.0, 0.0); // Texto negro en fondo verde
-            } else {
-                cairo_set_source_rgb(cr, 1.0, 1.0, 1.0); // Texto blanco en fondo rojo
-            }
-
-            // Convertir el nodeId a cadena de texto
-            std::string idText = std::to_string(nodeId);
-
-            // Obtener las dimensiones del texto para centrarlo
-            cairo_text_extents_t extents;
-            cairo_text_extents(cr, idText.c_str(), &extents);
-
-            // Calcular la posición para centrar el texto
-            double textX = x + (size - extents.width) / 2 - extents.x_bearing;
-            double textY = y + (size - extents.height) / 2 - extents.y_bearing;
-
-            // Dibujar el texto
-            cairo_move_to(cr, textX, textY);
-            cairo_show_text(cr, idText.c_str());
-        }
-    }
-}*/
 
 void View::drawTanks(cairo_t *cr) {
     const Tank* tanks = controller->getTanks();
@@ -418,31 +269,99 @@ void View::drawSelectedMarker(cairo_t *cr, const Tank& tank) {
     cairo_stroke(cr);
 }
 
-
-
-
-
-void View::updateStatusBar() {
+void View::drawStatusBar() {
     gtk_container_foreach(GTK_CONTAINER(statusBar), reinterpret_cast<GtkCallback>(gtk_widget_destroy), nullptr);
 
-    for (int player = 0; player < 2; ++player) {
+    for (int id = 0; id < 2; ++id) {
         GtkWidget* playerContainer = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
 
-        GtkWidget* playerLabel = createPlayerLabel(player);
+        GtkWidget* playerLabel = createPlayerLabel(id);
         gtk_box_pack_start(GTK_BOX(playerContainer), playerLabel, FALSE, FALSE, 0);
 
-        GtkWidget* playerBox = createPlayerBox(player);
+        GtkWidget* playerBox = createPlayerBox(id);
         gtk_widget_set_halign(playerBox, GTK_ALIGN_CENTER);
         gtk_widget_set_valign(playerBox, GTK_ALIGN_CENTER);
         gtk_box_pack_start(GTK_BOX(playerContainer), playerBox, TRUE, TRUE, 0);
 
-        GtkWidget* powerUpLabel = createPowerUpLabel(player);
+        GtkWidget* powerUpLabel = createPowerUpLabel(id);
         gtk_box_pack_start(GTK_BOX(playerContainer), powerUpLabel, FALSE, FALSE, 0);
 
         gtk_box_pack_start(GTK_BOX(statusBar), playerContainer, TRUE, TRUE, 0);
     }
 
     gtk_widget_show_all(statusBar);
+}
+
+GtkWidget* View::createPlayerLabel(const int playerId) const {
+    const string labelText = "Player " + to_string(playerId + 1);
+    GtkWidget* label = gtk_label_new(labelText.c_str());
+
+    GdkRGBA color;
+    if (playerId == controller->getCurrentPlayer()->getId()) {
+        gdk_rgba_parse(&color, "green");
+    } else {
+        gdk_rgba_parse(&color, "white");
+    }
+    gtk_widget_override_color(label, GTK_STATE_FLAG_NORMAL, &color);
+
+    return label;
+}
+
+GtkWidget* View::createPlayerBox(const int playerId) {
+    GtkWidget* playerBox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
+
+    for (int col = 0; col < 2; ++col) {
+        GtkWidget* colBox = createTankBox(playerId, col);
+        gtk_box_pack_start(GTK_BOX(playerBox), colBox, FALSE, FALSE, 0);
+
+        if (col == 0) {
+            GtkWidget* separator = gtk_separator_new(GTK_ORIENTATION_VERTICAL);
+            gtk_box_pack_start(GTK_BOX(playerBox), separator, FALSE, FALSE, 10);
+        }
+    }
+
+    return playerBox;
+}
+
+GtkWidget* View::createTankBox(const int playerId, const int col) {
+    GtkWidget* colBox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+
+    const Tank* tanks = controller->getTanks();
+    for (int tankIndex = 0; tankIndex < 2; ++tankIndex) {
+        const int tankId = playerId * 4 + col * 2 + tankIndex;
+        const Tank* tank = &tanks[tankId];
+        GtkWidget* hbox = createTankDisplay(tank);
+        gtk_box_pack_start(GTK_BOX(colBox), hbox, FALSE, FALSE, 0);
+    }
+
+    return colBox;
+}
+
+GtkWidget* View::createTankDisplay(const Tank* tank) {
+    GtkWidget* hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
+
+    GdkPixbuf* tankImage = selectTankImage(tank->getColor());
+    GtkWidget* image = gtk_image_new_from_pixbuf(tankImage);
+    gtk_box_pack_start(GTK_BOX(hbox), image, FALSE, FALSE, 0);
+
+    const string healthText = "Health: " + to_string(tank->getHealth());
+    GtkWidget* label = gtk_label_new(healthText.c_str());
+    gtk_box_pack_start(GTK_BOX(hbox), label, FALSE, FALSE, 0);
+
+    return hbox;
+}
+
+GtkWidget* View::createPowerUpLabel(const int playerId) {
+    const Player* player = &controller->getPlayers()[playerId];
+
+    GtkWidget* label = gtk_label_new(player->getPowerUpName().c_str());
+
+    GdkRGBA fontColor;
+    player->getPowerUpActive() ? gdk_rgba_parse(&fontColor, "red") : gdk_rgba_parse(&fontColor, "white");
+
+    gtk_widget_override_color(label, GTK_STATE_FLAG_NORMAL, &fontColor);
+
+    return label;
 }
 
 void View::drawBullet(cairo_t *cr) const {
@@ -947,7 +866,6 @@ void View::endTurn() {
         actionsRemaining = 1;
     }
 
-    updatePlayerLabels();
     update(); // Actualizar la interfaz gráfica
 }
 

@@ -31,10 +31,23 @@ public:
     */
     [[nodiscard]] Player* getPlayers() const;
 
+    /**
+    * @brief Gets the current player
+    */
+    [[nodiscard]] Player* getCurrentPlayer() const;
+
+    /**
+    * @brief Sets the current player
+    *
+    * @param player Player to set as current
+    */
+    void setCurrentPlayer(Player* player);
+
 private:
     GridGraph* map = nullptr; ///< Map of the game
     Player* players = nullptr; ///< Array of players
     Tank* tanks = nullptr; ///< Array of tanks
+    Player* currentPlayer = nullptr; ///< Current player
 
     /**
     * @brief Creates the map of the game

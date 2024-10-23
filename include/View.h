@@ -64,8 +64,6 @@ private:
     GtkWidget* drawingArea = nullptr;    ///< Área de dibujo del juego
     GtkWidget* statusBar = nullptr;      ///< Barra de estado del juego
     GtkWidget* timerLabel = nullptr;     ///< Etiqueta para mostrar el temporizador
-    GtkWidget* playerLabels[2];          ///< Arreglo de etiquetas para los jugadores
-    GtkWidget* powerUpLabels[2];    ///< Etiqueta para mostrar el poder obtenido
     std::map<std::string, GdkPixbuf*> assets; ///< Recursos gráficos del juego
     std::vector<Explosion> explosions; ///< Lista de explosiones en curso
 
@@ -195,29 +193,24 @@ private:
      * @param player Índice del jugador.
      * @return GtkWidget* Etiqueta del jugador.
      */
-    [[nodiscard]] GtkWidget* createPlayerLabel(int player);
-
-    /**
-     * @brief Actualiza las etiquetas de los jugadores para reflejar el turno actual.
-     */
-    void updatePlayerLabels();
+    [[nodiscard]] GtkWidget* createPlayerLabel(int playerId) const;
 
     /**
      * @brief Crea la caja de información del jugador.
      *
-     * @param player Índice del jugador.
+     * @param playerId Índice del jugador.
      * @return GtkWidget* Caja del jugador.
      */
-    [[nodiscard]] GtkWidget* createPlayerBox(int player) const;
+    [[nodiscard]] GtkWidget* createPlayerBox(int playerId);
 
     /**
      * @brief Crea la caja de tanques para un jugador.
      *
-     * @param player Índice del jugador.
+     * @param playerId Índice del jugador.
      * @param col Índice de la columna.
      * @return GtkWidget* Caja de tanques.
      */
-    [[nodiscard]] GtkWidget* createTankBox(int player, int col) const;
+    [[nodiscard]] GtkWidget* createTankBox(int playerId, int col);
 
     /**
      * @brief Crea el widget de visualización del tanque.
@@ -225,9 +218,9 @@ private:
      * @param tank Referencia al tanque.
      * @return GtkWidget* Visualización del tanque.
      */
-    [[nodiscard]] GtkWidget* createTankDisplay(const Tank& tank) const;
+    [[nodiscard]] GtkWidget* createTankDisplay(const Tank* tank);
 
-    [[nodiscard]] GtkWidget* createPowerUpLabel(int player);
+    [[nodiscard]] GtkWidget* createPowerUpLabel(int playerId);
 
     // Métodos de configuración
     /**
@@ -276,7 +269,7 @@ private:
     /**
      * @brief Actualiza la barra de estado.
      */
-    void updateStatusBar();
+    void drawStatusBar();
 
     /**
      * @brief Dibuja la bala del juego.

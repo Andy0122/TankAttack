@@ -27,7 +27,16 @@ public:
     */
     [[nodiscard]] Tank* getTanks() const;
 
+    /**
+    * @brief Gets the players of the game
+    */
+    [[nodiscard]] Player* getPlayers() const;
+
+    /**
+    * @brief Gets the current player
+    */
+    [[nodiscard]] Player* getCurrentPlayer() const;
+
 private:
     Model* model; ///< Model of the game
-    // View* view; ///< View of the game
 };
