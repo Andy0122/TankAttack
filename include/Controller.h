@@ -1,6 +1,5 @@
 #pragma once
 
-#include "View.h"
 #include "Model.h"
 #include "systems/GridGraph.h"
 
@@ -12,10 +11,10 @@ class Controller {
 public:
     /**
     * @brief Controller Constructor
-    * @param view View of the game
+    *
     * @param model Model of the game
     */
-    Controller(View* view, Model* model);
+    explicit Controller(Model* model);
 
     /**
     * @brief Gets the map of the game
@@ -24,11 +23,11 @@ public:
     [[nodiscard]] GridGraph* getMap() const;
 
     /**
-    * @brief Updates the game state
+    * @brief Gets the tanks of the game
     */
-    void updateGameState() const;
+    [[nodiscard]] Tank* getTanks() const;
 
 private:
     Model* model; ///< Model of the game
-    View* view; ///< View of the game
+    // View* view; ///< View of the game
 };

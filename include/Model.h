@@ -4,11 +4,6 @@
 #include "entities/Tank.h"
 #include "systems/GridGraph.h"
 
-struct TankData {
-    int id;
-    Color color;
-    int player;
-};
 
 /**
  * @brief Model class
@@ -31,6 +26,9 @@ public:
     */
     [[nodiscard]] Tank* getTanks() const;
 
+    /**
+    * @brief Gets the players of the game
+    */
     [[nodiscard]] Player* getPlayers() const;
 
 private:
@@ -38,11 +36,23 @@ private:
     Player* players = nullptr; ///< Array of players
     Tank* tanks = nullptr; ///< Array of tanks
 
+    /**
+    * @brief Creates the map of the game
+    */
     void createMap();
 
+    /**
+    * @brief Creates the players of the game
+    */
     void createPlayers();
 
+    /**
+    * @brief Creates the tanks of the game
+    */
     void createTanks();
 
+    /**
+    * @brief Places the tanks on the map
+    */
     void placeTanksOnMap() const;
 };

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Controller.h>
 #include <map>
 #include <string>
 #include <gtk/gtk.h>
@@ -20,9 +21,10 @@ public:
     /**
      * @brief Constructor de la clase View.
      *
+     * @param controller Controller of the game.
      * @param window GtkWidget* Ventana principal para mostrar el juego.
      */
-    explicit View(GtkWidget* window);
+    explicit View(Controller* controller, GtkWidget* window);
 
     // Métodos públicos
     /**
@@ -47,13 +49,14 @@ public:
     void update() const;
 
 private:
+    Controller* controller;     ///< Controller of the game
     // Variables miembro
     // Estado del juego
-    Player* players = nullptr;            ///< Arreglo de jugadores del juego
-    Tank* tanks = nullptr;               ///< Arreglo de tanques del juego
+    Player* playersList = nullptr;            ///< Arreglo de jugadores del juego
+    Tank* tanksList = nullptr;               ///< Arreglo de tanques del juego
     Bullet* bullet = nullptr;            ///< Bala actual en el juego
     DATA_STRUCTURES::LinkedList* bulletTrace = nullptr;     ///< Rastreo del movimiento de la bala
-    GridGraph* gridMap = nullptr;        ///< Mapa del juego
+    GridGraph* gridMapGame = nullptr;        ///< Mapa del juego
     bool gameOver = false;               ///< Indicador de fin del juego
 
     // Elementos de la interfaz de usuario
@@ -162,6 +165,8 @@ private:
      */
     static GtkWidget* createVBox(GtkWidget* window);
 
+    void createTimerLabel(GtkWidget* vbox);
+
     /**
      * @brief Crea una caja horizontal.
      *
@@ -253,12 +258,20 @@ private:
      */
     void drawMap(cairo_t* cr);
 
+    GdkPixbuf* selectCellImage(const Node& node);
+
     /**
      * @brief Dibuja los tanques del juego.
      *
      * @param cr cairo_t* Contexto de Cairo.
      */
     void drawTanks(cairo_t* cr);
+
+    GdkPixbuf* selectTankImage(Color color);
+
+    static GdkPixbuf* rotateTankImage(const GdkPixbuf* image, double rotationAngle);
+
+    static void drawSelectedMarker(cairo_t* cr, const Tank& tank) ;
 
     /**
      * @brief Actualiza la barra de estado.

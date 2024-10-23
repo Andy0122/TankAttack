@@ -9,42 +9,35 @@
 using namespace DATA_STRUCTURES;
 //TODO: Refactored code
 
-View::View(GtkWidget *window) {
-    this->window = window;
+View::View(Controller* controller, GtkWidget *window)
+: controller(controller), window(window) {
     GtkWidget* vbox = createVBox(window);
 
-    // Crear la etiqueta del temporizador con el tiempo inicial (por ejemplo, "05:00")
-    timerLabel = gtk_label_new("05:00");
-
-    // Configurar alineación de la etiqueta
-    gtk_widget_set_halign(timerLabel, GTK_ALIGN_CENTER);
-    gtk_widget_set_valign(timerLabel, GTK_ALIGN_START);
-
-    // Añadir la etiqueta del temporizador al vbox
-    gtk_box_pack_start(GTK_BOX(vbox), timerLabel, FALSE, FALSE, 10);
-
+    createTimerLabel(vbox);
     startTimer();
 
     GtkWidget* hbox = createHBox(vbox);
     createDrawingArea(hbox);
+
     createStatusBar(vbox);
     loadAssets();
     connectSignals();
     gtk_widget_show_all(window);
+
     initSound();
 }
 
 
 void View::setGridMap(GridGraph *map) {
-    gridMap = map;
+    gridMapGame = map;
 }
 
 void View::setTanks(Tank* tanks) {
-    this->tanks = tanks;
+    this->tanksList = tanks;
 }
 
 void View::setPlayers(Player* players) {
-    this->players = players;
+    this->playersList = players;
 }
 
 
@@ -68,8 +61,19 @@ GtkWidget* View::createVBox(GtkWidget *window) {
     return vbox;
 }
 
+void View::createTimerLabel(GtkWidget *vbox) {
+    timerLabel = gtk_label_new("05:00");
+
+    gtk_widget_set_halign(timerLabel, GTK_ALIGN_CENTER);
+    gtk_widget_set_valign(timerLabel, GTK_ALIGN_START);
+
+    gtk_box_pack_start(GTK_BOX(vbox), timerLabel, FALSE, FALSE, 10);
+}
+
+
 GtkWidget* View::createHBox(GtkWidget *vbox) {
     GtkWidget* hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+
     gtk_box_set_homogeneous(GTK_BOX(hbox), TRUE);
     gtk_box_pack_start(GTK_BOX(vbox), hbox, TRUE, FALSE, 0);
 
@@ -78,14 +82,17 @@ GtkWidget* View::createHBox(GtkWidget *vbox) {
 
 void View::createDrawingArea(GtkWidget *hbox) {
     drawingArea = gtk_drawing_area_new();
+
     gtk_widget_set_size_request(drawingArea, COLS * CELL_SIZE, ROWS * CELL_SIZE);
     gtk_box_pack_start(GTK_BOX(hbox), drawingArea, FALSE, FALSE, 0);
+
     gtk_widget_set_can_focus(drawingArea, TRUE); // Ensure the widget can receive focus
     gtk_widget_add_events(drawingArea, GDK_KEY_PRESS_MASK); // Add key press events
 }
 
 void View::createStatusBar(GtkWidget *vbox) {
     statusBar = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
+
     gtk_box_pack_start(GTK_BOX(vbox), statusBar, TRUE, TRUE, 0);
 }
 
@@ -131,7 +138,7 @@ GtkWidget* View::createTankBox(const int player, const int col) const {
 
     for (int tankIndex = 0; tankIndex < 2; ++tankIndex) {
         const int tankId = player * 4 + col * 2 + tankIndex;
-        const Tank& tank = tanks[tankId];
+        const Tank& tank = tanksList[tankId];
         GtkWidget* hbox = createTankDisplay(tank);
         gtk_box_pack_start(GTK_BOX(colBox), hbox, FALSE, FALSE, 0);
     }
@@ -161,12 +168,12 @@ GtkWidget* View::createTankDisplay(const Tank& tank) const {
 }
 
 GtkWidget* View::createPowerUpLabel(const int player) {
-    GtkWidget* label = gtk_label_new(players[player].getPowerUpName().c_str());
+    GtkWidget* label = gtk_label_new(playersList[player].getPowerUpName().c_str());
     powerUpLabels[player] = label;
 
     GdkRGBA fontColor;
 
-    players[player].getPowerUpActive() ? gdk_rgba_parse(&fontColor, "red") : gdk_rgba_parse(&fontColor, "white");
+    playersList[player].getPowerUpActive() ? gdk_rgba_parse(&fontColor, "red") : gdk_rgba_parse(&fontColor, "white");
 
     gtk_widget_override_color(label, GTK_STATE_FLAG_NORMAL, &fontColor);
 
@@ -236,32 +243,44 @@ gboolean View::onDraw(GtkWidget *widget, cairo_t *cr, gpointer data) {
 
     view->drawMap(cr);
     view->drawTanks(cr);
-    view->drawExplosions(cr);
-    view->drawBulletTrace(cr);
-    view->drawBullet(cr);
-    view->updateStatusBar();
-    view->updatePlayerLabels();
+    // view->drawExplosions(cr);
+    // view->drawBulletTrace(cr);
+    // view->drawBullet(cr);
+    // view->updateStatusBar();
+    // view->updatePlayerLabels();
 
     return FALSE;
 }
 
 void View::drawMap(cairo_t *cr) {
+    const GridGraph* gridMap = controller->getMap();
+
     for (int row = 0; row < ROWS; ++row) {
-        for (int col = 0; col <COLS; ++col) {
+        for (int col = 0; col < COLS; ++col) {
             const Node& node = gridMap->getNode(row, col);
 
-            const GdkPixbuf* pixbuf = nullptr;
-            if (!node.obstacle) {
-                pixbuf = assets["obstacle"];
-            } else {
-                pixbuf = assets["cell"];
-            }
+            // Get the cell image
+            const GdkPixbuf* pixbuf = selectCellImage(node);
 
+            // Draw the cell
             gdk_cairo_set_source_pixbuf(cr, pixbuf, col * CELL_SIZE, row * CELL_SIZE);
             cairo_paint(cr);
         }
     }
 }
+
+GdkPixbuf* View::selectCellImage(const Node& node) {
+    GdkPixbuf* pixbuf = nullptr;
+    if (!node.obstacle) {
+        pixbuf = assets["obstacle"];
+    } else {
+        pixbuf = assets["cell"];
+    }
+
+    return pixbuf;
+}
+
+
 /*
 void View::drawMap(cairo_t *cr) {
     // Establecer la fuente y el tamaño del texto
@@ -327,56 +346,80 @@ void View::drawMap(cairo_t *cr) {
 }*/
 
 void View::drawTanks(cairo_t *cr) {
+    const Tank* tanks = controller->getTanks();
+
     for (int i = 0; i < 8; i++) {
         const Tank* tank = &tanks[i];
 
-        // Saltar tanques destruidos
         if (tank->isDestroyed()) {
             continue;
         }
 
-        const GdkPixbuf* pixbuf = nullptr;
-        switch (tank->getColor()) {
-            case Yellow: pixbuf = assets["yellow_tank"]; break;
-            case Red: pixbuf = assets["red_tank"]; break;
-            case Cian: pixbuf = assets["cian_tank"]; break;
-            case Blue: pixbuf = assets["blue_tank"]; break;
-        }
+        // Get the tank image
+        const GdkPixbuf* tankImage = selectTankImage(tank->getColor());
 
-        // Rotar el pixbuf según el ángulo del tanque
-        GdkPixbuf* rotated_pixbuf = nullptr;
-        const double angle = tank->getRotationAngle();
-        GdkPixbufRotation rotation;
+        // Rotate the tank image
+        GdkPixbuf* rotatedTankImage = rotateTankImage(tankImage, tank->getRotationAngle());
 
-        if (angle == 0.0) {
-            rotation = GDK_PIXBUF_ROTATE_NONE;
-        } else if (angle == 90.0) {
-            rotation = GDK_PIXBUF_ROTATE_CLOCKWISE;
-        } else if (angle == 180.0) {
-            rotation = GDK_PIXBUF_ROTATE_UPSIDEDOWN;
-        } else if (angle == 270.0) {
-            rotation = GDK_PIXBUF_ROTATE_COUNTERCLOCKWISE;
-        } else {
-            rotation = GDK_PIXBUF_ROTATE_NONE;
-        }
-
-        rotated_pixbuf = gdk_pixbuf_rotate_simple(pixbuf, rotation);
-
-        // Dibujar el tanque rotado
-        gdk_cairo_set_source_pixbuf(cr, rotated_pixbuf, tank->getColumn() * CELL_SIZE, tank->getRow() * CELL_SIZE);
+        // Draw the tank
+        gdk_cairo_set_source_pixbuf(cr, rotatedTankImage, tank->getColumn() * CELL_SIZE, tank->getRow() * CELL_SIZE);
         cairo_paint(cr);
 
-        g_object_unref(rotated_pixbuf); // Liberar el pixbuf rotado
+        // Free the GdkPixbuf
+        g_object_unref(rotatedTankImage);
 
-        // Dibujar marco rojo si el tanque está seleccionado
+        // Draw the selected marker
         if (tank->isSelected()) {
-            cairo_set_source_rgb(cr, 1.0, 0.0, 0.0); // Color rojo
-            cairo_set_line_width(cr, 2.0);
-            cairo_rectangle(cr, tank->getColumn() * CELL_SIZE, tank->getRow() * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-            cairo_stroke(cr);
+            drawSelectedMarker(cr, *tank);
         }
     }
 }
+
+GdkPixbuf* View::selectTankImage(const Color color) {
+    GdkPixbuf* pixbuf = nullptr;
+    switch (color) {
+        case Yellow: pixbuf = assets["yellow_tank"]; break;
+        case Red: pixbuf = assets["red_tank"]; break;
+        case Cian: pixbuf = assets["cian_tank"]; break;
+        case Blue: pixbuf = assets["blue_tank"]; break;
+    }
+
+    return pixbuf;
+}
+
+GdkPixbuf* View::rotateTankImage(const GdkPixbuf* image, const double rotationAngle) {
+    GdkPixbufRotation rotation;
+
+    switch (static_cast<int>(rotationAngle)) {
+        case 0:
+            rotation = GDK_PIXBUF_ROTATE_NONE;
+            break;
+        case 90:
+            rotation = GDK_PIXBUF_ROTATE_CLOCKWISE;
+            break;
+        case 180:
+            rotation = GDK_PIXBUF_ROTATE_UPSIDEDOWN;
+            break;
+        case 270:
+            rotation = GDK_PIXBUF_ROTATE_COUNTERCLOCKWISE;
+            break;
+        default:
+            rotation = GDK_PIXBUF_ROTATE_NONE;
+            break;
+    }
+
+    return gdk_pixbuf_rotate_simple(image, rotation);
+}
+
+void View::drawSelectedMarker(cairo_t *cr, const Tank& tank) {
+    cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+    cairo_set_line_width(cr, 2.0);
+    cairo_rectangle(cr, tank.getColumn() * CELL_SIZE, tank.getRow() * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+    cairo_stroke(cr);
+}
+
+
+
 
 
 void View::updateStatusBar() {
@@ -469,7 +512,7 @@ gboolean View::onKeyPress(GtkWidget* widget, GdkEventKey* event, gpointer data) 
 }
 
 void View::handlePowerUpActivation() {
-    Player& player = players[currentPlayer];
+    Player& player = playersList[currentPlayer];
 
     if (player.getPowerUp() == NONE) {
         return;
@@ -496,10 +539,10 @@ void View::handleSelectTank(Tank* tank) const {
 
 void View::handleFireBullet(const Position &origin, const Position &target) {
     POWER_UP currentPowerUp;
-    if (players[currentPlayer].getPowerUpActive()) {
-        currentPowerUp = players[currentPlayer].getPowerUp();
-        players[currentPlayer].setPowerUpActive(false);
-        players[currentPlayer].erasePowerUp();
+    if (playersList[currentPlayer].getPowerUpActive()) {
+        currentPowerUp = playersList[currentPlayer].getPowerUp();
+        playersList[currentPlayer].setPowerUpActive(false);
+        playersList[currentPlayer].erasePowerUp();
     } else {
         currentPowerUp = NONE;
     }
@@ -532,13 +575,13 @@ void View::createBullet(const Position& origin, const Position& target, const PO
     }
 
     // Calculate bullet path
-    const Pathfinder pathfinder(*gridMap);
+    const Pathfinder pathfinder(*gridMapGame);
     Queue* path;
 
     if (powerUp == ATTACK_PRECISION) {
         bullet->setPath(*pathfinder.aStar(origin, target));
-        players[currentPlayer].setPowerUpActive(false);
-        players[currentPlayer].erasePowerUp();
+        playersList[currentPlayer].setPowerUpActive(false);
+        playersList[currentPlayer].erasePowerUp();
     } else {
         bullet->setPath(*pathfinder.lineaVista(origin, target));
     }
@@ -569,7 +612,7 @@ gboolean View::handleMoveBullet(gpointer data) {
 
             if (tankHit->getHealth() <= 0 && !tankHit->isDestroyed()) {
                 tankHit->destroy(); // Marcar el tanque como destruido
-                view->gridMap->removeTank(tankHit->getRow(), tankHit->getColumn()); // Remover del mapa
+                view->gridMapGame->removeTank(tankHit->getRow(), tankHit->getColumn()); // Remover del mapa
 
                 // Iniciar la explosión en la posición del tanque
                 Explosion explosion;
@@ -623,7 +666,7 @@ gboolean View::handleMoveBullet(gpointer data) {
 
 Tank* View::getTankOnPosition(const Position position) const {
     for (int i = 0; i < 8; i++) {
-        Tank* tank = &tanks[i];
+        Tank* tank = &tanksList[i];
         if (!tank->isDestroyed() &&
             position.row == tank->getRow() && position.column == tank->getColumn()) {
             return tank;
@@ -635,7 +678,7 @@ Tank* View::getTankOnPosition(const Position position) const {
 
 Tank* View::getSelectedTank() const {
     for (int i = 0; i < 8; i++) {
-        if (Tank* tank = &tanks[i];
+        if (Tank* tank = &tanksList[i];
             tank->isSelected()) {
             return tank;
             }
@@ -650,7 +693,7 @@ bool View::cellClicked(const Position position) {
 
 bool View::bulletHitTank(const Bullet* bullet) const {
     if (auto [row, col] = bullet->getPosition();
-    gridMap->isOccupied(row, col)) {
+    gridMapGame->isOccupied(row, col)) {
         return true;
     }
 
@@ -662,9 +705,9 @@ void View::handleMoveTank(Tank* tank, const Position position)  {
     if (tank->isDestroyed()) {
         return;
     }
-    Pathfinder pathfinder(*gridMap);
-    int startId = gridMap->toIndex(tank->getRow(), tank->getColumn());
-    int goalId = gridMap->toIndex(position.row, position.column);
+    Pathfinder pathfinder(*gridMapGame);
+    int startId = gridMapGame->toIndex(tank->getRow(), tank->getColumn());
+    int goalId = gridMapGame->toIndex(position.row, position.column);
 
     int color = tank->getColor();
 
@@ -674,7 +717,7 @@ void View::handleMoveTank(Tank* tank, const Position position)  {
     std::uniform_int_distribution<> dist(1, 10);
     int randomNumber = dist(gen);
     std::vector<int> path;
-    if (players[currentPlayer].getPowerUpActive() && players[currentPlayer].getPowerUp() == MOVEMENT_PRECISION) {
+    if (playersList[currentPlayer].getPowerUpActive() && playersList[currentPlayer].getPowerUp() == MOVEMENT_PRECISION) {
         if (color == 0 || color == 1) {
             if (randomNumber <= 9) {
                 path = pathfinder.bfs(startId, goalId);
@@ -693,8 +736,8 @@ void View::handleMoveTank(Tank* tank, const Position position)  {
             }
         }
 
-        players[currentPlayer].setPowerUpActive(false);
-        players[currentPlayer].erasePowerUp();
+        playersList[currentPlayer].setPowerUpActive(false);
+        playersList[currentPlayer].erasePowerUp();
     } else {
         if (color == 0 || color == 1) {
             // Tanque seleccionado: Rojo o amarillo
@@ -748,9 +791,9 @@ void View::handleMoveTank(Tank* tank, const Position position)  {
 
 void View::MoveTank(Tank* tank, const Position position) const {
     if (tank->isSelected()) {
-        if (!gridMap->isObstacle(position.row, position.column) && !gridMap->isOccupied(position.row, position.column)) {
-            gridMap->removeTank(tank->getRow(), tank->getColumn());
-            gridMap->placeTank(position.row, position.column);
+        if (!gridMapGame->isObstacle(position.row, position.column) && !gridMapGame->isOccupied(position.row, position.column)) {
+            gridMapGame->removeTank(tank->getRow(), tank->getColumn());
+            gridMapGame->placeTank(position.row, position.column);
 
             tank->setPosition(position);
             update();
@@ -760,7 +803,7 @@ void View::MoveTank(Tank* tank, const Position position) const {
 
 bool View::BulletHitWall(const Bullet* bullet) const {
     if (auto [row, col] = bullet->getPosition();
-    gridMap->isObstacle(row, col)) {
+    gridMapGame->isObstacle(row, col)) {
         return true;
     }
     return false;
@@ -789,18 +832,18 @@ gboolean View::moveTankStep(gpointer data) {
     }
 
     int id = path[currentStep];
-    const int row = id / view->gridMap->getCols();
-    const int column = id % view->gridMap->getCols();
+    const int row = id / view->gridMapGame->getCols();
+    const int column = id % view->gridMapGame->getCols();
 
     // Obtener la posición anterior
     int prevId;
     if (currentStep > 0) {
         prevId = path[currentStep - 1];
     } else {
-        prevId = view->gridMap->toIndex(tank->getRow(), tank->getColumn());
+        prevId = view->gridMapGame->toIndex(tank->getRow(), tank->getColumn());
     }
-    const int prevRow = prevId / view->gridMap->getCols();
-    const int prevColumn = prevId % view->gridMap->getCols();
+    const int prevRow = prevId / view->gridMapGame->getCols();
+    const int prevColumn = prevId % view->gridMapGame->getCols();
 
     // Calcular la dirección del movimiento
     int deltaRow = row - prevRow;
@@ -830,7 +873,7 @@ gboolean View::moveTankStep(gpointer data) {
 
 void View::deselectAllTanks() const {
     for (int i = 0; i < 8; i++) {
-        tanks[i].setSelected(false);
+        tanksList[i].setSelected(false);
     }
 }
 
@@ -858,7 +901,7 @@ void View::startTimer() {
 gboolean View::grantPowerUp(gpointer data) {
     const auto* view = static_cast<View*>(data);
     for (int i = 0; i < 2; i++) {
-        view->players[i].generatePowerUp();
+        view->playersList[i].generatePowerUp();
     }
     view->update();
 
@@ -895,11 +938,11 @@ void View::endTurn() {
     // Cambiar al siguiente jugador
     currentPlayer = (currentPlayer + 1) % 2;
 
-    if (const Player& player = players[currentPlayer];
+    if (const Player& player = playersList[currentPlayer];
         player.getPowerUpActive() && player.getPowerUp() == DOUBLE_TURN) {
         actionsRemaining = 2;
-        players[currentPlayer].setPowerUpActive(false);
-        players[currentPlayer].erasePowerUp();
+        playersList[currentPlayer].setPowerUpActive(false);
+        playersList[currentPlayer].erasePowerUp();
     } else {
         actionsRemaining = 1;
     }
@@ -930,7 +973,7 @@ void View::endGameDueToTime() {
 
 bool View::areAllTanksDestroyed(int player) {
     for (int i = 0; i < 8; ++i) {
-        Tank& tank = tanks[i];
+        Tank& tank = tanksList[i];
         if (tank.getPlayer()->getId() == player && !tank.isDestroyed()) {
             // Aún queda al menos un tanque de este jugador
             return false;
@@ -989,7 +1032,7 @@ int View::determineWinner() {
     int tanksPlayer1 = 0;
 
     for (int i = 0; i < 8; ++i) {
-        Tank& tank = tanks[i];
+        Tank& tank = tanksList[i];
         if (!tank.isDestroyed()) {
             if (tank.getPlayer() == 0) {
                 tanksPlayer0++;
