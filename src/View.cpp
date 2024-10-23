@@ -498,6 +498,7 @@ void View::handleFireBullet(const Position &origin, const Position &target) {
     POWER_UP currentPowerUp;
     if (players[currentPlayer].getPowerUpActive()) {
         currentPowerUp = players[currentPlayer].getPowerUp();
+        players[currentPlayer].setPowerUpActive(false);
         players[currentPlayer].erasePowerUp();
     } else {
         currentPowerUp = NONE;
@@ -536,6 +537,8 @@ void View::createBullet(const Position& origin, const Position& target, const PO
 
     if (powerUp == ATTACK_PRECISION) {
         bullet->setPath(*pathfinder.aStar(origin, target));
+        players[currentPlayer].setPowerUpActive(false);
+        players[currentPlayer].erasePowerUp();
     } else {
         bullet->setPath(*pathfinder.lineaVista(origin, target));
     }
@@ -671,32 +674,54 @@ void View::handleMoveTank(Tank* tank, const Position position)  {
     std::uniform_int_distribution<> dist(1, 10);
     int randomNumber = dist(gen);
     std::vector<int> path;
-    if (color == 0 || color == 1) {
-        // Tanque seleccionado: Rojo o amarillo
-        // 50% de probabilidad BFS o 50% movimiento aleatorio
-        if (randomNumber <= 5) {
-            // 50% de probabilidad BFS
-            path = pathfinder.bfs(startId, goalId);
-            std::cout << "Color:" << color << " Algoritmo usado: BFS" << std::endl;
-        } else {
-            // 50% de probabilidad movimiento aleatorio
-            path = pathfinder.randomMovement(startId, goalId);
-            std::cout << "Color:" << color << " Algoritmo usado: movimiento aleatorio" << std::endl;
+    if (players[currentPlayer].getPowerUpActive() && players[currentPlayer].getPowerUp() == MOVEMENT_PRECISION) {
+        if (color == 0 || color == 1) {
+            if (randomNumber <= 9) {
+                path = pathfinder.bfs(startId, goalId);
+                std::cout << "Color:" << color << " Algoritmo usado: BFS" << std::endl;
+            } else {
+                path = pathfinder.randomMovement(startId, goalId);
+                std::cout << "Color:" << color << " Algoritmo usado: movimiento aleatorio" << std::endl;
+            }
+        } else if (color == 2 || color == 3) {
+            if (randomNumber <= 9) {
+                path = pathfinder.dijkstra(startId, goalId);
+                std::cout << "Color:" << color << " Algoritmo usado: Dijkstra" << std::endl;
+            } else {
+                path = pathfinder.randomMovement(startId, goalId);
+                std::cout << "Color:" << color << " Algoritmo usado: movimiento aleatorio" << std::endl;
+            }
         }
-    } else if (color == 2 || color == 3) {
-        // Tanque seleccionado: Celeste o azul
-        // 80% de probabilidad Dijkstra o 20% movimiento aleatorio
-        if (randomNumber <= 8) {
-            // 80% de probabilidad Dijkstra
-            path = pathfinder.dijkstra(startId, goalId);
-            std::cout << "Color:" << color << " Algoritmo usado: Dijkstra" << std::endl;
-        } else {
-            // 20% de probabilidad para Acción D
-            path = pathfinder.randomMovement(startId, goalId);
-            std::cout << "Color:" << color << " Algoritmo usado: movimiento aleatorio" << std::endl;
+
+        players[currentPlayer].setPowerUpActive(false);
+        players[currentPlayer].erasePowerUp();
+    } else {
+        if (color == 0 || color == 1) {
+            // Tanque seleccionado: Rojo o amarillo
+            // 50% de probabilidad BFS o 50% movimiento aleatorio
+            if (randomNumber <= 5) {
+                // 50% de probabilidad BFS
+                path = pathfinder.bfs(startId, goalId);
+                std::cout << "Color:" << color << " Algoritmo usado: BFS" << std::endl;
+            } else {
+                // 50% de probabilidad movimiento aleatorio
+                path = pathfinder.randomMovement(startId, goalId);
+                std::cout << "Color:" << color << " Algoritmo usado: movimiento aleatorio" << std::endl;
+            }
+        } else if (color == 2 || color == 3) {
+            // Tanque seleccionado: Celeste o azul
+            // 80% de probabilidad Dijkstra o 20% movimiento aleatorio
+            if (randomNumber <= 8) {
+                // 80% de probabilidad Dijkstra
+                path = pathfinder.dijkstra(startId, goalId);
+                std::cout << "Color:" << color << " Algoritmo usado: Dijkstra" << std::endl;
+            } else {
+                // 20% de probabilidad para Acción D
+                path = pathfinder.randomMovement(startId, goalId);
+                std::cout << "Color:" << color << " Algoritmo usado: movimiento aleatorio" << std::endl;
+            }
         }
     }
-
     if (path.size() < 2) {
         tank->setSelected(false);
         update();
@@ -873,6 +898,8 @@ void View::endTurn() {
     if (const Player& player = players[currentPlayer];
         player.getPowerUpActive() && player.getPowerUp() == DOUBLE_TURN) {
         actionsRemaining = 2;
+        players[currentPlayer].setPowerUpActive(false);
+        players[currentPlayer].erasePowerUp();
     } else {
         actionsRemaining = 1;
     }

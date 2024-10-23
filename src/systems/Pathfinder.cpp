@@ -172,8 +172,12 @@ std::vector<int> Pathfinder::randomMovement(int startId, int goalId) {
             if (!totalPath.empty() && totalPath.back() == graph.toIndex(lineaVistaPath->front().row, lineaVistaPath->front().column)) {
                 lineaVistaPath->pop();
             }
-            totalPath.insert(totalPath.end(), graph.toIndex(lineaVistaPath->front().row, lineaVistaPath->front().column),
-                graph.toIndex(lineaVistaPath->back().row, lineaVistaPath->back().column));
+            for (int i = 0; i < lineaVistaPath->size(); ++i) {
+                totalPath.push_back(graph.toIndex(lineaVistaPath->front().row, lineaVistaPath->front().column));
+                lineaVistaPath->pop();
+            }
+            // totalPath.insert(totalPath.end(), graph.toIndex(lineaVistaPath->front().row, lineaVistaPath->front().column),
+            //     graph.toIndex(lineaVistaPath->back().row, lineaVistaPath->back().column));
             return totalPath;
         }
 
