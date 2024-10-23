@@ -2,6 +2,8 @@
 #define BULLET_H
 
 #include "Position.h"
+#include "data_structures/Queue.h"
+#include "data_structures/Stack.h"
 
 /**
  * @brief Represents a unitary vector for the direction of the bullet.
@@ -23,7 +25,7 @@ public:
      * @param origin The position where the bullet is created.
      * @param target The position where the bullet is aimed.
      */
-    Bullet(Position origin, Position target, bool maxDamage);
+    Bullet(Position origin, Position target);
 
     /**
      * @brief Destroys the bullet.
@@ -53,12 +55,22 @@ public:
 
     [[nodiscard]] bool getMaxDamage() const;
 
+    [[nodiscard]] DATA_STRUCTURES::Queue* getPath() const;
+
+    [[nodiscard]] bool reachedTarget() const;
+
     /**
      * @brief Sets the direction of the bullet.
      *
      * @param newDirection The new direction of the bullet.
      */
     void setDirection(Direction newDirection);
+
+    void setMaxDamage(bool maxDamage);
+
+    void setPath(DATA_STRUCTURES::Queue& path);
+
+    void setPath(DATA_STRUCTURES::Stack& path);
 
     /**
     * @brief Moves the bullet.
@@ -80,7 +92,9 @@ private:
     Position position; ///< The position of the bullet.
     Position target; ///< The position where the bullet is aimed.
     Direction direction{}; ///< The direction of the bullet.
-    bool maxDamage; ///< If the bullet applies max damage.
+    DATA_STRUCTURES::Queue* path = nullptr; ///< The path the bullet has to follow.
+    DATA_STRUCTURES::Stack* precisePath = nullptr; ///< The precise path the bullet has to follow.
+    bool maxDamage = false; ///< If the bullet applies max damage.
     int distance; ///< The distance the bullet has to travel.
     int speed = 1; ///< The speed of the bullet.
     float bounceAngle = 0.0; ///< The angle of the bounce.

@@ -8,6 +8,10 @@
 struct Position {
     int row;    ///< Row of the position.
     int column;    ///< Column of the position.
+
+    bool operator==(const Position& other) const {
+        return row == other.row && column == other.column;
+    }
 };
 
 #endif //POSITION_H
