@@ -41,7 +41,7 @@ public:
 	* @param goalId Identificador del nodo objetivo.
 	* @return Un vector con los nodos que forman el camino más corto desde el inicio hasta el objetivo.
 	*/
-	std::vector<int> dijkstra(int startId, int goalId);
+	DATA_STRUCTURES::Queue<Position>* dijkstra(Position src, Position dest);
 
 	/**
 	 * @brief Search for a direct path between two positions.
@@ -57,7 +57,7 @@ public:
 	 * @param goalId Identificador del nodo objetivo.
 	 * @return Un vector con los nodos que forman el camino desde el inicio hasta el objetivo.
 	 */
-	std::vector<int> randomMovement(int startId, int goalId);
+	DATA_STRUCTURES::Queue<Position>* randomMovement(Position src, Position dest);
 
 	[[nodiscard]] DATA_STRUCTURES::Stack<Position>* aStar(Position src, Position dest) const;
 };

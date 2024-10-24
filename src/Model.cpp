@@ -1,5 +1,4 @@
 #include "Model.h"
-
 #include <random>
 #include <View.h>
 #include <systems/Pathfinder.h>
@@ -94,12 +93,10 @@ Queue<Position>* Model::calculatePath(const Color color, const POWER_UP powerUp,
         }
     } else {
         if (randomNumber <= probability) {
-            // return pathfinder.dijkstra();
-            return pathfinder.bfs(src, dest);
+            return pathfinder.dijkstra(src, dest);
         }
     }
-    // return pathfinder.randomMovement();
-    return pathfinder.bfs(src, dest);
+    return pathfinder.randomMovement(src, dest);
 
 }
 

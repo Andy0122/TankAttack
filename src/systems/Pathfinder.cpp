@@ -86,10 +86,14 @@ Queue<Position>* Pathfinder::bfs(Position src, Position dest) {
  * @param goalId Identificador del nodo objetivo.
  * @return Un vector con los nodos que forman el camino más corto desde el inicio hasta el objetivo.
  */
-std::vector<int> Pathfinder::dijkstra(int startId, int goalId) {
+Queue<Position>* Pathfinder::dijkstra(Position src, Position dest) {
     const int INF = std::numeric_limits<int>::max(); // Valor infinito para inicializar distancias.
     std::vector<int> dist(graph.getRows() * graph.getCols() , INF); // Distancia a cada nodo.
     std::vector<int> parent(graph.getRows() * graph.getCols() , -1); // Para reconstruir el camino.
+
+    int startId = graph.toIndex(src.row, src.column);
+    int goalId = graph.toIndex(dest.row, dest.column);
+
     dist[startId] = 0;
 
     // Cola de prioridad que almacena pares (distancia, nodo).
@@ -103,12 +107,12 @@ std::vector<int> Pathfinder::dijkstra(int startId, int goalId) {
 
         // Si llegamos al nodo objetivo, reconstruir el camino.
         if (current == goalId) {
-            std::vector<int> path;
+            auto* path = new Stack<Position>();
             for (int at = goalId; at != -1; at = parent[at]) {
-                path.push_back(at);
+                path->push(Position{at / graph.getCols(), at % graph.getCols()});
             }
-            std::reverse(path.begin(), path.end());
-            return path;
+            // std::reverse(path->begin(), path->end());
+            return convertStackToQueue(*path);
         }
 
         // Si la distancia actual es mayor que la mejor conocida, omitir.
@@ -169,9 +173,12 @@ Queue<Position>* Pathfinder::lineaVista(Position start, Position goal) const {
  * @param goalId Identificador del nodo objetivo.
  * @return Un vector con los nodos que forman el camino desde el inicio hasta el objetivo.
  */
-std::vector<int> Pathfinder::randomMovement(int startId, int goalId) {
+Queue<Position>* Pathfinder::randomMovement(Position src, Position dest) {
+    int startId = graph.toIndex(src.row, src.column);
+    int goalId = graph.toIndex(dest.row, dest.column);
+
     int currentId = startId;
-    std::vector<int> totalPath;
+    auto* totalPath = new Queue<Position>();
     int attempts = 0;
 
     while (attempts < 4) {
@@ -180,11 +187,11 @@ std::vector<int> Pathfinder::randomMovement(int startId, int goalId) {
         if (!lineaVistaPath->empty()) {
             // Se encontró línea de vista directa
             // Evitar duplicar el nodo actual si ya está en totalPath
-            if (!totalPath.empty() && totalPath.back() == graph.toIndex(lineaVistaPath->front().row, lineaVistaPath->front().column)) {
+            if (!totalPath->empty() && totalPath->back() == Position{lineaVistaPath->front().row, lineaVistaPath->front().column}) {
                 lineaVistaPath->pop();
             }
             for (int i = 0; i < lineaVistaPath->size(); ++i) {
-                totalPath.push_back(graph.toIndex(lineaVistaPath->front().row, lineaVistaPath->front().column));
+                totalPath->push(Position{lineaVistaPath->front().row, lineaVistaPath->front().column});
                 lineaVistaPath->pop();
             }
             // totalPath.insert(totalPath.end(), graph.toIndex(lineaVistaPath->front().row, lineaVistaPath->front().column),
@@ -246,11 +253,12 @@ std::vector<int> Pathfinder::randomMovement(int startId, int goalId) {
 
         // Agregar el camino aleatorio al camino total
         // Evitar duplicar el nodo actual si ya está en totalPath
-        if (!totalPath.empty() && totalPath.back() == randomPath.front()) {
+        if (!totalPath->empty() && totalPath->back() == Position{randomPath.front() / graph.getCols(), randomPath.front() % graph.getCols()}) {
             randomPath.erase(randomPath.begin());
         }
-        totalPath.insert(totalPath.end(), randomPath.begin(), randomPath.end());
-
+        for (int i = 0; i < randomPath.size(); ++i) {
+            totalPath->push(Position{randomPath[i] / graph.getCols(), randomPath[i] % graph.getCols()});
+        }
         // Intentar línea de vista desde la nueva posición
         // currentId ya está actualizado
         attempts++;
