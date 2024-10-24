@@ -14,19 +14,8 @@ Tank* Controller::getTanks() const {
     return model->getTanks();
 }
 
-Tank* Controller::getTankOnPosition(Position position) const {
-    auto [row, column] = position;
-    Tank* tanks = getTanks();
-
-    for (int i = 0; i < 8; i++) {
-        if (Tank* tank = &tanks[i];
-            !tank->isDestroyed() &&
-            row == tank->getRow() && column == tank->getColumn()) {
-                return tank;
-            }
-    }
-
-    return nullptr;
+Tank* Controller::getTankOnPosition(const Position position) const {
+    return model->getTankOnPosition(position);
 }
 
 Tank* Controller::getSelectedTank() const {
@@ -55,6 +44,30 @@ Player* Controller::getCurrentPlayer() const {
 
 Bullet *Controller::getBullet() const {
     return model->getBullet();
+}
+
+void Controller::handleFireBullet(const Position src, const Position dest) const {
+    model->handleFireBullet(src, dest);
+}
+
+void Controller::moveBullet(Bullet* bullet, const Position position) {
+    Model::moveBullet(bullet, position);
+}
+
+bool Controller::bulletHitTank() const {
+    return model->bulletHitTank();
+}
+
+void Controller::handleBulletCollision() const {
+    model->handleBulletCollision();
+}
+
+void Controller::handleTankDestruction(Tank* tank) const {
+    model->handleTankDestruction(tank);
+}
+
+void Controller::destroyBullet() const {
+    model->destroyBullet();
 }
 
 Queue<Position>* Controller::getTankPath() const {

@@ -38,6 +38,8 @@ public:
      */
     [[nodiscard]] bool getMaxDamage() const;
 
+    [[nodiscard]] double getRotationAngle() const;
+
     /**
      * @brief Gets the path the bullet has to follow.
      *
@@ -58,6 +60,8 @@ public:
      * @param maxDamage True if the bullet applies max damage, false otherwise.
      */
     void setMaxDamage(bool maxDamage);
+
+    void setRotationAngle(double angle);
 
     /**
      * @brief Sets the path the bullet has to follow.
@@ -80,6 +84,8 @@ public:
     */
     [[nodiscard]] bool move();
 
+    void setPosition(Position position);
+
     /**
      * @brief Checks if the bullet collides with another position.
      *
@@ -92,6 +98,7 @@ public:
 private:
     Position position; ///< The position of the bullet.
     Position target; ///< The position where the bullet is aimed.
+    double rotationAngle = 0.0; ///< The rotation angle of the bullet.
     DATA_STRUCTURES::Queue<Position>* path = nullptr; ///< The path the bullet has to follow.
     bool maxDamage = false; ///< If the bullet applies max damage.
 };

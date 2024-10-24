@@ -38,6 +38,21 @@ Tank* Model::getSelectedTank() const {
     return nullptr;
 }
 
+Tank* Model::getTankOnPosition(Position position) const {
+    auto [row, column] = position;
+    Tank* tanks = getTanks();
+
+    for (int i = 0; i < 8; i++) {
+        if (Tank* tank = &tanks[i];
+            !tank->isDestroyed() &&
+            row == tank->getRow() && column == tank->getColumn()) {
+            return tank;
+            }
+    }
+
+    return nullptr;
+}
+
 void Model::handleSelectTank(Tank* tank) const {
     const int playerId = tank->getPlayer()->getId();
 
@@ -61,17 +76,12 @@ void Model::handleMoveTank(const Tank* tank, const Position dest) {
         return;
     }
 
-    Player* tankPlayer = tank->getPlayer();
+    const Player* tankPlayer = tank->getPlayer();
     const POWER_UP playerPowerUp = tankPlayer->getPowerUp();
 
     // Calculate path
     const auto src = Position{tank->getRow(), tank->getColumn()};
     tankPath = calculatePath(tank->getColor(), playerPowerUp, src, dest);
-
-    // Erase power up
-    if (tankPlayer->getPowerUpActive() && playerPowerUp == MOVEMENT_PRECISION) {
-        tankPlayer->erasePowerUp();
-    }
 
     // Decrement actions remaining
     decreaseActions();
@@ -100,8 +110,9 @@ Queue<Position>* Model::calculatePath(const Color color, const POWER_UP powerUp,
 
 }
 
-int Model::calculateProbability(const Color color, const POWER_UP powerUp) {
-    if (powerUp == MOVEMENT_PRECISION) {
+int Model::calculateProbability(const Color color, const POWER_UP powerUp) const {
+    if (powerUp == MOVEMENT_PRECISION && currentPlayer->getPowerUpActive()) {
+        currentPlayer->erasePowerUp();
         return 9;
     }
 
@@ -121,8 +132,69 @@ Player* Model::getCurrentPlayer() const {
     return currentPlayer;
 }
 
-Bullet *Model::getBullet() const {
+Bullet* Model::getBullet() const {
     return bullet;
+}
+
+void Model::handleFireBullet(const Position src, const Position dest) {
+    const POWER_UP powerUp = currentPlayer->getPowerUp();
+
+    // Create bullet
+    createBullet(src, dest, powerUp);
+
+    // Decrement actions remaining
+    decreaseActions();
+}
+
+void Model::moveBullet(Bullet* bullet, const Position position) {
+    bullet->setPosition(position);
+}
+
+bool Model::bulletHitTank() const {
+    if (auto [row, col] = bullet->getPosition();
+    map->isOccupied(row, col)) {
+        return true;
+    }
+
+    return false;
+}
+
+void Model::handleBulletCollision() const {
+    Tank* tankHit = getTankOnPosition(bullet->getPosition());
+    tankHit->applyDamage(bullet->getMaxDamage());
+}
+
+bool Model::tankKilled(const Tank* tank) {
+    return tank->getHealth() <= 0 && !tank->isDestroyed();
+}
+
+void Model::handleTankDestruction(Tank* tank) const {
+    tank->destroy();
+    map->removeTank(tank->getRow(), tank->getColumn());
+}
+
+void Model::createBullet(const Position src, const Position dest, const POWER_UP powerUp) {
+    bullet = new Bullet(src, dest);
+
+    if (powerUp == ATTACK_POWER && currentPlayer->getPowerUpActive()) {
+        bullet->setMaxDamage(true);
+        currentPlayer->erasePowerUp();
+    }
+
+    // Calculate bullet path
+    const Pathfinder pathfinder(*map);
+
+    if (powerUp == ATTACK_PRECISION && currentPlayer->getPowerUpActive()) {
+        bullet->setPath(*pathfinder.aStar(src, dest));
+        currentPlayer->erasePowerUp();
+    } else {
+        bullet->setPath(*pathfinder.lineaVista(src, dest));
+    }
+}
+
+void Model::destroyBullet() {
+    delete bullet;
+    bullet = nullptr;
 }
 
 Queue<Position>* Model::getTankPath() const {
@@ -144,6 +216,21 @@ void Model::moveTank(Tank* tank, const Position position) const {
         }
     }
 }
+
+void Model::endTurn() {
+    currentPlayer = currentPlayer->getId() == 0 ? &players[1] : &players[0];
+
+    if (const POWER_UP powerUp = currentPlayer->getPowerUp();
+        currentPlayer->getPowerUpActive() && powerUp == DOUBLE_TURN) {
+        actionsRemaining = 2;
+
+        // Erase power up
+        currentPlayer->erasePowerUp();
+    } else {
+        actionsRemaining = 1;
+    }
+}
+
 
 void Model::createMap() {
     map = new GridGraph();
@@ -189,7 +276,7 @@ void Model::decreaseActions() {
     actionsRemaining--;
 
     if (actionsRemaining <= 0) {
-        // end turn
+        endTurn();
     }
 }
 

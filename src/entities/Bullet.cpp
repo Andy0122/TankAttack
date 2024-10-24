@@ -13,6 +13,10 @@ bool Bullet::getMaxDamage() const {
     return maxDamage;
 }
 
+double Bullet::getRotationAngle() const {
+    return rotationAngle;
+}
+
 Queue<Position>* Bullet::getPath() const {
     return path;
 }
@@ -23,6 +27,10 @@ bool Bullet::reachedTarget() const {
 
 void Bullet::setMaxDamage(const bool maxDamage) {
     this->maxDamage = maxDamage;
+}
+
+void Bullet::setRotationAngle(const double angle) {
+    this->rotationAngle = angle;
 }
 
 void Bullet::setPath(Queue<Position>& path) {
@@ -50,6 +58,11 @@ bool Bullet::move() {
 
     return true;
 }
+
+void Bullet::setPosition(const Position position) {
+    this->position = position;
+}
+
 
 bool Bullet::bulletCollision(const Position& other) const {
     return position.row == other.row && position.column == other.column;

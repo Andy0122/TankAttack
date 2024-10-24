@@ -220,7 +220,7 @@ private:
      */
     [[nodiscard]] GtkWidget* createTankDisplay(const Tank* tank);
 
-    [[nodiscard]] GtkWidget* createPowerUpLabel(int playerId);
+    [[nodiscard]] GtkWidget* createPowerUpLabel(int playerId) const;
 
     // Métodos de configuración
     /**
@@ -262,7 +262,7 @@ private:
 
     GdkPixbuf* selectTankImage(Color color);
 
-    static GdkPixbuf* rotateTankImage(const GdkPixbuf* image, double rotationAngle);
+    static GdkPixbuf* rotateImage(const GdkPixbuf* image, double rotationAngle);
 
     static void drawSelectedMarker(cairo_t* cr, const Tank& tank) ;
 
@@ -321,9 +321,9 @@ private:
      * @param origin Posición de origen.
      * @param target Posición objetivo.
      */
-    void handleFireBullet(const Position& origin, const Position& target);
+    // void handleFireBullet(const Position& origin, const Position& target);
 
-    void createBullet(const Position& origin, const Position& target, POWER_UP powerUp);
+    // void createBullet(const Position& origin, const Position& target, POWER_UP powerUp);
 
     /**
      * @brief Maneja el movimiento de la bala.
@@ -390,6 +390,14 @@ private:
     static gboolean moveTankStep(gpointer data);
 
     static void setTankRotationAngle(Tank* tank, int destRow, int destCol);
+
+    static gboolean moveBulletStep(gpointer data);
+
+    static void setBulletRotationAngle(Bullet* bullet, int destRow, int destCol);
+
+    static bool tankKilled(const Tank* tank);
+
+    static void startExplosion(View* view, Position position);
 
     // Métodos de reinicio
     /**

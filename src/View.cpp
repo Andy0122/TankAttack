@@ -8,7 +8,7 @@
 
 using namespace std;
 using namespace DATA_STRUCTURES;
-//TODO: Refactored code, pass game logic to model
+//TODO: CHECK PATHS ALGORITHM
 
 View::View(Controller* controller, GtkWidget *window)
 : controller(controller), window(window) {
@@ -45,13 +45,6 @@ void View::setPlayers(Player* players) {
 void View::update() const {
     gtk_widget_queue_draw(drawingArea);
 }
-
-void View::addTrace() const {
-    if (bulletTrace) {
-        bulletTrace->append(bulletGame->getPosition());
-    }
-}
-
 
 
 GtkWidget* View::createVBox(GtkWidget *window) {
@@ -163,7 +156,7 @@ gboolean View::onDraw(GtkWidget *widget, cairo_t *cr, gpointer data) {
     view->drawStatusBar();
     view->drawBulletTrace(cr);
     view->drawBullet(cr);
-    // view->drawExplosions(cr);
+    view->drawExplosions(cr);
 
     return FALSE;
 }
@@ -210,7 +203,7 @@ void View::drawTanks(cairo_t *cr) {
         const GdkPixbuf* tankImage = selectTankImage(tank->getColor());
 
         // Rotate the tank image
-        GdkPixbuf* rotatedTankImage = rotateTankImage(tankImage, tank->getRotationAngle());
+        GdkPixbuf* rotatedTankImage = rotateImage(tankImage, tank->getRotationAngle());
 
         // Draw the tank
         gdk_cairo_set_source_pixbuf(cr, rotatedTankImage, tank->getColumn() * CELL_SIZE, tank->getRow() * CELL_SIZE);
@@ -238,7 +231,7 @@ GdkPixbuf* View::selectTankImage(const Color color) {
     return pixbuf;
 }
 
-GdkPixbuf* View::rotateTankImage(const GdkPixbuf* image, const double rotationAngle) {
+GdkPixbuf* View::rotateImage(const GdkPixbuf* image, const double rotationAngle) {
     GdkPixbufRotation rotation;
 
     switch (static_cast<int>(rotationAngle)) {
@@ -351,7 +344,7 @@ GtkWidget* View::createTankDisplay(const Tank* tank) {
     return hbox;
 }
 
-GtkWidget* View::createPowerUpLabel(const int playerId) {
+GtkWidget* View::createPowerUpLabel(const int playerId) const {
     const Player* player = &controller->getPlayers()[playerId];
 
     GtkWidget* label = gtk_label_new(player->getPowerUpName().c_str());
@@ -389,19 +382,28 @@ void View::drawBullet(cairo_t *cr) const { // Add the bullet orientation
     if (const Bullet* bullet = controller->getBullet()) {
         auto [row, column] = bullet->getPosition();
 
-        const GdkPixbuf* pixbuf = assets.at("bullet");
-        gdk_cairo_set_source_pixbuf(cr, pixbuf, column * CELL_SIZE + CELL_SIZE / 4, row * CELL_SIZE + CELL_SIZE / 4);
+        // Get the bullet image
+        const GdkPixbuf* bulletImage = assets.at("bullet");
+
+        // Rotate the bullet image
+        GdkPixbuf* rotatedBulletImage = rotateImage(bulletImage, bullet->getRotationAngle());
+
+        // Draw the bullet
+        gdk_cairo_set_source_pixbuf(cr, rotatedBulletImage, column * CELL_SIZE + CELL_SIZE / 4, row * CELL_SIZE + CELL_SIZE / 4);
         cairo_paint(cr);
+
+        // Free the GdkPixbuf
+        g_object_unref(rotatedBulletImage);
     }
 }
 
 void View::drawExplosions(cairo_t *cr) {
     for (const auto& explosion : explosions) {
         std::string key = "explosion_" + std::to_string(explosion.currentFrame + 1);
-        GdkPixbuf* pixbuf = assets[key];
+        const GdkPixbuf* pixbuf = assets[key];
 
-        int row = explosion.position.row;
-        int column = explosion.position.column;
+        const int row = explosion.position.row;
+        const int column = explosion.position.column;
 
         gdk_cairo_set_source_pixbuf(cr, pixbuf, column * CELL_SIZE, row * CELL_SIZE);
         cairo_paint(cr);
@@ -409,7 +411,7 @@ void View::drawExplosions(cairo_t *cr) {
 }
 
 
-gboolean View::onClick(GtkWidget *widget, const GdkEventButton *event, gpointer data) {
+gboolean View::onClick(GtkWidget* widget, const GdkEventButton* event, gpointer data) {
     auto* view = static_cast<View*>(data);
     const auto* controller = view->controller;
 
@@ -436,11 +438,14 @@ gboolean View::onClick(GtkWidget *widget, const GdkEventButton *event, gpointer 
         }
 
     } else if (event->button == 3) {
-        if (Tank* selectedTank = view->getSelectedTank()) {
+        if (Tank* selectedTank = controller->getSelectedTank()) {
             if (selectedTank->isDestroyed()) {
                 return TRUE;
             }
-            view->handleFireBullet(Position(selectedTank->getRow(), selectedTank->getColumn()), position);
+            controller->handleFireBullet(Position(selectedTank->getRow(), selectedTank->getColumn()), position);
+
+            view->soundManager.playSoundEffect("fire");
+            g_timeout_add(100, moveBulletStep, view);
             selectedTank->setSelected(false);
         }
     }
@@ -475,8 +480,8 @@ gboolean View::moveTankStep(gpointer data) {
 
     setTankRotationAngle(tank, row, col);
 
-    const auto NewPosition = Position(row, col);
-    view->controller->moveTank(tank, NewPosition);
+    const auto newPosition = Position(row, col);
+    view->controller->moveTank(tank, newPosition);
     view->update();
 
     return TRUE;
@@ -501,6 +506,89 @@ void View::setTankRotationAngle(Tank* tank, const int destRow, const int destCol
     }
 
     tank->setRotationAngle(rotationAngle);
+}
+
+gboolean View::moveBulletStep(gpointer data) {
+    auto* view = static_cast<View*>(data);
+    const auto* controller = view->controller;
+
+    if (controller->getBullet() == nullptr) { // No bullet
+        return FALSE;
+    }
+
+    if (view->gameOver) { // Game over
+        return FALSE;
+    }
+
+    Bullet* bullet = controller->getBullet();
+    Queue<Position>* path = bullet->getPath();
+
+    if (path->empty()) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        controller->destroyBullet();
+        view->update();
+        return FALSE;
+    }
+
+    auto [row, col] = path->front();
+    path->pop();
+
+    setBulletRotationAngle(bullet, row, col);
+
+    // Move the bullet
+    const auto newPosition = Position(row, col);
+    Controller::moveBullet(bullet, newPosition);
+
+    // Check collision with tank
+    if (controller->bulletHitTank()) {
+        controller->handleBulletCollision();
+        view->soundManager.playSoundEffect("impact");
+
+        if (Tank* tankHit = controller->getTankOnPosition(newPosition);
+            tankKilled(tankHit)) {
+            controller->handleTankDestruction(tankHit);
+
+            startExplosion(view, Position{tankHit->getRow(), tankHit->getColumn()});
+        }
+    }
+
+    view->update();
+
+    return TRUE;
+}
+
+void View::setBulletRotationAngle(Bullet* bullet, const int destRow, const int destCol) {
+    const int currentRow = bullet->getPosition().row;
+    const int currentCol = bullet->getPosition().column;
+
+    const int deltaRow = destRow - currentRow;
+    const int deltaCol = destCol - currentCol;
+
+    double rotationAngle = 0.0;
+    if (deltaRow == 0 && deltaCol == 1) {
+        rotationAngle = 0.0;
+    } else if (deltaRow == 1 && deltaCol == 0) {
+        rotationAngle = 90.0;
+    } else if (deltaRow == 0 && deltaCol == -1) {
+        rotationAngle = 180.0;
+    } else if (deltaRow == -1 && deltaCol == 0) {
+        rotationAngle = 270.0;
+    }
+
+    bullet->setRotationAngle(rotationAngle);
+}
+
+bool View::tankKilled(const Tank* tank) {
+    return tank->getHealth() <= 0 && !tank->isDestroyed();
+}
+
+void View::startExplosion(View* view, const Position position) {
+    const auto explosion = Explosion{position, 0};
+    view->explosions.push_back(explosion);
+
+    view->soundManager.playSoundEffect("explosion");
+
+    g_timeout_add(100, animateExplosions, view);
 }
 
 gboolean View::onKeyPress(GtkWidget* widget, GdkEventKey* event, gpointer data) {
@@ -528,178 +616,47 @@ void View::handlePowerUpActivation() {
     }
 }
 
-void View::handleSelectTank(Tank* tank) const {
-    if (tank->getPlayer()->getId() != currentPlayer || tank->isDestroyed()) {
-        // No permitir seleccionar tanques del otro jugador o que estén destruidos
-        return;
-    }
-    deselectAllTanks();
-    tank->setSelected(true);
-    update();
-}
-
-void View::handleFireBullet(const Position &origin, const Position &target) {
-    POWER_UP currentPowerUp;
-    if (playersList[currentPlayer].getPowerUpActive()) {
-        currentPowerUp = playersList[currentPlayer].getPowerUp();
-        playersList[currentPlayer].setPowerUpActive(false);
-        playersList[currentPlayer].erasePowerUp();
-    } else {
-        currentPowerUp = NONE;
-    }
-
-    createBullet(origin, target, currentPowerUp);
-
-    bulletTrace = new LinkedList<Position>();
-
-    g_timeout_add(100, handleMoveBullet, this);
-
-    // Reproducir efecto de sonido de disparo
-    soundManager.playSoundEffect("fire");
-
-    // Decrementar acciones restantes
-    actionsRemaining--;
-
-    // Verificar si se debe cambiar de turno
-    if (actionsRemaining <= 0) {
-        endTurn();
-    }
-
-    update();
-}
-
-void View::createBullet(const Position& origin, const Position& target, const POWER_UP powerUp) {
-    bulletGame = new Bullet(origin, target);
-
-    if (powerUp == ATTACK_POWER) {
-        bulletGame->setMaxDamage(true);
-    }
-
-    // Calculate bullet path
-    const Pathfinder pathfinder(*gridMapGame);
-    Queue<Position>* path;
-
-    if (powerUp == ATTACK_PRECISION) {
-        bulletGame->setPath(*pathfinder.aStar(origin, target));
-        playersList[currentPlayer].setPowerUpActive(false);
-        playersList[currentPlayer].erasePowerUp();
-    } else {
-        bulletGame->setPath(*pathfinder.lineaVista(origin, target));
-    }
-}
-
-
-gboolean View::handleMoveBullet(gpointer data) {
-    auto* view = static_cast<View*>(data);
-    if (view->bulletGame && view->bulletGame->getPath() != nullptr) {
-
-        if (view->gameOver) {
-            return FALSE;
-        }
-
-        if (view->bulletGame->move()) {
-            view->destroyBullet();
-            view->destroyBulletTrace();
-            view->update();
-            return FALSE;
-        }
-
-        if (view->bulletHitTank(view->bulletGame)) {
-            Tank* tankHit = view->getTankOnPosition(view->bulletGame->getPosition());
-            tankHit->applyDamage(view->bulletGame->getMaxDamage());
-
-            // Reproducir efecto de sonido de impacto
-            view->soundManager.playSoundEffect("impact");
-
-            if (tankHit->getHealth() <= 0 && !tankHit->isDestroyed()) {
-                tankHit->destroy(); // Marcar el tanque como destruido
-                view->gridMapGame->removeTank(tankHit->getRow(), tankHit->getColumn()); // Remover del mapa
-
-                // Iniciar la explosión en la posición del tanque
-                Explosion explosion;
-                int row = tankHit->getRow();
-                int column = tankHit->getColumn();
-                explosion.position = Position(row, column);
-                explosion.currentFrame = 0;
-                view->explosions.push_back(explosion);
-
-                // Reproducir efecto de sonido de explosión
-                view->soundManager.playSoundEffect("explosion");
-
-                // Iniciar el temporizador para animar la explosión
-                g_timeout_add(100, View::animateExplosions, view);
-
-                // Verificar si todos los tanques del jugador han sido destruidos
-                // if (view->areAllTanksDestroyed(tankHit->getPlayer())) {
-                //     // Finalizar el juego
-                //     view->endGameDueToDestruction(tankHit->getPlayer());
-                //     view->update();
-                //     return FALSE;
-                // }
-            }
-
-            view->destroyBullet();
-            view->destroyBulletTrace();
-            view->update();
-            return FALSE;
-        }
-
-        // if (view->BulletHitWall(view->bullet)) {
-        //     handleBulletBounce(view->bullet);
-        // }
-
-        if (!view->bulletGame->reachedTarget()) {
-            view->addTrace();
-        }
-
-        view->update();
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
 // void View::handleBulletBounce(Bullet* bullet) {
 //     auto [x, y] = bullet->getDirection();
 //     bullet->setDirection(Direction(-x, -y));
 // }
 
 
-Tank* View::getTankOnPosition(const Position position) const {
-    for (int i = 0; i < 8; i++) {
-        Tank* tank = &tanksList[i];
-        if (!tank->isDestroyed() &&
-            position.row == tank->getRow() && position.column == tank->getColumn()) {
-            return tank;
-        }
-    }
-
-    return nullptr;
-}
-
-Tank* View::getSelectedTank() const {
-    for (int i = 0; i < 8; i++) {
-        if (Tank* tank = &tanksList[i];
-            tank->isSelected()) {
-            return tank;
-            }
-    }
-
-    return nullptr;
-}
+// Tank* View::getTankOnPosition(const Position position) const {
+//     for (int i = 0; i < 8; i++) {
+//         Tank* tank = &tanksList[i];
+//         if (!tank->isDestroyed() &&
+//             position.row == tank->getRow() && position.column == tank->getColumn()) {
+//             return tank;
+//         }
+//     }
+//
+//     return nullptr;
+// }
+//
+// Tank* View::getSelectedTank() const {
+//     for (int i = 0; i < 8; i++) {
+//         if (Tank* tank = &tanksList[i];
+//             tank->isSelected()) {
+//             return tank;
+//             }
+//     }
+//
+//     return nullptr;
+// }
 
 bool View::cellClicked(const Position position) {
     return position.row >= 0 && position.row < ROWS && position.column >= 0 && position.column < COLS;
 }
 
-bool View::bulletHitTank(const Bullet* bullet) const {
-    if (auto [row, col] = bullet->getPosition();
-    gridMapGame->isOccupied(row, col)) {
-        return true;
-    }
-
-    return false;
-}
+// bool View::bulletHitTank(const Bullet* bullet) const {
+//     if (auto [row, col] = bullet->getPosition();
+//     gridMapGame->isOccupied(row, col)) {
+//         return true;
+//     }
+//
+//     return false;
+// }
 
 
 // void View::handleMoveTank(Tank* tank, const Position position)  {
@@ -798,25 +755,25 @@ bool View::BulletHitWall(const Bullet* bullet) const {
     return false;
 }
 
-void View::deselectAllTanks() const {
-    for (int i = 0; i < 8; i++) {
-        tanksList[i].setSelected(false);
-    }
-}
+// void View::deselectAllTanks() const {
+//     for (int i = 0; i < 8; i++) {
+//         tanksList[i].setSelected(false);
+//     }
+// }
 
-void View::destroyBullet() {
-    if (bulletGame) {
-        delete bulletGame;
-        bulletGame = nullptr;
-    }
-}
-
-void View::destroyBulletTrace(){
-    if (bulletTrace) {
-        delete bulletTrace;
-        bulletTrace = nullptr;
-    }
-}
+// void View::destroyBullet() {
+//     if (bulletGame) {
+//         delete bulletGame;
+//         bulletGame = nullptr;
+//     }
+// }
+//
+// void View::destroyBulletTrace(){
+//     if (bulletTrace) {
+//         delete bulletTrace;
+//         bulletTrace = nullptr;
+//     }
+// }
 
 // Implementación de startTimer()
 void View::startTimer() {

@@ -29,6 +29,8 @@ public:
 
     [[nodiscard]] Tank* getSelectedTank() const;
 
+    [[nodiscard]] Tank* getTankOnPosition(Position position) const;
+
     /**
     * @brief Handles the selection of a tank
     *
@@ -51,7 +53,7 @@ public:
 
     [[nodiscard]] DATA_STRUCTURES::Queue<Position>* calculatePath(Color color, POWER_UP powerUp, Position src, Position dest) const;
 
-    static int calculateProbability(Color color, POWER_UP powerUp);
+    int calculateProbability(Color color, POWER_UP powerUp) const;
 
     /**
     * @brief Gets the players of the game
@@ -68,6 +70,22 @@ public:
     */
     [[nodiscard]] Bullet* getBullet() const;
 
+    void handleFireBullet(Position src, Position dest);
+
+    static void moveBullet(Bullet* bullet, Position position);
+
+    [[nodiscard]] bool bulletHitTank() const;
+
+    void handleBulletCollision() const;
+
+    static bool tankKilled(const Tank* tank);
+
+    void handleTankDestruction(Tank* tank) const;
+
+    void createBullet(Position src, Position dest, POWER_UP powerUp);
+
+    void destroyBullet();
+
     /**
     * @brief Gets the path of the tank
     */
@@ -81,6 +99,8 @@ public:
     void setCurrentPlayer(Player* player);
 
     void moveTank(Tank* tank, Position position) const;
+
+    void endTurn();
 
 private:
     GridGraph* map = nullptr; ///< Map of the game

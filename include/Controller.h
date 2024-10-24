@@ -52,6 +52,18 @@ public:
     */
     [[nodiscard]] Bullet* getBullet() const;
 
+    void handleFireBullet(Position src, Position dest) const;
+
+    static void moveBullet(Bullet* bullet, Position position) ;
+
+    [[nodiscard]] bool bulletHitTank() const;
+
+    void handleBulletCollision() const;
+
+    void handleTankDestruction(Tank* tank) const;
+
+    void destroyBullet() const;
+
     /**
     * @brief Gets the path of the tank
     */
