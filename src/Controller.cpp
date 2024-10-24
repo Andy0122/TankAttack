@@ -22,6 +22,10 @@ Tank* Controller::getSelectedTank() const {
     return model->getSelectedTank();
 }
 
+bool Controller::allTanksDestroyed(const Player* player) const {
+    return model->allTanksDestroyed(player);
+}
+
 void Controller::handleSelectTank(Tank* tank) const {
     model->handleSelectTank(tank);
 }
@@ -82,4 +86,24 @@ void Controller::handlePowerUpActivation() const {
 
 Queue<Position>* Controller::getTankPath() const {
     return model->getTankPath();
+}
+
+bool Controller::getGameOver() const {
+    return model->getGameOver();
+}
+
+void Controller::setGameOver(const bool gameOver) const {
+    model->setGameOver(gameOver);
+}
+
+int Controller::getRemainingTime() const {
+    return model->getRemainingTime();
+}
+
+void Controller::decreaseTime() const {
+    model->decreaseTime();
+}
+
+Player* Controller::determineWinner() const {
+    return model->determineWinner();
 }

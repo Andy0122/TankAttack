@@ -31,6 +31,8 @@ public:
 
     [[nodiscard]] Tank* getTankOnPosition(Position position) const;
 
+    bool allTanksDestroyed(const Player* player) const;
+
     /**
     * @brief Handles the selection of a tank
     *
@@ -104,7 +106,19 @@ public:
 
     void handlePowerUpActivation();
 
+    [[nodiscard]] int getRemainingTime() const;
+
+    void decreaseTime();
+
     void endTurn();
+
+    [[nodiscard]] Player* determineWinner() const;
+
+    int getRemainingTanks(const Player* player) const;
+
+    [[nodiscard]] bool getGameOver() const;
+
+    void setGameOver(bool gameOver);
 
 private:
     GridGraph* map = nullptr; ///< Map of the game
@@ -115,7 +129,10 @@ private:
 
     DATA_STRUCTURES::Queue<Position>* tankPath = nullptr; ///< Path of the tank to move
 
-    int actionsRemaining = 1;
+    int actionsRemaining = 1; ///< Actions remaining for the current player
+
+    int remainingTime = 300; ///< Remaining time of the game
+    bool gameOver = false; ///< Indicates if the game is over
 
 
     /**

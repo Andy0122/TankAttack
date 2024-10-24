@@ -31,6 +31,8 @@ public:
 
     [[nodiscard]] Tank* getSelectedTank() const;
 
+    bool allTanksDestroyed(const Player* player) const;
+
     void handleSelectTank(Tank* tank) const;
 
     void handleMoveTank(const Tank* tank, Position position) const;
@@ -68,10 +70,20 @@ public:
 
     void handlePowerUpActivation() const;
 
+    [[nodiscard]] int getRemainingTime() const;
+
+    void decreaseTime() const;
+
+    [[nodiscard]] Player* determineWinner() const;
+
     /**
     * @brief Gets the path of the tank
     */
     [[nodiscard]] DATA_STRUCTURES::Queue<Position>* getTankPath() const;
+
+    [[nodiscard]] bool getGameOver() const;
+
+    void setGameOver(bool gameOver) const;
 
 private:
     Model* model; ///< Model of the game

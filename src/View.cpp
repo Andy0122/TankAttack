@@ -533,8 +533,12 @@ gboolean View::moveBulletStep(gpointer data) {
         if (Tank* tankHit = controller->getTankOnPosition(newPosition);
             tankKilled(tankHit)) {
             controller->handleTankDestruction(tankHit);
-
             startExplosion(view, Position{tankHit->getRow(), tankHit->getColumn()});
+
+            if (const Player* playerHit = tankHit->getPlayer();
+                controller->allTanksDestroyed(playerHit)) {
+                view->endGameDueToDestruction(playerHit);
+            }
         }
     }
 
@@ -624,7 +628,6 @@ bool View::cellClicked(const Position position) {
 //     return false;
 // }
 
-// Implementación de startTimer()
 void View::startTimer() {
     g_timeout_add_seconds(1, updateTimer, this);
     g_timeout_add_seconds(20, grantPowerUps, this);
@@ -641,96 +644,63 @@ gboolean View::grantPowerUps(gpointer data) {
     return TRUE;
 }
 
-// Implementación de updateTimer()
 gboolean View::updateTimer(gpointer data) {
     auto* view = static_cast<View*>(data);
+    const auto* controller = view->controller;
 
-    if (view->remaining_time > 0) {
-        --(view->remaining_time);
+    if (const int remainingTime = controller->getRemainingTime();
+        remainingTime > 0) {
+        // Decrease the remaining time
+        controller->decreaseTime();
 
-        // Calcular minutos y segundos
-        int minutes = view->remaining_time / 60;
-        int seconds = view->remaining_time % 60;
-
-        // Formatear el tiempo como MM:SS
+        // Format the time
+        const int minutes = remainingTime / 60;
+        const int seconds = remainingTime % 60;
         char buffer[6];
         snprintf(buffer, sizeof(buffer), "%02d:%02d", minutes, seconds);
 
-        // Actualizar la etiqueta del temporizador directamente
+        // Update the timer label
         gtk_label_set_text(GTK_LABEL(view->timerLabel), buffer);
 
-        return TRUE; // Continuar el temporizador
+        return TRUE;
+    }
+    view->endGameDueToTime();
+    return FALSE;
+}
+
+void View::endGameDueToTime() {
+    if (controller->getGameOver()) return;
+    controller->setGameOver(true);
+
+    // Play sound effect
+    soundManager.playSoundEffect("game_over");
+
+    // Show a message dialog
+    if (const Player* winner = controller->determineWinner();
+        winner == nullptr) {
+        showTieMessage();
     } else {
-        // El temporizador ha llegado a cero, finalizar el juego
-        // view->endGameDueToTime();
-        return FALSE; // Detener el temporizador
+        showWinnerMessage(winner->getId());
     }
 }
 
-// void View::endTurn() {
-//     // Cambiar al siguiente jugador
-//     currentPlayer = (currentPlayer + 1) % 2;
-//
-//     if (const Player& player = playersList[currentPlayer];
-//         player.getPowerUpActive() && player.getPowerUp() == DOUBLE_TURN) {
-//         actionsRemaining = 2;
-//         playersList[currentPlayer].setPowerUpActive(false);
-//         playersList[currentPlayer].erasePowerUp();
-//     } else {
-//         actionsRemaining = 1;
-//     }
-//
-//     update(); // Actualizar la interfaz gráfica
-// }
+void View::endGameDueToDestruction(const Player* losingPlayer) {
+    if (controller->getGameOver()) return;
+    controller->setGameOver(true);
 
-// void View::setActionsPerTurn(int actions) {
-//     actionsRemaining = actions;
-// }
-//
-// void View::endGameDueToTime() {
-//     if (gameOver) return; // Evitar llamadas múltiples
-//     gameOver = true;
-//
-//     // Reproducir efecto de sonido de fin de juego
-//     soundManager.playSoundEffect("game_over");
-//
-//     int winner = determineWinner();
-//     if (winner == -1) {
-//         showTieMessage();
-//     } else {
-//         showWinnerMessage(winner);
-//     }
-// }
+    // Play sound effect
+    soundManager.stopBackgroundMusic();
+    soundManager.playSoundEffect("game_over");
 
+    // Show a message dialog
+    const int winner = losingPlayer->getId() == 0 ? 1 : 0;
+    showWinnerMessage(winner);
+}
 
-// bool View::areAllTanksDestroyed(int player) {
-//     for (int i = 0; i < 8; ++i) {
-//         Tank& tank = tanksList[i];
-//         if (tank.getPlayer()->getId() == player && !tank.isDestroyed()) {
-//             // Aún queda al menos un tanque de este jugador
-//             return false;
-//         }
-//     }
-//     return true; // Todos los tanques de este jugador han sido destruidos
-// }
+void View::showWinnerMessage(const int winner) const {
+    const string message = "¡El jugador " + std::to_string(winner + 1) + " ha ganado!";
 
-// void View::endGameDueToDestruction(int losingPlayer) {
-//     if (gameOver) return; // Evitar llamadas múltiples
-//     gameOver = true;
-//
-//     soundManager.stopBackgroundMusic();
-//
-//     // Reproducir efecto de sonido de fin de juego
-//     soundManager.playSoundEffect("game_over");
-//
-//     int winner = (losingPlayer == 0) ? 1 : 0;
-//     showWinnerMessage(winner);
-// }
-void View::showWinnerMessage(int winner) {
-    // Crear un mensaje con el ganador
-    std::string message = "¡El jugador " + std::to_string(winner + 1) + " ha ganado!";
-
-    // Mostrar un diálogo con el mensaje
+    // Show a dialog
     GtkWidget* dialog = gtk_message_dialog_new(GTK_WINDOW(window),
                                                GTK_DIALOG_DESTROY_WITH_PARENT,
                                                GTK_MESSAGE_INFO,
@@ -739,13 +709,13 @@ void View::showWinnerMessage(int winner) {
     gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
 
-    // Cerrar la ventana o reiniciar el juego
+    // Close the window
     gtk_widget_destroy(window);
 
 }
 
-void View::showTieMessage() {
-    // Mostrar un diálogo indicando que hay un empate
+void View::showTieMessage() const {
+    // Show a dialog
     GtkWidget* dialog = gtk_message_dialog_new(GTK_WINDOW(window),
                                                GTK_DIALOG_DESTROY_WITH_PARENT,
                                                GTK_MESSAGE_INFO,
@@ -754,41 +724,16 @@ void View::showTieMessage() {
     gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
 
-    // Cerrar la ventana o reiniciar el juego
+    // Close the window
     gtk_widget_destroy(window);
 
 }
 
-// int View::determineWinner() {
-//     int tanksPlayer0 = 0;
-//     int tanksPlayer1 = 0;
-//
-//     for (int i = 0; i < 8; ++i) {
-//         Tank& tank = tanksList[i];
-//         if (!tank.isDestroyed()) {
-//             if (tank.getPlayer() == 0) {
-//                 tanksPlayer0++;
-//             } else if (tank.getPlayer()->getId() == 1) {
-//                 tanksPlayer1++;
-//             }
-//         }
-//     }
-//
-//     if (tanksPlayer0 > tanksPlayer1) {
-//         return 0; // Gana el jugador 1
-//     } else if (tanksPlayer1 > tanksPlayer0) {
-//         return 1; // Gana el jugador 2
-//     } else {
-//         // Empate
-//         return -1;
-//     }
-// }
-
 void View::initSound() {
-    // Reproducir música de fondo
+    // Play background music
     soundManager.playBackgroundMusic("../assets/sounds/background_music.mp3");
 
-    // Cargar efectos de sonido
+    // Load sound effects
     soundManager.loadSoundEffect("fire", "../assets/sounds/fire.wav");
     soundManager.loadSoundEffect("impact", "../assets/sounds/impact.wav");
     soundManager.loadSoundEffect("explosion", "../assets/sounds/explosion.wav");

@@ -53,6 +53,17 @@ Tank* Model::getTankOnPosition(Position position) const {
     return nullptr;
 }
 
+bool Model::allTanksDestroyed(const Player* player) const {
+    for (int i = 0; i < 8; i++) {
+        if (tanks[i].getPlayer() == player
+            && !tanks[i].isDestroyed()) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 void Model::handleSelectTank(Tank* tank) const {
     const int playerId = tank->getPlayer()->getId();
 
@@ -233,6 +244,14 @@ void Model::handlePowerUpActivation() {
     decreaseActions();
 }
 
+int Model::getRemainingTime() const {
+    return remainingTime;
+}
+
+void Model::decreaseTime() {
+    remainingTime--;
+}
+
 void Model::endTurn() {
     currentPlayer = currentPlayer->getId() == 0 ? &players[1] : &players[0];
 
@@ -247,6 +266,38 @@ void Model::endTurn() {
     }
 }
 
+Player* Model::determineWinner() const {
+    const int remainingTankP1 = getRemainingTanks(&players[0]);
+    const int remainingTankP2 = getRemainingTanks(&players[1]);
+
+    if (remainingTankP1 > remainingTankP2) {
+        return &players[0];
+    }
+    if (remainingTankP1 < remainingTankP2) {
+        return &players[1];
+    }
+    return nullptr;
+}
+
+int Model::getRemainingTanks(const Player* player) const {
+    int remainingTanks = 0;
+
+    for (int i = 0; i < 8; i++) {
+        if (tanks[i].getPlayer() == player && !tanks[i].isDestroyed()) {
+            remainingTanks++;
+        }
+    }
+
+    return remainingTanks;
+}
+
+bool Model::getGameOver() const {
+    return gameOver;
+}
+
+void Model::setGameOver(const bool gameOver) {
+    Model::gameOver = gameOver;
+}
 
 void Model::createMap() {
     map = new GridGraph();

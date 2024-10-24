@@ -69,51 +69,29 @@ private:
      */
     static gboolean updateTimer(gpointer data);
 
-    // Métodos para finalizar el juego
-    // /**
-    //  * @brief Finaliza el juego debido a que se agotó el tiempo.
-    //  */
-    // void endGameDueToTime();
+    /**
+     * @brief Finaliza el juego debido a que se agotó el tiempo.
+     */
+    void endGameDueToTime();
 
     /**
-     * @brief Verifica si todos los tanques de un jugador han sido destruidos.
+     * @brief Finaliza el juego debido a la destrucción de todos los tanques de un jugador.
      *
-     * @param player Índice del jugador.
-     * @return True si todos los tanques han sido destruidos.
+     * @param losingPlayer Índice del jugador que perdió.
      */
-    bool areAllTanksDestroyed(int player);
-
-    // /**
-    //  * @brief Finaliza el juego debido a la destrucción de todos los tanques de un jugador.
-    //  *
-    //  * @param losingPlayer Índice del jugador que perdió.
-    //  */
-    // void endGameDueToDestruction(int losingPlayer);
+    void endGameDueToDestruction(const Player* losingPlayer);
 
     /**
      * @brief Muestra un mensaje indicando el ganador.
      *
      * @param winner Índice del jugador ganador.
      */
-    void showWinnerMessage(int winner);
+    void showWinnerMessage(int winner) const;
 
     /**
      * @brief Muestra un mensaje indicando un empate.
      */
-    void showTieMessage();
-
-    // /**
-    //  * @brief Determina el ganador basado en los tanques restantes.
-    //  *
-    //  * @return Índice del jugador ganador, o -1 en caso de empate.
-    //  */
-    // int determineWinner();
-
-    // Métodos de interfaz de usuario
-    /**
-     * @brief Añade la posición actual de la bala al rastro.
-     */
-    void addTrace() const;
+    void showTieMessage() const;
 
     /**
      * @brief Crea una caja vertical.
