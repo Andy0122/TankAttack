@@ -13,7 +13,7 @@ bool Bullet::getMaxDamage() const {
     return maxDamage;
 }
 
-Queue* Bullet::getPath() const {
+Queue<Position>* Bullet::getPath() const {
     return path;
 }
 
@@ -25,12 +25,12 @@ void Bullet::setMaxDamage(const bool maxDamage) {
     this->maxDamage = maxDamage;
 }
 
-void Bullet::setPath(Queue& path) {
+void Bullet::setPath(Queue<Position>& path) {
     this->path = &path;
 }
 
-void Bullet::setPath(Stack& path) {
-    this->path = new Queue(); // Initialize the path queue
+void Bullet::setPath(Stack<Position>& path) {
+    this->path = new Queue<Position>(); // Initialize the path queue
     while (!path.empty()) {
         this->path->push(path.top());
         path.pop();

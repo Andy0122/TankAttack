@@ -43,7 +43,7 @@ public:
      *
      * @return The path the bullet has to follow.
      */
-    [[nodiscard]] DATA_STRUCTURES::Queue* getPath() const;
+    [[nodiscard]] DATA_STRUCTURES::Queue<Position>* getPath() const;
 
     /**
      * @brief Checks if the bullet has reached its target.
@@ -64,14 +64,14 @@ public:
      *
      * @param path The path the bullet has to follow.
      */
-    void setPath(DATA_STRUCTURES::Queue& path);
+    void setPath(DATA_STRUCTURES::Queue<Position>& path);
 
     /**
      * @brief Sets the path the bullet has to follow.
      *
      * @param path The path the bullet has to follow.
      */
-    void setPath(DATA_STRUCTURES::Stack& path);
+    void setPath(DATA_STRUCTURES::Stack<Position>& path);
 
     /**
     * @brief Moves the bullet.
@@ -92,7 +92,7 @@ public:
 private:
     Position position; ///< The position of the bullet.
     Position target; ///< The position where the bullet is aimed.
-    DATA_STRUCTURES::Queue* path = nullptr; ///< The path the bullet has to follow.
+    DATA_STRUCTURES::Queue<Position>* path = nullptr; ///< The path the bullet has to follow.
     bool maxDamage = false; ///< If the bullet applies max damage.
 };
 

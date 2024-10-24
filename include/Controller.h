@@ -27,6 +27,16 @@ public:
     */
     [[nodiscard]] Tank* getTanks() const;
 
+    [[nodiscard]] Tank* getTankOnPosition(Position position) const;
+
+    [[nodiscard]] Tank* getSelectedTank() const;
+
+    void handleSelectTank(Tank* tank) const;
+
+    void handleMoveTank(const Tank* tank, Position position) const;
+
+    void moveTank(Tank* tank, Position position) const;
+
     /**
     * @brief Gets the players of the game
     */
@@ -36,6 +46,16 @@ public:
     * @brief Gets the current player
     */
     [[nodiscard]] Player* getCurrentPlayer() const;
+
+    /**
+    * @brief Gets the bullet of the game
+    */
+    [[nodiscard]] Bullet* getBullet() const;
+
+    /**
+    * @brief Gets the path of the tank
+    */
+    [[nodiscard]] DATA_STRUCTURES::Queue<Position>* getTankPath() const;
 
 private:
     Model* model; ///< Model of the game

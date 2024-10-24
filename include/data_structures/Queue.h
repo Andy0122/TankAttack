@@ -1,66 +1,102 @@
 #ifndef QUEUE_H
 #define QUEUE_H
 
-#include <Position.h>
 
 namespace DATA_STRUCTURES {
 
 /**
  * @brief Queue data structure.
  */
+template <typename T>
 class Queue {
 public:
     /**
      * @brief Queue constructor.
      */
-    Queue();
+    Queue() : head(nullptr), tail(nullptr), length(0) {}
 
     /**
      * @brief Queue destructor.
      */
-    ~Queue();
+    ~Queue() {
+        while (!empty()) {
+            pop();
+        }
+    }
 
     /**
      * @brief Add a new element to the queue.
-     * @param position Element to add.
+     * @param data Element to add.
      */
-    void push(Position position);
+     void push(const T& data) {
+         const auto newNode = new Node{data, nullptr};
+
+         if (empty()) {
+             head = newNode;
+         } else {
+             tail->next = newNode;
+         }
+
+         tail = newNode;
+         length++;
+     }
 
     /**
      * @brief Remove the first element from the queue.
      */
-    void pop();
+     void pop() {
+         if (empty()) {
+             return;
+         }
+
+         auto temp = head;
+         head = head->next;
+         delete temp;
+         length--;
+
+         if (empty()) {
+             tail = nullptr;
+         }
+    }
 
     /**
      * @brief Get the first element from the queue.
      * @return The first element from the queue.
      */
-    [[nodiscard]] Position front() const;
+    [[nodiscard]] T front() const {
+        return head->data;
+    }
 
     /**
      * @brief Get the last element from the queue.
      * @return The last element from the queue.
      */
-    [[nodiscard]] Position back() const;
+    [[nodiscard]] T back() const {
+        return tail->data;
+    }
 
     /**
      * @brief Get the size of the queue.
      * @return The size of the queue.
      */
-    [[nodiscard]] int size() const;
+    [[nodiscard]] int size() const {
+        return length;
+    }
 
     /**
      * @brief Check if the queue is empty.
      * @return True if the queue is empty, false otherwise.
      */
-    [[nodiscard]] bool empty() const;
+    [[nodiscard]] bool empty() const{
+        return length == 0;
+    }
 
 private:
     /**
      * @brief Node structure for the queue.
      */
     struct Node {
-     Position data;
+     T data;
      Node* next;
     };
 

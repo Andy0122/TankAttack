@@ -24,7 +24,14 @@ using namespace DATA_STRUCTURES;
  */
 Pathfinder::Pathfinder(GridGraph& g) : graph(g) {}
 
-
+Queue<Position>* convertStackToQueue(Stack<Position>& stack) {
+    auto* queue = new Queue<Position>();
+    while (!stack.empty()) {
+        queue->push(stack.top());
+        stack.pop();
+    }
+    return queue;
+}
 
 /**
  * @brief Implementación de BFS para encontrar el camino más corto desde un nodo de inicio a un nodo de destino.
@@ -32,10 +39,13 @@ Pathfinder::Pathfinder(GridGraph& g) : graph(g) {}
  * @param goalId Identificador del nodo objetivo.
  * @return Un vector con los nodos que forman el camino desde el inicio hasta el objetivo.
  */
-std::vector<int> Pathfinder::bfs(int startId, int goalId) {
+Queue<Position>* Pathfinder::bfs(Position src, Position dest) {
     std::vector<bool> visited(graph.getRows() * graph.getCols(), false);
     std::vector<int> parent(graph.getRows() * graph.getCols(), -1); // Para reconstruir el camino.
     std::queue<int> q;
+
+    int startId = graph.toIndex(src.row, src.column);
+    int goalId = graph.toIndex(dest.row, dest.column);
 
     // Iniciar BFS desde el nodo inicial.
     visited[startId] = true;
@@ -47,12 +57,13 @@ std::vector<int> Pathfinder::bfs(int startId, int goalId) {
 
         // Si llegamos al nodo objetivo, reconstruir el camino.
         if (current == goalId) {
-            std::vector<int> path;
+            auto* path = new Stack<Position>();
+            // std::vector<int> path;
             for (int at = goalId; at != -1; at = parent[at]) {
-                path.push_back(at);
+                path->push(Position{at / graph.getCols(), at % graph.getCols()});
             }
-            std::reverse(path.begin(), path.end());
-            return path;
+            // std::reverse(path->begin(), path->end());
+            return convertStackToQueue(*path);
         }
 
         // Explorar los nodos vecinos
@@ -122,11 +133,11 @@ std::vector<int> Pathfinder::dijkstra(int startId, int goalId) {
 
 
 
-Queue* Pathfinder::lineaVista(Position start, Position goal) const {
+Queue<Position>* Pathfinder::lineaVista(Position start, Position goal) const {
     auto [startRow, startCol] = start;
     auto [goalRow, goalCol] = goal;
 
-    auto* path = new Queue();
+    auto* path = new Queue<Position>();
 
     if (startRow == goalRow) { // Move horizontally
         const int colIncrement = goalCol > startCol ? 1 : -1;
@@ -165,7 +176,7 @@ std::vector<int> Pathfinder::randomMovement(int startId, int goalId) {
 
     while (attempts < 4) {
         // Intentar línea de vista
-        Queue* lineaVistaPath = lineaVista(Position{currentId / graph.getCols()}, Position{goalId % graph.getCols()});
+        Queue<Position>* lineaVistaPath = lineaVista(Position{currentId / graph.getCols()}, Position{goalId % graph.getCols()});
         if (!lineaVistaPath->empty()) {
             // Se encontró línea de vista directa
             // Evitar duplicar el nodo actual si ya está en totalPath
@@ -259,13 +270,6 @@ double calculateHValue(const int row, const int col, const Position &dest) {
     return sqrt((row - dest.row) * (row - dest.row) + (col - dest.column) * (col - dest.column));
 }
 
-void convertStackToQueue(Stack& stack, Queue& queue) {
-    while (!stack.empty()) {
-        queue.push(stack.top());
-        stack.pop();
-    }
-}
-
 bool isDestination(int row, int col, Position dest)
 {
     if (row == dest.row && col == dest.column)
@@ -282,10 +286,10 @@ bool isValid(int row, int col)
            && (col < COL);
 }
 
-Stack* tracePath(cell cellDetails[][COL], const Position dest) {
+Stack<Position>* tracePath(cell cellDetails[][COL], const Position dest) {
     auto [row, col] = dest;
 
-    auto* path = new Stack();
+    auto* path = new Stack<Position>();
 
     while (!(cellDetails[row][col].parent_i == row
             && cellDetails[row][col].parent_j == col)) {
@@ -305,7 +309,7 @@ Stack* tracePath(cell cellDetails[][COL], const Position dest) {
 }
 
 //Finish A* algorithm
-Stack* Pathfinder::aStar(const Position src, const Position dest) const {
+Stack<Position>* Pathfinder::aStar(const Position src, const Position dest) const {
     if (!GridGraph::isValid(src.row, src.column)) {
         printf("Start node is invalid\n");
         return nullptr;

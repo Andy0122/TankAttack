@@ -37,6 +37,7 @@ void Player::setPowerUpActive(const bool active) {
 
 void Player::erasePowerUp() {
     powerUp = NONE;
+    powerUpActive = false;
 }
 
 void Player::generatePowerUp() {

@@ -33,7 +33,7 @@ public:
      * @param goalId Identificador del nodo objetivo.
      * @return Un vector con los nodos que forman el camino desde el inicio hasta el objetivo.
      */
-    std::vector<int> bfs(int startId, int goalId);
+    DATA_STRUCTURES::Queue<Position>* bfs(Position src, Position dest);
 
 	/**
 	* @brief Implementación del algoritmo de Dijkstra para encontrar el camino más corto desde un nodo de inicio a un nodo de destino.
@@ -49,7 +49,7 @@ public:
 	 * @param goal Goal position.
 	 * @return A pointer to queue with the found path or nullptr if there is no linear path.
 	 */
-	[[nodiscard]] DATA_STRUCTURES::Queue* lineaVista(Position start, Position goal) const;
+	[[nodiscard]] DATA_STRUCTURES::Queue<Position>* lineaVista(Position start, Position goal) const;
 
 	/**
 	 * @brief Metodo que intenta moverse al objetivo utilizando línea de vista y movimiento aleatorio si es necesario.
@@ -59,7 +59,7 @@ public:
 	 */
 	std::vector<int> randomMovement(int startId, int goalId);
 
-	[[nodiscard]] DATA_STRUCTURES::Stack* aStar(Position src, Position dest) const;
+	[[nodiscard]] DATA_STRUCTURES::Stack<Position>* aStar(Position src, Position dest) const;
 };
 
 #endif // PATHFINDER_H

@@ -54,8 +54,8 @@ private:
     // Estado del juego
     Player* playersList = nullptr;            ///< Arreglo de jugadores del juego
     Tank* tanksList = nullptr;               ///< Arreglo de tanques del juego
-    Bullet* bullet = nullptr;            ///< Bala actual en el juego
-    DATA_STRUCTURES::LinkedList* bulletTrace = nullptr;     ///< Rastreo del movimiento de la bala
+    Bullet* bulletGame = nullptr;            ///< Bala actual en el juego
+    DATA_STRUCTURES::LinkedList<Position>* bulletTrace = nullptr;     ///< Rastreo del movimiento de la bala
     GridGraph* gridMapGame = nullptr;        ///< Mapa del juego
     bool gameOver = false;               ///< Indicador de fin del juego
 
@@ -382,20 +382,14 @@ private:
 
     // Métodos de movimiento
     /**
-     * @brief Mueve el tanque a una nueva posición.
-     *
-     * @param tank Puntero al tanque.
-     * @param position Nueva posición.
-     */
-    void MoveTank(Tank* tank, Position position) const;
-
-    /**
      * @brief Función de paso para mover el tanque a lo largo de una ruta.
      *
      * @param data Puntero a datos adicionales.
      * @return gboolean TRUE para continuar moviéndose.
      */
     static gboolean moveTankStep(gpointer data);
+
+    static void setTankRotationAngle(Tank* tank, int destRow, int destCol);
 
     // Métodos de reinicio
     /**
@@ -441,7 +435,7 @@ private:
 struct MoveData {
     View* view;                ///< Puntero a la vista
     Tank* tank;                ///< Puntero al tanque
-    std::vector<int> path;     ///< Ruta a seguir
+    DATA_STRUCTURES::Queue<Position>* path;     ///< Ruta a seguir
     std::size_t currentStep;   ///< Paso actual en la ruta
 };
 
