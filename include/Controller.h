@@ -64,6 +64,10 @@ public:
 
     void destroyBullet() const;
 
+    void generatePowerUps() const;
+
+    void handlePowerUpActivation() const;
+
     /**
     * @brief Gets the path of the tank
     */

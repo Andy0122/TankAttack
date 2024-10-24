@@ -8,7 +8,7 @@
 
 using namespace std;
 using namespace DATA_STRUCTURES;
-//TODO: CHECK PATHS ALGORITHM
+//TODO: CHECK PATHS ALGORITHM && BULLET COLLISIONS
 
 View::View(Controller* controller, GtkWidget *window)
 : controller(controller), window(window) {
@@ -27,20 +27,6 @@ View::View(Controller* controller, GtkWidget *window)
 
     initSound();
 }
-
-
-void View::setGridMap(GridGraph *map) {
-    gridMapGame = map;
-}
-
-void View::setTanks(Tank* tanks) {
-    this->tanksList = tanks;
-}
-
-void View::setPlayers(Player* players) {
-    this->playersList = players;
-}
-
 
 void View::update() const {
     gtk_widget_queue_draw(drawingArea);
@@ -591,29 +577,34 @@ void View::startExplosion(View* view, const Position position) {
     g_timeout_add(100, animateExplosions, view);
 }
 
-gboolean View::onKeyPress(GtkWidget* widget, GdkEventKey* event, gpointer data) {
+gboolean View::animateExplosions(gpointer data) {
     auto* view = static_cast<View*>(data);
+    bool anyActive = false;
+
+    for (auto it = view->explosions.begin(); it != view->explosions.end();) {
+        it->currentFrame++;
+
+        if (it->currentFrame >= 7) {
+            it = view->explosions.erase(it);
+        } else {
+            anyActive = true;
+            ++it;
+        }
+    }
+    view->update();
+
+    return anyActive ? TRUE : FALSE;
+}
+
+gboolean View::onKeyPress(GtkWidget* widget, GdkEventKey* event, gpointer data) {
+    const auto* view = static_cast<View*>(data);
+    const auto* controller = view->controller;
     if (event->keyval == GDK_KEY_Shift_L || event->keyval == GDK_KEY_Shift_R) {
-        view->handlePowerUpActivation();
+        controller->handlePowerUpActivation();
+        view->update();
     }
 
     return FALSE;
-}
-
-void View::handlePowerUpActivation() {
-    Player& player = playersList[currentPlayer];
-
-    if (player.getPowerUp() == NONE) {
-        return;
-    }
-
-    player.setPowerUpActive(true);
-
-    actionsRemaining--;
-
-    if (actionsRemaining <= 0) {
-        endTurn();
-    }
 }
 
 // void View::handleBulletBounce(Bullet* bullet) {
@@ -621,172 +612,30 @@ void View::handlePowerUpActivation() {
 //     bullet->setDirection(Direction(-x, -y));
 // }
 
-
-// Tank* View::getTankOnPosition(const Position position) const {
-//     for (int i = 0; i < 8; i++) {
-//         Tank* tank = &tanksList[i];
-//         if (!tank->isDestroyed() &&
-//             position.row == tank->getRow() && position.column == tank->getColumn()) {
-//             return tank;
-//         }
-//     }
-//
-//     return nullptr;
-// }
-//
-// Tank* View::getSelectedTank() const {
-//     for (int i = 0; i < 8; i++) {
-//         if (Tank* tank = &tanksList[i];
-//             tank->isSelected()) {
-//             return tank;
-//             }
-//     }
-//
-//     return nullptr;
-// }
-
 bool View::cellClicked(const Position position) {
     return position.row >= 0 && position.row < ROWS && position.column >= 0 && position.column < COLS;
 }
 
-// bool View::bulletHitTank(const Bullet* bullet) const {
+// bool View::BulletHitWall(const Bullet* bullet) const {
 //     if (auto [row, col] = bullet->getPosition();
-//     gridMapGame->isOccupied(row, col)) {
+//     gridMapGame->isObstacle(row, col)) {
 //         return true;
 //     }
-//
 //     return false;
-// }
-
-
-// void View::handleMoveTank(Tank* tank, const Position position)  {
-//     if (tank->isDestroyed()) {
-//         return;
-//     }
-//     Pathfinder pathfinder(*gridMapGame);
-//     int startId = gridMapGame->toIndex(tank->getRow(), tank->getColumn());
-//     int goalId = gridMapGame->toIndex(position.row, position.column);
-//
-//     int color = tank->getColor();
-//
-//     // Generar un número aleatorio entre 1 y 10
-//     static std::random_device rd;
-//     static std::mt19937 gen(rd());
-//     std::uniform_int_distribution<> dist(1, 10);
-//     int randomNumber = dist(gen);
-//     std::vector<int> path;
-//     if (playersList[currentPlayer].getPowerUpActive() && playersList[currentPlayer].getPowerUp() == MOVEMENT_PRECISION) {
-//         if (color == 0 || color == 1) {
-//             if (randomNumber <= 9) {
-//                 path = pathfinder.bfs(startId, goalId);
-//                 std::cout << "Color:" << color << " Algoritmo usado: BFS" << std::endl;
-//             } else {
-//                 path = pathfinder.randomMovement(startId, goalId);
-//                 std::cout << "Color:" << color << " Algoritmo usado: movimiento aleatorio" << std::endl;
-//             }
-//         } else if (color == 2 || color == 3) {
-//             if (randomNumber <= 9) {
-//                 path = pathfinder.dijkstra(startId, goalId);
-//                 std::cout << "Color:" << color << " Algoritmo usado: Dijkstra" << std::endl;
-//             } else {
-//                 path = pathfinder.randomMovement(startId, goalId);
-//                 std::cout << "Color:" << color << " Algoritmo usado: movimiento aleatorio" << std::endl;
-//             }
-//         }
-//
-//         playersList[currentPlayer].setPowerUpActive(false);
-//         playersList[currentPlayer].erasePowerUp();
-//     } else {
-//         if (color == 0 || color == 1) {
-//             // Tanque seleccionado: Rojo o amarillo
-//             // 50% de probabilidad BFS o 50% movimiento aleatorio
-//             if (randomNumber <= 5) {
-//                 // 50% de probabilidad BFS
-//                 path = pathfinder.bfs(startId, goalId);
-//                 std::cout << "Color:" << color << " Algoritmo usado: BFS" << std::endl;
-//             } else {
-//                 // 50% de probabilidad movimiento aleatorio
-//                 path = pathfinder.randomMovement(startId, goalId);
-//                 std::cout << "Color:" << color << " Algoritmo usado: movimiento aleatorio" << std::endl;
-//             }
-//         } else if (color == 2 || color == 3) {
-//             // Tanque seleccionado: Celeste o azul
-//             // 80% de probabilidad Dijkstra o 20% movimiento aleatorio
-//             if (randomNumber <= 8) {
-//                 // 80% de probabilidad Dijkstra
-//                 path = pathfinder.dijkstra(startId, goalId);
-//                 std::cout << "Color:" << color << " Algoritmo usado: Dijkstra" << std::endl;
-//             } else {
-//                 // 20% de probabilidad para Acción D
-//                 path = pathfinder.randomMovement(startId, goalId);
-//                 std::cout << "Color:" << color << " Algoritmo usado: movimiento aleatorio" << std::endl;
-//             }
-//         }
-//     }
-//     if (path.size() < 2) {
-//         tank->setSelected(false);
-//         update();
-//         return;
-//     }
-//
-//     // Decrementar acciones restantes
-//     actionsRemaining--;
-//
-//     // Verificar si se debe cambiar de turno
-//     if (actionsRemaining <= 0) {
-//         endTurn();
-//     }
-//
-//     // Reproducir efecto de sonido de movimiento en bucle
-//     moveSoundChannel = soundManager.playSoundEffect("move", -1);
-//
-//     // Crear la estructura de datos para el movimiento
-//     auto* moveData = new MoveData{const_cast<View*>(this), tank, path, 1};
-//
-//     // Iniciar el temporizador para mover el tanque
-//     g_timeout_add(100, View::moveTankStep, moveData);
-// }
-
-bool View::BulletHitWall(const Bullet* bullet) const {
-    if (auto [row, col] = bullet->getPosition();
-    gridMapGame->isObstacle(row, col)) {
-        return true;
-    }
-    return false;
-}
-
-// void View::deselectAllTanks() const {
-//     for (int i = 0; i < 8; i++) {
-//         tanksList[i].setSelected(false);
-//     }
-// }
-
-// void View::destroyBullet() {
-//     if (bulletGame) {
-//         delete bulletGame;
-//         bulletGame = nullptr;
-//     }
-// }
-//
-// void View::destroyBulletTrace(){
-//     if (bulletTrace) {
-//         delete bulletTrace;
-//         bulletTrace = nullptr;
-//     }
 // }
 
 // Implementación de startTimer()
 void View::startTimer() {
-    // Configurar una función que se llame cada segundo
     g_timeout_add_seconds(1, updateTimer, this);
-    g_timeout_add_seconds(20, grantPowerUp, this);
+    g_timeout_add_seconds(20, grantPowerUps, this);
 }
 
-gboolean View::grantPowerUp(gpointer data) {
+gboolean View::grantPowerUps(gpointer data) {
     const auto* view = static_cast<View*>(data);
-    for (int i = 0; i < 2; i++) {
-        view->playersList[i].generatePowerUp();
-    }
+    const auto* controller = view->controller;
+
+    controller->generatePowerUps();
+
     view->update();
 
     return TRUE;
@@ -813,70 +662,70 @@ gboolean View::updateTimer(gpointer data) {
         return TRUE; // Continuar el temporizador
     } else {
         // El temporizador ha llegado a cero, finalizar el juego
-        view->endGameDueToTime();
+        // view->endGameDueToTime();
         return FALSE; // Detener el temporizador
     }
 }
 
-void View::endTurn() {
-    // Cambiar al siguiente jugador
-    currentPlayer = (currentPlayer + 1) % 2;
+// void View::endTurn() {
+//     // Cambiar al siguiente jugador
+//     currentPlayer = (currentPlayer + 1) % 2;
+//
+//     if (const Player& player = playersList[currentPlayer];
+//         player.getPowerUpActive() && player.getPowerUp() == DOUBLE_TURN) {
+//         actionsRemaining = 2;
+//         playersList[currentPlayer].setPowerUpActive(false);
+//         playersList[currentPlayer].erasePowerUp();
+//     } else {
+//         actionsRemaining = 1;
+//     }
+//
+//     update(); // Actualizar la interfaz gráfica
+// }
 
-    if (const Player& player = playersList[currentPlayer];
-        player.getPowerUpActive() && player.getPowerUp() == DOUBLE_TURN) {
-        actionsRemaining = 2;
-        playersList[currentPlayer].setPowerUpActive(false);
-        playersList[currentPlayer].erasePowerUp();
-    } else {
-        actionsRemaining = 1;
-    }
-
-    update(); // Actualizar la interfaz gráfica
-}
-
-void View::setActionsPerTurn(int actions) {
-    actionsRemaining = actions;
-}
-
-void View::endGameDueToTime() {
-    if (gameOver) return; // Evitar llamadas múltiples
-    gameOver = true;
-
-    // Reproducir efecto de sonido de fin de juego
-    soundManager.playSoundEffect("game_over");
-
-    int winner = determineWinner();
-    if (winner == -1) {
-        showTieMessage();
-    } else {
-        showWinnerMessage(winner);
-    }
-}
+// void View::setActionsPerTurn(int actions) {
+//     actionsRemaining = actions;
+// }
+//
+// void View::endGameDueToTime() {
+//     if (gameOver) return; // Evitar llamadas múltiples
+//     gameOver = true;
+//
+//     // Reproducir efecto de sonido de fin de juego
+//     soundManager.playSoundEffect("game_over");
+//
+//     int winner = determineWinner();
+//     if (winner == -1) {
+//         showTieMessage();
+//     } else {
+//         showWinnerMessage(winner);
+//     }
+// }
 
 
-bool View::areAllTanksDestroyed(int player) {
-    for (int i = 0; i < 8; ++i) {
-        Tank& tank = tanksList[i];
-        if (tank.getPlayer()->getId() == player && !tank.isDestroyed()) {
-            // Aún queda al menos un tanque de este jugador
-            return false;
-        }
-    }
-    return true; // Todos los tanques de este jugador han sido destruidos
-}
+// bool View::areAllTanksDestroyed(int player) {
+//     for (int i = 0; i < 8; ++i) {
+//         Tank& tank = tanksList[i];
+//         if (tank.getPlayer()->getId() == player && !tank.isDestroyed()) {
+//             // Aún queda al menos un tanque de este jugador
+//             return false;
+//         }
+//     }
+//     return true; // Todos los tanques de este jugador han sido destruidos
+// }
 
-void View::endGameDueToDestruction(int losingPlayer) {
-    if (gameOver) return; // Evitar llamadas múltiples
-    gameOver = true;
-
-    soundManager.stopBackgroundMusic();
-
-    // Reproducir efecto de sonido de fin de juego
-    soundManager.playSoundEffect("game_over");
-
-    int winner = (losingPlayer == 0) ? 1 : 0;
-    showWinnerMessage(winner);
-}
+// void View::endGameDueToDestruction(int losingPlayer) {
+//     if (gameOver) return; // Evitar llamadas múltiples
+//     gameOver = true;
+//
+//     soundManager.stopBackgroundMusic();
+//
+//     // Reproducir efecto de sonido de fin de juego
+//     soundManager.playSoundEffect("game_over");
+//
+//     int winner = (losingPlayer == 0) ? 1 : 0;
+//     showWinnerMessage(winner);
+// }
 void View::showWinnerMessage(int winner) {
     // Crear un mensaje con el ganador
     std::string message = "¡El jugador " + std::to_string(winner + 1) + " ha ganado!";
@@ -910,53 +759,30 @@ void View::showTieMessage() {
 
 }
 
-int View::determineWinner() {
-    int tanksPlayer0 = 0;
-    int tanksPlayer1 = 0;
-
-    for (int i = 0; i < 8; ++i) {
-        Tank& tank = tanksList[i];
-        if (!tank.isDestroyed()) {
-            if (tank.getPlayer() == 0) {
-                tanksPlayer0++;
-            } else if (tank.getPlayer()->getId() == 1) {
-                tanksPlayer1++;
-            }
-        }
-    }
-
-    if (tanksPlayer0 > tanksPlayer1) {
-        return 0; // Gana el jugador 1
-    } else if (tanksPlayer1 > tanksPlayer0) {
-        return 1; // Gana el jugador 2
-    } else {
-        // Empate
-        return -1;
-    }
-}
-
-
-gboolean View::animateExplosions(gpointer data) {
-    auto* view = static_cast<View*>(data);
-
-    bool anyActive = false;
-
-    for (auto it = view->explosions.begin(); it != view->explosions.end(); ) {
-        it->currentFrame++;
-
-        if (it->currentFrame >= 7) {
-            // Animación terminada, eliminar explosión
-            it = view->explosions.erase(it);
-        } else {
-            anyActive = true;
-            ++it;
-        }
-    }
-
-    view->update();
-
-    return anyActive ? TRUE : FALSE;
-}
+// int View::determineWinner() {
+//     int tanksPlayer0 = 0;
+//     int tanksPlayer1 = 0;
+//
+//     for (int i = 0; i < 8; ++i) {
+//         Tank& tank = tanksList[i];
+//         if (!tank.isDestroyed()) {
+//             if (tank.getPlayer() == 0) {
+//                 tanksPlayer0++;
+//             } else if (tank.getPlayer()->getId() == 1) {
+//                 tanksPlayer1++;
+//             }
+//         }
+//     }
+//
+//     if (tanksPlayer0 > tanksPlayer1) {
+//         return 0; // Gana el jugador 1
+//     } else if (tanksPlayer1 > tanksPlayer0) {
+//         return 1; // Gana el jugador 2
+//     } else {
+//         // Empate
+//         return -1;
+//     }
+// }
 
 void View::initSound() {
     // Reproducir música de fondo

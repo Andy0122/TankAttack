@@ -5,7 +5,6 @@
 #include <string>
 #include <gtk/gtk.h>
 
-#include "data_structures/LinkedList.h"
 #include "entities/Bullet.h"
 #include "entities/Tank.h"
 #include "systems/GridGraph.h"
@@ -26,23 +25,6 @@ public:
      */
     explicit View(Controller* controller, GtkWidget* window);
 
-    // Métodos públicos
-    /**
-     * @brief Establece el mapa del juego.
-     *
-     * @param map Puntero al mapa de tipo GridGraph.
-     */
-    void setGridMap(GridGraph* map);
-
-    /**
-     * @brief Establece los tanques del juego.
-     *
-     * @param tanks Arreglo de tanques.
-     */
-    void setTanks(Tank* tanks);
-
-    void setPlayers(Player* players);
-
     /**
      * @brief Actualiza la interfaz gráfica del juego.
      */
@@ -50,13 +32,6 @@ public:
 
 private:
     Controller* controller;     ///< Controller of the game
-    // Variables miembro
-    // Estado del juego
-    Player* playersList = nullptr;            ///< Arreglo de jugadores del juego
-    Tank* tanksList = nullptr;               ///< Arreglo de tanques del juego
-    Bullet* bulletGame = nullptr;            ///< Bala actual en el juego
-    DATA_STRUCTURES::LinkedList<Position>* bulletTrace = nullptr;     ///< Rastreo del movimiento de la bala
-    GridGraph* gridMapGame = nullptr;        ///< Mapa del juego
     bool gameOver = false;               ///< Indicador de fin del juego
 
     // Elementos de la interfaz de usuario
@@ -69,8 +44,6 @@ private:
 
     // Variables de mecánicas del juego
     int remaining_time = 300;            ///< Tiempo restante en segundos (5 minutos)
-    int currentPlayer = 0;               ///< Jugador actual (0 para Jugador 1, 1 para Jugador 2)
-    int actionsRemaining = 1;            ///< Acciones restantes en el turno actual
 
     // Constantes
     static constexpr int CELL_SIZE = 50;             ///< Tamaño de cada celda
@@ -96,24 +69,11 @@ private:
      */
     static gboolean updateTimer(gpointer data);
 
-    // Gestión de turnos
-    /**
-     * @brief Finaliza el turno del jugador actual.
-     */
-    void endTurn();
-
-    /**
-     * @brief Establece el número de acciones por turno.
-     *
-     * @param actions Número de acciones por turno.
-     */
-    void setActionsPerTurn(int actions);
-
     // Métodos para finalizar el juego
-    /**
-     * @brief Finaliza el juego debido a que se agotó el tiempo.
-     */
-    void endGameDueToTime();
+    // /**
+    //  * @brief Finaliza el juego debido a que se agotó el tiempo.
+    //  */
+    // void endGameDueToTime();
 
     /**
      * @brief Verifica si todos los tanques de un jugador han sido destruidos.
@@ -123,12 +83,12 @@ private:
      */
     bool areAllTanksDestroyed(int player);
 
-    /**
-     * @brief Finaliza el juego debido a la destrucción de todos los tanques de un jugador.
-     *
-     * @param losingPlayer Índice del jugador que perdió.
-     */
-    void endGameDueToDestruction(int losingPlayer);
+    // /**
+    //  * @brief Finaliza el juego debido a la destrucción de todos los tanques de un jugador.
+    //  *
+    //  * @param losingPlayer Índice del jugador que perdió.
+    //  */
+    // void endGameDueToDestruction(int losingPlayer);
 
     /**
      * @brief Muestra un mensaje indicando el ganador.
@@ -142,12 +102,12 @@ private:
      */
     void showTieMessage();
 
-    /**
-     * @brief Determina el ganador basado en los tanques restantes.
-     *
-     * @return Índice del jugador ganador, o -1 en caso de empate.
-     */
-    int determineWinner();
+    // /**
+    //  * @brief Determina el ganador basado en los tanques restantes.
+    //  *
+    //  * @return Índice del jugador ganador, o -1 en caso de empate.
+    //  */
+    // int determineWinner();
 
     // Métodos de interfaz de usuario
     /**
@@ -298,33 +258,6 @@ private:
 
     static gboolean onKeyPress(GtkWidget* widget, GdkEventKey* event, gpointer data);
 
-    void handlePowerUpActivation();
-
-    /**
-     * @brief Maneja la selección de un tanque.
-     *
-     * @param tank Puntero al tanque seleccionado.
-     */
-    void handleSelectTank(Tank* tank) const;
-
-    /**
-     * @brief Maneja el movimiento de un tanque.
-     *
-     * @param tank Puntero al tanque.
-     * @param position Posición a la que se moverá.
-     */
-    void handleMoveTank(Tank* tank, Position position);
-
-    /**
-     * @brief Maneja el disparo de una bala.
-     *
-     * @param origin Posición de origen.
-     * @param target Posición objetivo.
-     */
-    // void handleFireBullet(const Position& origin, const Position& target);
-
-    // void createBullet(const Position& origin, const Position& target, POWER_UP powerUp);
-
     /**
      * @brief Maneja el movimiento de la bala.
      *
@@ -340,22 +273,6 @@ private:
      */
     // static void handleBulletBounce(Bullet* bullet);
 
-    // Métodos de datos del juego
-    /**
-     * @brief Obtiene el tanque en una posición dada.
-     *
-     * @param position Posición a verificar.
-     * @return Puntero al tanque en esa posición, o nullptr si no hay ninguno.
-     */
-    [[nodiscard]] Tank* getTankOnPosition(Position position) const;
-
-    /**
-     * @brief Obtiene el tanque seleccionado.
-     *
-     * @return Puntero al tanque seleccionado, o nullptr si no hay ninguno.
-     */
-    [[nodiscard]] Tank* getSelectedTank() const;
-
     /**
      * @brief Verifica si la posición clicada está dentro de la cuadrícula.
      *
@@ -370,7 +287,7 @@ private:
      * @param bullet Puntero a la bala.
      * @return True si la bala golpeó un tanque.
      */
-    bool bulletHitTank(const Bullet* bullet) const;
+    // bool bulletHitTank(const Bullet* bullet) const;
 
     /**
      * @brief Verifica si la bala ha golpeado una pared.
@@ -378,7 +295,7 @@ private:
      * @param bullet Puntero a la bala.
      * @return True si la bala golpeó una pared.
      */
-    bool BulletHitWall(const Bullet* bullet) const;
+    // bool BulletHitWall(const Bullet* bullet) const;
 
     // Métodos de movimiento
     /**
@@ -399,22 +316,6 @@ private:
 
     static void startExplosion(View* view, Position position);
 
-    // Métodos de reinicio
-    /**
-     * @brief Deselecciona todos los tanques.
-     */
-    void deselectAllTanks() const;
-
-    /**
-     * @brief Destruye la bala actual.
-     */
-    void destroyBullet();
-
-    /**
-     * @brief Destruye el rastro de la bala.
-     */
-    void destroyBulletTrace();
-
     // Explociones
     /**
    * @brief Anima las explosiones en curso.
@@ -431,7 +332,7 @@ private:
    */
     void drawExplosions(cairo_t* cr);
 
-    static gboolean grantPowerUp(gpointer data);
+    static gboolean grantPowerUps(gpointer data);
 
     //Sounds
     SoundManager soundManager;  ///< Administrador de sonidos

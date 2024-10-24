@@ -217,6 +217,22 @@ void Model::moveTank(Tank* tank, const Position position) const {
     }
 }
 
+void Model::generatePowerUps() const {
+    for (int i = 0; i < 2; i++) {
+        players[i].generatePowerUp();
+    }
+}
+
+void Model::handlePowerUpActivation() {
+    if (currentPlayer->getPowerUp() ==  NONE) {
+        return;
+    }
+
+    currentPlayer->setPowerUpActive(true);
+
+    decreaseActions();
+}
+
 void Model::endTurn() {
     currentPlayer = currentPlayer->getId() == 0 ? &players[1] : &players[0];
 

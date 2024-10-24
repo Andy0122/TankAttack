@@ -53,7 +53,7 @@ public:
 
     [[nodiscard]] DATA_STRUCTURES::Queue<Position>* calculatePath(Color color, POWER_UP powerUp, Position src, Position dest) const;
 
-    int calculateProbability(Color color, POWER_UP powerUp) const;
+    [[nodiscard]] int calculateProbability(Color color, POWER_UP powerUp) const;
 
     /**
     * @brief Gets the players of the game
@@ -99,6 +99,10 @@ public:
     void setCurrentPlayer(Player* player);
 
     void moveTank(Tank* tank, Position position) const;
+
+    void generatePowerUps() const;
+
+    void handlePowerUpActivation();
 
     void endTurn();
 

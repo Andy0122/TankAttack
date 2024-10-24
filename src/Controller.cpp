@@ -70,6 +70,16 @@ void Controller::destroyBullet() const {
     model->destroyBullet();
 }
 
+void Controller::generatePowerUps() const {
+    model->generatePowerUps();
+}
+
+
+void Controller::handlePowerUpActivation() const {
+    model->handlePowerUpActivation();
+}
+
+
 Queue<Position>* Controller::getTankPath() const {
     return model->getTankPath();
 }
