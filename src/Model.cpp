@@ -155,6 +155,11 @@ void Model::handleFireBullet(const Position src, const Position dest) {
     // Create bullet
     createBullet(src, dest, powerUp);
 
+    if (bulletPath == nullptr) {
+        destroyBullet();
+        return;
+    }
+
     // Decrement actions remaining
     decreaseActions();
 }

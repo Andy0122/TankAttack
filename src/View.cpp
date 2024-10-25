@@ -379,8 +379,8 @@ GtkWidget* View::createPowerUpLabel(const int playerId) const {
 void View::drawBulletTrace(cairo_t *cr) const {
     if (const Bullet* bullet = controller->getBullet();
         bullet != nullptr) {
-        if (!controller->getBulletPath()->empty()) {
-            const LinkedList<Position>* trace = controller->getBulletPath();
+        if (const LinkedList<Position>* trace = controller->getBulletPath();
+            trace != nullptr && !trace->empty()) {
             cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
 
             for (int i = 0; i < trace->size(); i++) {
@@ -533,11 +533,14 @@ void View::setTankRotationAngle(Tank* tank, const int destRow, const int destCol
 gboolean View::moveBulletStep(gpointer data) {
     auto* moveData = static_cast<MoveData*>(data);
     auto* view = moveData->view;
-    Tank* tank = moveData->tank;
     const int currentStep = moveData->currentStep;
     const auto* controller = view->controller;
     const LinkedList<Position>* path = moveData->path;
     Bullet* bullet = controller->getBullet();
+
+    if (path == nullptr) { // No path
+        return FALSE;
+    }
 
     if (bullet == nullptr) { // No bullet
         return FALSE;
