@@ -208,7 +208,7 @@ void Model::createBullet(const Position src, const Position dest, const POWER_UP
         bulletPath = pathfinder.aStar(src, dest);
         currentPlayer->erasePowerUp();
     } else {
-        bulletPath = pathfinder.lineaVista(src, dest);
+        bulletPath = pathfinder.calculateBulletPath(src, dest, 4); // 4 rebotes máximos
     }
 }
 

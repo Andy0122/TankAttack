@@ -61,6 +61,16 @@ public:
     DATA_STRUCTURES::LinkedList<Position> *randomMovement(Position src, Position dest);
 
 	[[nodiscard]] DATA_STRUCTURES::LinkedList<Position> *aStar(Position src, Position dest) const;
+
+	/**
+	 * @brief Calcula la ruta de la bala considerando rebotes y colisiones.
+	 * @param start Posición inicial de la bala.
+	 * @param end Posición objetivo (donde se hizo clic).
+	 * @param maxBounces Número máximo de rebotes permitidos.
+	 * @return Puntero a LinkedList<Position> con la ruta calculada.
+	 */
+	DATA_STRUCTURES::LinkedList<Position>* calculateBulletPath(Position start, Position end, int maxBounces) const;
+
 };
 
 #endif // PATHFINDER_H

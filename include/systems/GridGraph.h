@@ -212,6 +212,12 @@ public:
      */
     void fillLargeOpenAreas();
 
+    /**
+    * @brief Verifica si una posición es válida dentro de la cuadrícula.
+    * @param row Fila de la posición.
+    * @param column Columna de la posición.
+    * @return true si la posición es válida, false en caso contrario.
+    */
     [[nodiscard]] static bool isValid(int row, int column) ;
 
 };

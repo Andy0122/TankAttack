@@ -462,9 +462,9 @@ gboolean View::onClick(GtkWidget* widget, const GdkEventButton* event, gpointer 
             controller->handleFireBullet(Position(selectedTank->getRow(), selectedTank->getColumn()), position);
 
             LinkedList<Position>* path = controller->getBulletPath();
-            auto* moveData = new MoveData{view, selectedTank, path};
+            auto* moveData = new MoveData{view, selectedTank, path, 0};
             view->soundManager.playSoundEffect("fire");
-            g_timeout_add(100, moveBulletStep, moveData);
+            g_timeout_add(500, moveBulletStep, moveData);
             selectedTank->setSelected(false);
         }
     }

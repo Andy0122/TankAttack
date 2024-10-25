@@ -834,3 +834,100 @@ LinkedList<Position> *Pathfinder::aStar(const Position src, const Position dest)
 
     return nullptr;
 }
+
+LinkedList<Position>* Pathfinder::calculateBulletPath(Position start, Position end, int maxBounces) const {
+    auto* path = new LinkedList<Position>();
+
+    int bounces = 0;
+
+    double x = start.column + 0.5;
+    double y = start.row + 0.5;
+
+    double dx = end.column - start.column;
+    double dy = end.row - start.row;
+
+    // Normalizar el vector de dirección
+    double length = sqrt(dx * dx + dy * dy);
+    dx /= length;
+    dy /= length;
+
+    int gridX = static_cast<int>(x);
+    int gridY = static_cast<int>(y);
+
+    path->append(Position{gridY, gridX});
+
+    while (bounces <= maxBounces) {
+        x += dx;
+        y += dy;
+
+        int newGridX = static_cast<int>(x);
+        int newGridY = static_cast<int>(y);
+
+        // Verificar si cambió de celda en la cuadrícula
+        if (newGridX != gridX || newGridY != gridY) {
+            gridX = newGridX;
+            gridY = newGridY;
+
+            // Verificar límites del mapa
+            if (!GridGraph::isValid(gridY, gridX)) {
+                // Reflexionar dirección
+                if (gridX < 0 || gridX >= graph.getCols()) {
+                    dx = -dx;
+                    x += 2 * dx;
+                    bounces++;
+                }
+                if (gridY < 0 || gridY >= graph.getRows()) {
+                    dy = -dy;
+                    y += 2 * dy;
+                    bounces++;
+                }
+                if (bounces > maxBounces) {
+                    break;
+                }
+                continue;
+            }
+
+            Position pos{gridY, gridX};
+            path->append(pos);
+
+            // Verificar colisión con obstáculo
+            if (graph.isObstacle(gridY, gridX)) {
+                // Reflexionar dirección
+                double prevX = x - dx;
+                double prevY = y - dy;
+
+                int prevGridX = static_cast<int>(prevX);
+                int prevGridY = static_cast<int>(prevY);
+
+                if (gridX != prevGridX && gridY != prevGridY) {
+                    // Colisión diagonal, reflexionar ambos ejes
+                    dx = -dx;
+                    dy = -dy;
+                } else if (gridX != prevGridX) {
+                    dx = -dx;
+                } else if (gridY != prevGridY) {
+                    dy = -dy;
+                }
+                bounces++;
+
+                if (bounces > maxBounces) {
+                    break;
+                }
+
+                // Ajustar posición para evitar bucles
+                x += dx;
+                y += dy;
+                continue;
+            }
+
+            // Verificar colisión con tanque
+            if (graph.isOccupied(gridY, gridX)) {
+                // La bala golpea un tanque
+                break;
+            }
+        }
+    }
+
+    return path;
+}
+

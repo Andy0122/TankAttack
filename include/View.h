@@ -321,7 +321,7 @@ struct MoveData {
     View* view;                ///< Puntero a la vista
     Tank* tank;                ///< Puntero al tanque
     DATA_STRUCTURES::LinkedList<Position>* path;     ///< Ruta a seguir
-    int currentStep;   ///< Paso actual en la ruta
+    int currentStep = 0;   ///< Paso actual en la ruta
 };
 
 struct Explosion {
