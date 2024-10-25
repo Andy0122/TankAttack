@@ -174,7 +174,7 @@ LinkedList<Position>* Pathfinder::lineaVista(Position start, Position goal) cons
     if (startRow == goalRow) { // Move horizontally
         const int colIncrement = goalCol > startCol ? 1 : -1;
         for (int col = startCol + colIncrement; col != goalCol + colIncrement; col += colIncrement) {
-            if (graph.isObstacle(startRow, col)) {
+            if (GridGraph::isValid(startCol, col) && graph.isObstacle(startRow, col)) {
                 return convertQueueToLinkedList(path);
             }
             path->push(Position{startRow, col});
@@ -184,7 +184,7 @@ LinkedList<Position>* Pathfinder::lineaVista(Position start, Position goal) cons
     if (startCol == goalCol) { // Move vertically
         const int rowIncrement = goalRow > startRow ? 1 : -1;
         for (int row = startRow + rowIncrement; row != goalRow + rowIncrement; row += rowIncrement) {
-            if (graph.isObstacle(row, startCol)) {
+            if (GridGraph::isValid(row, startCol) && graph.isObstacle(row, startCol)) {
                 return convertQueueToLinkedList(path);
             }
             path->push(Position{row, startCol});
