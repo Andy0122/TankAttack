@@ -165,7 +165,6 @@ LinkedList<Position>* Pathfinder::dijkstra(Position src, Position dest) {
     return {};
 }
 
-
 LinkedList<Position>* Pathfinder::lineaVista(Position start, Position goal) const {
     auto [startRow, startCol] = start;
     auto [goalRow, goalCol] = goal;
@@ -176,7 +175,7 @@ LinkedList<Position>* Pathfinder::lineaVista(Position start, Position goal) cons
         const int colIncrement = goalCol > startCol ? 1 : -1;
         for (int col = startCol + colIncrement; col != goalCol + colIncrement; col += colIncrement) {
             if (graph.isObstacle(startRow, col)) {
-                return nullptr;
+                return convertQueueToLinkedList(path);
             }
             path->push(Position{startRow, col});
         }
@@ -186,7 +185,7 @@ LinkedList<Position>* Pathfinder::lineaVista(Position start, Position goal) cons
         const int rowIncrement = goalRow > startRow ? 1 : -1;
         for (int row = startRow + rowIncrement; row != goalRow + rowIncrement; row += rowIncrement) {
             if (graph.isObstacle(row, startCol)) {
-                return nullptr;
+                return convertQueueToLinkedList(path);
             }
             path->push(Position{row, startCol});
         }
