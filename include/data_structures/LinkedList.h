@@ -32,7 +32,7 @@ public:
     *
     * @param data The data to append.
     */
-    void append(const T& data){
+    void append(const T data){
           const auto newNode = new Node{data, nullptr};
 
           if (empty()) {
@@ -53,7 +53,7 @@ public:
     */
     [[nodiscard]] T at(const int index) const {
           if (index < 0 || index >= length) {
-              return nullptr;
+              return T{};
           }
 
           auto current = head;

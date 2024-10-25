@@ -54,6 +54,8 @@ public:
     */
     [[nodiscard]] Bullet* getBullet() const;
 
+    [[nodiscard]] DATA_STRUCTURES::LinkedList<Position> *getBulletPath() const;
+
     void handleFireBullet(Position src, Position dest) const;
 
     static void moveBullet(Bullet* bullet, Position position) ;
@@ -65,6 +67,8 @@ public:
     void handleTankDestruction(Tank* tank) const;
 
     void destroyBullet() const;
+
+    void destroyTankPath() const;
 
     void generatePowerUps() const;
 
@@ -79,7 +83,7 @@ public:
     /**
     * @brief Gets the path of the tank
     */
-    [[nodiscard]] DATA_STRUCTURES::Queue<Position>* getTankPath() const;
+    [[nodiscard]] DATA_STRUCTURES::LinkedList<Position> *getTankPath() const;
 
     [[nodiscard]] bool getGameOver() const;
 

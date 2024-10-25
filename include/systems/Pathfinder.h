@@ -3,6 +3,7 @@
 
 #include <vector>
 #include "GridGraph.h"
+#include "data_structures/LinkedList.h"
 #include "data_structures/Queue.h"
 #include "data_structures/Stack.h"
 
@@ -33,7 +34,7 @@ public:
      * @param goalId Identificador del nodo objetivo.
      * @return Un vector con los nodos que forman el camino desde el inicio hasta el objetivo.
      */
-    DATA_STRUCTURES::Queue<Position>* bfs(Position src, Position dest);
+    DATA_STRUCTURES::LinkedList<Position> *bfs(Position src, Position dest);
 
 	/**
 	* @brief Implementación del algoritmo de Dijkstra para encontrar el camino más corto desde un nodo de inicio a un nodo de destino.
@@ -41,7 +42,7 @@ public:
 	* @param goalId Identificador del nodo objetivo.
 	* @return Un vector con los nodos que forman el camino más corto desde el inicio hasta el objetivo.
 	*/
-	DATA_STRUCTURES::Queue<Position>* dijkstra(Position src, Position dest);
+    DATA_STRUCTURES::LinkedList<Position> *dijkstra(Position src, Position dest);
 
 	/**
 	 * @brief Search for a direct path between two positions.
@@ -49,7 +50,7 @@ public:
 	 * @param goal Goal position.
 	 * @return A pointer to queue with the found path or nullptr if there is no linear path.
 	 */
-	[[nodiscard]] DATA_STRUCTURES::Queue<Position>* lineaVista(Position start, Position goal) const;
+	[[nodiscard]] DATA_STRUCTURES::LinkedList<Position> *lineaVista(Position start, Position goal) const;
 
 	/**
 	 * @brief Metodo que intenta moverse al objetivo utilizando línea de vista y movimiento aleatorio si es necesario.
@@ -57,9 +58,9 @@ public:
 	 * @param goalId Identificador del nodo objetivo.
 	 * @return Un vector con los nodos que forman el camino desde el inicio hasta el objetivo.
 	 */
-	DATA_STRUCTURES::Queue<Position>* randomMovement(Position src, Position dest);
+    DATA_STRUCTURES::LinkedList<Position> *randomMovement(Position src, Position dest);
 
-	[[nodiscard]] DATA_STRUCTURES::Stack<Position>* aStar(Position src, Position dest) const;
+	[[nodiscard]] DATA_STRUCTURES::LinkedList<Position> *aStar(Position src, Position dest) const;
 };
 
 #endif // PATHFINDER_H

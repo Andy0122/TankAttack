@@ -28,7 +28,7 @@ public:
      * @brief Add a new element to the queue.
      * @param data Element to add.
      */
-     void push(const T& data) {
+     void push(const T data) {
          const auto newNode = new Node{data, nullptr};
 
          if (empty()) {

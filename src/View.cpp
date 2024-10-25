@@ -4,11 +4,23 @@
 #include <thread>
 #include <random>
 #include <cmath>
+
+#include "data_structures/LinkedList.h"
 #include "systems/SoundManager.h"
 
 using namespace std;
 using namespace DATA_STRUCTURES;
-//TODO: CHECK PATHS ALGORITHM && BULLET COLLISIONS
+
+LinkedList<Position>* queueToLinkedList(Queue<Position>* queue) {
+    auto* list = new LinkedList<Position>();
+
+    while (!queue->empty()) {
+        list->append(queue->front());
+        queue->pop();
+    }
+
+    return list;
+}
 
 View::View(Controller* controller, GtkWidget *window)
 : controller(controller), window(window) {
@@ -138,6 +150,7 @@ gboolean View::onDraw(GtkWidget *widget, cairo_t *cr, gpointer data) {
     const auto view = static_cast<View*>(data);
 
     view->drawMap(cr);
+    view->drawTankPath(cr);
     view->drawTanks(cr);
     view->drawStatusBar();
     view->drawBulletTrace(cr);
@@ -163,6 +176,24 @@ void View::drawMap(cairo_t *cr) {
         }
     }
 }
+
+void View::drawTankPath(cairo_t *cr) const {
+    LinkedList<Position>* trace = controller->getTankPath();
+    if (trace == nullptr) {
+        return;
+    }
+
+    cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+    for (int i = 0; i < trace->size(); i++) {
+        const auto [row, col] = trace->at(i);
+
+        const double x = col * CELL_SIZE + CELL_SIZE / 2;
+        const double y = row * CELL_SIZE + CELL_SIZE / 2;
+        cairo_rectangle(cr, x - 5, y - 5, 10, 10);
+        cairo_fill(cr);
+    }
+}
+
 
 GdkPixbuf* View::selectCellImage(const Node& node) {
     GdkPixbuf* pixbuf = nullptr;
@@ -346,19 +377,17 @@ GtkWidget* View::createPowerUpLabel(const int playerId) const {
 void View::drawBulletTrace(cairo_t *cr) const {
     if (const Bullet* bullet = controller->getBullet();
         bullet != nullptr) {
-        if (Queue<Position>* bulletTrace = bullet->getPath();
-            !bulletTrace->empty()) {
+        if (!controller->getBulletPath()->empty()) {
+            const LinkedList<Position>* trace = controller->getBulletPath();
             cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
 
-            for (int i = 0; i < bulletTrace->size(); i++) {
-                const auto [row, column] = bulletTrace->front();
+            for (int i = 0; i < trace->size(); i++) {
+                const auto [row, column] = trace->at(i);
 
                 const double x = column * CELL_SIZE + (CELL_SIZE - TRACE_SIZE) / 2;
                 const double y = row * CELL_SIZE + (CELL_SIZE - TRACE_SIZE) / 2;
                 cairo_rectangle(cr, x, y, TRACE_SIZE, TRACE_SIZE);
                 cairo_fill(cr);
-
-                bulletTrace->pop();
             }
         }
     }
@@ -401,7 +430,7 @@ gboolean View::onClick(GtkWidget* widget, const GdkEventButton* event, gpointer 
     auto* view = static_cast<View*>(data);
     const auto* controller = view->controller;
 
-    if (view->gameOver) {
+    if (controller->getGameOver()) {
         return FALSE;
     }
 
@@ -416,7 +445,7 @@ gboolean View::onClick(GtkWidget* widget, const GdkEventButton* event, gpointer 
             if (Tank* selectedTank = controller->getSelectedTank()) {
                 controller->handleMoveTank(selectedTank, position);
 
-                Queue<Position>* path = controller->getTankPath();
+                LinkedList<Position>* path = controller->getTankPath();
                 auto* moveData = new MoveData{view, selectedTank, path};
                 view->moveSoundChannel = view->soundManager.playSoundEffect("move", -1);
                 g_timeout_add(100, moveTankStep, moveData);
@@ -430,9 +459,10 @@ gboolean View::onClick(GtkWidget* widget, const GdkEventButton* event, gpointer 
             }
             controller->handleFireBullet(Position(selectedTank->getRow(), selectedTank->getColumn()), position);
 
+            LinkedList<Position>* path = controller->getBulletPath();
+            auto* moveData = new MoveData{view, selectedTank, path};
             view->soundManager.playSoundEffect("fire");
-            g_timeout_add(100, moveBulletStep, view);
-            selectedTank->setSelected(false);
+            g_timeout_add(100, moveBulletStep, moveData);
         }
     }
     view->update();
@@ -441,12 +471,13 @@ gboolean View::onClick(GtkWidget* widget, const GdkEventButton* event, gpointer 
 }
 
 gboolean View::moveTankStep(gpointer data) {
-    const auto* moveData = static_cast<MoveData*>(data);
+    auto* moveData = static_cast<MoveData*>(data);
     View* view = moveData->view;
     Tank* tank = moveData->tank;
-    Queue<Position>* path = moveData->path;
+    int currentStep = moveData->currentStep;
+    LinkedList<Position>* path = moveData->path;
 
-    if (path->empty()) {
+    if (path->size() == currentStep) {
         tank->setSelected(false);
 
         // Stop Sound Effect
@@ -455,19 +486,21 @@ gboolean View::moveTankStep(gpointer data) {
             view->moveSoundChannel = -1;
         }
 
-        view->update();
-
+        view->controller->destroyTankPath();
         delete moveData;
+
+        view->update();
         return FALSE;
     }
 
-    auto [row, col] = path->front();
-    path->pop();
+    auto [row, col] = path->at(currentStep);
 
     setTankRotationAngle(tank, row, col);
 
     const auto newPosition = Position(row, col);
     view->controller->moveTank(tank, newPosition);
+
+    moveData->currentStep++;
     view->update();
 
     return TRUE;
@@ -495,29 +528,33 @@ void View::setTankRotationAngle(Tank* tank, const int destRow, const int destCol
 }
 
 gboolean View::moveBulletStep(gpointer data) {
-    auto* view = static_cast<View*>(data);
+    auto* moveData = static_cast<MoveData*>(data);
+    auto* view = moveData->view;
+    Tank* tank = moveData->tank;
+    int currentStep = moveData->currentStep;
     const auto* controller = view->controller;
-
-    if (controller->getBullet() == nullptr) { // No bullet
-        return FALSE;
-    }
-
-    if (view->gameOver) { // Game over
-        return FALSE;
-    }
-
+    LinkedList<Position>* path = moveData->path;
     Bullet* bullet = controller->getBullet();
-    Queue<Position>* path = bullet->getPath();
 
-    if (path->empty()) {
+    if (bullet == nullptr) { // No bullet
+        return FALSE;
+    }
+
+    if (controller->getGameOver()) { // Game over
+        return FALSE;
+    }
+
+    if (path->size() == currentStep) { // Movement finished
+        tank->setSelected(false);
+
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         controller->destroyBullet();
+
         view->update();
         return FALSE;
     }
 
-    auto [row, col] = path->front();
-    path->pop();
+    auto [row, col] = path->at(currentStep);
 
     setBulletRotationAngle(bullet, row, col);
 
@@ -542,6 +579,7 @@ gboolean View::moveBulletStep(gpointer data) {
         }
     }
 
+    moveData->currentStep++;
     view->update();
 
     return TRUE;
@@ -740,6 +778,4 @@ void View::initSound() {
     soundManager.loadSoundEffect("move", "../assets/sounds/move.wav");
     soundManager.loadSoundEffect("game_over", "../assets/sounds/game_over.wav");
 }
-
-
 

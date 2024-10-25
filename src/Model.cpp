@@ -98,7 +98,7 @@ void Model::handleMoveTank(const Tank* tank, const Position dest) {
     decreaseActions();
 }
 
-Queue<Position>* Model::calculatePath(const Color color, const POWER_UP powerUp, Position src, Position dest) const {
+LinkedList<Position>* Model::calculatePath(const Color color, const POWER_UP powerUp, Position src, Position dest) const {
     Pathfinder pathfinder(*getMap());
 
     static std::random_device rd;
@@ -147,6 +147,10 @@ Bullet* Model::getBullet() const {
     return bullet;
 }
 
+LinkedList<Position>* Model::getBulletPath() const {
+    return bulletPath;
+}
+
 void Model::handleFireBullet(const Position src, const Position dest) {
     const POWER_UP powerUp = currentPlayer->getPowerUp();
 
@@ -170,9 +174,11 @@ bool Model::bulletHitTank() const {
     return false;
 }
 
-void Model::handleBulletCollision() const {
+void Model::handleBulletCollision() {
     Tank* tankHit = getTankOnPosition(bullet->getPosition());
     tankHit->applyDamage(bullet->getMaxDamage());
+
+    destroyBullet();
 }
 
 bool Model::tankKilled(const Tank* tank) {
@@ -196,19 +202,26 @@ void Model::createBullet(const Position src, const Position dest, const POWER_UP
     const Pathfinder pathfinder(*map);
 
     if (powerUp == ATTACK_PRECISION && currentPlayer->getPowerUpActive()) {
-        bullet->setPath(*pathfinder.aStar(src, dest));
+        bulletPath = pathfinder.aStar(src, dest);
         currentPlayer->erasePowerUp();
     } else {
-        bullet->setPath(*pathfinder.lineaVista(src, dest));
+        bulletPath = pathfinder.lineaVista(src, dest);
     }
 }
 
 void Model::destroyBullet() {
     delete bullet;
+    delete bulletPath;
     bullet = nullptr;
+    bulletPath = nullptr;
 }
 
-Queue<Position>* Model::getTankPath() const {
+void Model::destroyTankPath() {
+    delete tankPath;
+    tankPath = nullptr;
+}
+
+LinkedList<Position> *Model::getTankPath() const {
     return tankPath;
 }
 

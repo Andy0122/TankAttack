@@ -32,7 +32,6 @@ public:
 
 private:
     Controller* controller;     ///< Controller of the game
-    bool gameOver = false;               ///< Indicador de fin del juego
 
     // Elementos de la interfaz de usuario
     GtkWidget* window = nullptr;         ///< Ventana principal del juego
@@ -41,9 +40,6 @@ private:
     GtkWidget* timerLabel = nullptr;     ///< Etiqueta para mostrar el temporizador
     std::map<std::string, GdkPixbuf*> assets; ///< Recursos gráficos del juego
     std::vector<Explosion> explosions; ///< Lista de explosiones en curso
-
-    // Variables de mecánicas del juego
-    int remaining_time = 300;            ///< Tiempo restante en segundos (5 minutos)
 
     // Constantes
     static constexpr int CELL_SIZE = 50;             ///< Tamaño de cada celda
@@ -198,6 +194,8 @@ private:
      */
     void drawTanks(cairo_t* cr);
 
+    void drawTankPath(cairo_t* cr) const;
+
     GdkPixbuf* selectTankImage(Color color);
 
     static GdkPixbuf* rotateImage(const GdkPixbuf* image, double rotationAngle);
@@ -322,8 +320,8 @@ private:
 struct MoveData {
     View* view;                ///< Puntero a la vista
     Tank* tank;                ///< Puntero al tanque
-    DATA_STRUCTURES::Queue<Position>* path;     ///< Ruta a seguir
-    std::size_t currentStep;   ///< Paso actual en la ruta
+    DATA_STRUCTURES::LinkedList<Position>* path;     ///< Ruta a seguir
+    int currentStep;   ///< Paso actual en la ruta
 };
 
 struct Explosion {

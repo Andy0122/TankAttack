@@ -1,6 +1,5 @@
 #include "entities/Bullet.h"
 
-using namespace DATA_STRUCTURES;
 
 Bullet::Bullet(const Position origin, const Position target)
     : position(origin), target(target) {}
@@ -17,14 +16,6 @@ double Bullet::getRotationAngle() const {
     return rotationAngle;
 }
 
-Queue<Position>* Bullet::getPath() const {
-    return path;
-}
-
-bool Bullet::reachedTarget() const {
-    return path->empty();
-}
-
 void Bullet::setMaxDamage(const bool maxDamage) {
     this->maxDamage = maxDamage;
 }
@@ -33,37 +24,6 @@ void Bullet::setRotationAngle(const double angle) {
     this->rotationAngle = angle;
 }
 
-void Bullet::setPath(Queue<Position>& path) {
-    this->path = &path;
-}
-
-void Bullet::setPath(Stack<Position>& path) {
-    this->path = new Queue<Position>(); // Initialize the path queue
-    while (!path.empty()) {
-        this->path->push(path.top());
-        path.pop();
-    }
-}
-
-bool Bullet::move() {
-    if (!path->empty()) {
-        auto [row, column] = path->front();
-        position.row = row;
-        position.column = column;
-
-        path->pop();
-
-        return false;
-    }
-
-    return true;
-}
-
 void Bullet::setPosition(const Position position) {
     this->position = position;
-}
-
-
-bool Bullet::bulletCollision(const Position& other) const {
-    return position.row == other.row && position.column == other.column;
 }

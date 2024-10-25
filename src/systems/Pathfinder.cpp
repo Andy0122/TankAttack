@@ -9,6 +9,7 @@
 #include <float.h>
 #include <bits/stdc++.h>
 
+#include "data_structures/LinkedList.h"
 #include "data_structures/Stack.h"
 
 using namespace  std;
@@ -33,13 +34,39 @@ Queue<Position>* convertStackToQueue(Stack<Position>& stack) {
     return queue;
 }
 
+LinkedList<Position>* convertStackToLinkedList(Stack<Position>& stack) {
+    auto* list = new LinkedList<Position>();
+    while (!stack.empty()) {
+        list->append(stack.top());
+        stack.pop();
+    }
+    return list;
+}
+
+LinkedList<Position>* convertQueueToLinkedList(Queue<Position>& queue) {
+    auto* list = new LinkedList<Position>();
+    while (!queue.empty()) {
+        list->append(queue.front());
+        queue.pop();
+    }
+    return list;
+}
+
+Queue<Position>* convertLinkedListToQueue(LinkedList<Position>& list) {
+    auto* queue = new Queue<Position>();
+    for (int i = 0; i < list.size(); i++) {
+        queue->push(list.at(i));
+    }
+    return queue;
+}
+
 /**
  * @brief Implementación de BFS para encontrar el camino más corto desde un nodo de inicio a un nodo de destino.
  * @param startId Identificador del nodo de inicio.
  * @param goalId Identificador del nodo objetivo.
  * @return Un vector con los nodos que forman el camino desde el inicio hasta el objetivo.
  */
-Queue<Position>* Pathfinder::bfs(Position src, Position dest) {
+LinkedList<Position>* Pathfinder::bfs(Position src, Position dest) {
     std::vector<bool> visited(graph.getRows() * graph.getCols(), false);
     std::vector<int> parent(graph.getRows() * graph.getCols(), -1); // Para reconstruir el camino.
     std::queue<int> q;
@@ -63,7 +90,7 @@ Queue<Position>* Pathfinder::bfs(Position src, Position dest) {
                 path->push(Position{at / graph.getCols(), at % graph.getCols()});
             }
             // std::reverse(path->begin(), path->end());
-            return convertStackToQueue(*path);
+            return convertStackToLinkedList(*path);
         }
 
         // Explorar los nodos vecinos
@@ -86,7 +113,7 @@ Queue<Position>* Pathfinder::bfs(Position src, Position dest) {
  * @param goalId Identificador del nodo objetivo.
  * @return Un vector con los nodos que forman el camino más corto desde el inicio hasta el objetivo.
  */
-Queue<Position>* Pathfinder::dijkstra(Position src, Position dest) {
+LinkedList<Position>* Pathfinder::dijkstra(Position src, Position dest) {
     const int INF = std::numeric_limits<int>::max(); // Valor infinito para inicializar distancias.
     std::vector<int> dist(graph.getRows() * graph.getCols() , INF); // Distancia a cada nodo.
     std::vector<int> parent(graph.getRows() * graph.getCols() , -1); // Para reconstruir el camino.
@@ -112,7 +139,7 @@ Queue<Position>* Pathfinder::dijkstra(Position src, Position dest) {
                 path->push(Position{at / graph.getCols(), at % graph.getCols()});
             }
             // std::reverse(path->begin(), path->end());
-            return convertStackToQueue(*path);
+            return convertStackToLinkedList(*path);
         }
 
         // Si la distancia actual es mayor que la mejor conocida, omitir.
@@ -136,8 +163,7 @@ Queue<Position>* Pathfinder::dijkstra(Position src, Position dest) {
 }
 
 
-
-Queue<Position>* Pathfinder::lineaVista(Position start, Position goal) const {
+LinkedList<Position>* Pathfinder::lineaVista(Position start, Position goal) const {
     auto [startRow, startCol] = start;
     auto [goalRow, goalCol] = goal;
 
@@ -151,7 +177,7 @@ Queue<Position>* Pathfinder::lineaVista(Position start, Position goal) const {
             }
             path->push(Position{startRow, col});
         }
-        return path;
+        return convertQueueToLinkedList(*path);
     }
     if (startCol == goalCol) { // Move vertically
         const int rowIncrement = goalRow > startRow ? 1 : -1;
@@ -161,7 +187,7 @@ Queue<Position>* Pathfinder::lineaVista(Position start, Position goal) const {
             }
             path->push(Position{row, startCol});
         }
-        return path;
+        return convertQueueToLinkedList(*path);
     }
 
     return nullptr;
@@ -173,7 +199,7 @@ Queue<Position>* Pathfinder::lineaVista(Position start, Position goal) const {
  * @param goalId Identificador del nodo objetivo.
  * @return Un vector con los nodos que forman el camino desde el inicio hasta el objetivo.
  */
-Queue<Position>* Pathfinder::randomMovement(Position src, Position dest) {
+LinkedList<Position>* Pathfinder::randomMovement(Position src, Position dest) {
     int startId = graph.toIndex(src.row, src.column);
     int goalId = graph.toIndex(dest.row, dest.column);
 
@@ -183,8 +209,8 @@ Queue<Position>* Pathfinder::randomMovement(Position src, Position dest) {
 
     while (attempts < 4) {
         // Intentar línea de vista
-        Queue<Position>* lineaVistaPath = lineaVista(Position{currentId / graph.getCols()}, Position{goalId % graph.getCols()});
-        if (!lineaVistaPath->empty()) {
+        Queue<Position>* lineaVistaPath = convertLinkedListToQueue(*lineaVista(Position{currentId / graph.getCols()}, Position{goalId % graph.getCols()}));
+        if (lineaVistaPath != nullptr && !lineaVistaPath->empty()) {
             // Se encontró línea de vista directa
             // Evitar duplicar el nodo actual si ya está en totalPath
             if (!totalPath->empty() && totalPath->back() == Position{lineaVistaPath->front().row, lineaVistaPath->front().column}) {
@@ -196,7 +222,7 @@ Queue<Position>* Pathfinder::randomMovement(Position src, Position dest) {
             }
             // totalPath.insert(totalPath.end(), graph.toIndex(lineaVistaPath->front().row, lineaVistaPath->front().column),
             //     graph.toIndex(lineaVistaPath->back().row, lineaVistaPath->back().column));
-            return totalPath;
+            return convertQueueToLinkedList(*totalPath);
         }
 
         // No hay línea de vista, realizar movimiento aleatorio
@@ -264,7 +290,7 @@ Queue<Position>* Pathfinder::randomMovement(Position src, Position dest) {
         attempts++;
     }
 
-    return totalPath;
+    return convertQueueToLinkedList(*totalPath);
 }
 
 typedef std::pair<int, int> Pair;
@@ -294,7 +320,7 @@ bool isValid(int row, int col)
            && (col < COL);
 }
 
-Stack<Position>* tracePath(cell cellDetails[][COL], const Position dest) {
+LinkedList<Position>* tracePath(cell cellDetails[][COL], const Position dest) {
     auto [row, col] = dest;
 
     auto* path = new Stack<Position>();
@@ -308,7 +334,7 @@ Stack<Position>* tracePath(cell cellDetails[][COL], const Position dest) {
         col = temp_col;
     }
 
-    return path;
+    return convertStackToLinkedList(*path);
     while (!path->empty()) {
         Position p = path->top();
         path->pop();
@@ -317,7 +343,7 @@ Stack<Position>* tracePath(cell cellDetails[][COL], const Position dest) {
 }
 
 //Finish A* algorithm
-Stack<Position>* Pathfinder::aStar(const Position src, const Position dest) const {
+LinkedList<Position> *Pathfinder::aStar(const Position src, const Position dest) const {
     if (!GridGraph::isValid(src.row, src.column)) {
         printf("Start node is invalid\n");
         return nullptr;
@@ -431,7 +457,7 @@ Stack<Position>* Pathfinder::aStar(const Position src, const Position dest) cons
                 cellDetails[i - 1][j].parent_j = j;
                 printf("The destination cell is found\n");
                 foundDest = true;
-                return tracePath(cellDetails, dest);;
+                return tracePath(cellDetails, dest);
             }
             // If the successor is already on the closed
             // list or if it is blocked, then ignore it.

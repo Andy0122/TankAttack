@@ -50,6 +50,10 @@ Bullet *Controller::getBullet() const {
     return model->getBullet();
 }
 
+LinkedList<Position> *Controller::getBulletPath() const {
+    return model->getBulletPath();
+}
+
 void Controller::handleFireBullet(const Position src, const Position dest) const {
     model->handleFireBullet(src, dest);
 }
@@ -74,6 +78,10 @@ void Controller::destroyBullet() const {
     model->destroyBullet();
 }
 
+void Controller::destroyTankPath() const {
+    model->destroyTankPath();
+}
+
 void Controller::generatePowerUps() const {
     model->generatePowerUps();
 }
@@ -84,7 +92,7 @@ void Controller::handlePowerUpActivation() const {
 }
 
 
-Queue<Position>* Controller::getTankPath() const {
+LinkedList<Position> *Controller::getTankPath() const {
     return model->getTankPath();
 }
 

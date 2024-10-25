@@ -29,7 +29,7 @@ public:
      *
      * @param value Value to push onto the stack.
      */
-     void push(const T& value) {
+     void push(const T value) {
         auto* newNode = new Node{value, topNode};
         topNode = newNode;
         length++;

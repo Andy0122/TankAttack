@@ -1,6 +1,9 @@
 #pragma once
 
 #include <entities/Bullet.h>
+
+#include "data_structures/LinkedList.h"
+#include "data_structures/Queue.h"
 #include "entities/Player.h"
 #include "entities/Tank.h"
 #include "systems/GridGraph.h"
@@ -53,7 +56,8 @@ public:
     */
     void handleMoveTank(const Tank* tank, Position dest);
 
-    [[nodiscard]] DATA_STRUCTURES::Queue<Position>* calculatePath(Color color, POWER_UP powerUp, Position src, Position dest) const;
+    [[nodiscard]] DATA_STRUCTURES::LinkedList<Position> *calculatePath(Color color, POWER_UP powerUp, Position src,
+                                                                       Position dest) const;
 
     [[nodiscard]] int calculateProbability(Color color, POWER_UP powerUp) const;
 
@@ -72,13 +76,17 @@ public:
     */
     [[nodiscard]] Bullet* getBullet() const;
 
+    [[nodiscard]] DATA_STRUCTURES::LinkedList<Position>* getBulletPath() const;
+
+    void destroyTankPath();
+
     void handleFireBullet(Position src, Position dest);
 
     static void moveBullet(Bullet* bullet, Position position);
 
     [[nodiscard]] bool bulletHitTank() const;
 
-    void handleBulletCollision() const;
+    void handleBulletCollision();
 
     static bool tankKilled(const Tank* tank);
 
@@ -91,7 +99,7 @@ public:
     /**
     * @brief Gets the path of the tank
     */
-    [[nodiscard]] DATA_STRUCTURES::Queue<Position>* getTankPath() const;
+    [[nodiscard]] DATA_STRUCTURES::LinkedList<Position> *getTankPath() const;
 
     /**
     * @brief Sets the current player
@@ -127,7 +135,8 @@ private:
     Player* currentPlayer = nullptr; ///< Current player
     Bullet* bullet = nullptr; ///< Current bullet on map
 
-    DATA_STRUCTURES::Queue<Position>* tankPath = nullptr; ///< Path of the tank to move
+    DATA_STRUCTURES::LinkedList<Position>* tankPath = nullptr; ///< Path of the tank to move
+    DATA_STRUCTURES::LinkedList<Position>* bulletPath = nullptr; ///< Path of the bullet to move
 
     int actionsRemaining = 1; ///< Actions remaining for the current player
 
