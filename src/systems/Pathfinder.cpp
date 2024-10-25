@@ -43,11 +43,14 @@ LinkedList<Position>* convertStackToLinkedList(Stack<Position>& stack) {
     return list;
 }
 
-LinkedList<Position>* convertQueueToLinkedList(Queue<Position>& queue) {
+LinkedList<Position>* convertQueueToLinkedList(Queue<Position>* queue) {
+    if (!queue) {
+        return nullptr;
+    }
     auto* list = new LinkedList<Position>();
-    while (!queue.empty()) {
-        list->append(queue.front());
-        queue.pop();
+    while (!queue->empty()) {
+        list->append(queue->front());
+        queue->pop();
     }
     return list;
 }
@@ -177,7 +180,7 @@ LinkedList<Position>* Pathfinder::lineaVista(Position start, Position goal) cons
             }
             path->push(Position{startRow, col});
         }
-        return convertQueueToLinkedList(*path);
+        return convertQueueToLinkedList(path);
     }
     if (startCol == goalCol) { // Move vertically
         const int rowIncrement = goalRow > startRow ? 1 : -1;
@@ -187,7 +190,7 @@ LinkedList<Position>* Pathfinder::lineaVista(Position start, Position goal) cons
             }
             path->push(Position{row, startCol});
         }
-        return convertQueueToLinkedList(*path);
+        return convertQueueToLinkedList(path);
     }
 
     return nullptr;
@@ -222,7 +225,7 @@ LinkedList<Position>* Pathfinder::randomMovement(Position src, Position dest) {
             }
             // totalPath.insert(totalPath.end(), graph.toIndex(lineaVistaPath->front().row, lineaVistaPath->front().column),
             //     graph.toIndex(lineaVistaPath->back().row, lineaVistaPath->back().column));
-            return convertQueueToLinkedList(*totalPath);
+            return convertQueueToLinkedList(totalPath);
         }
 
         // No hay línea de vista, realizar movimiento aleatorio
@@ -290,7 +293,7 @@ LinkedList<Position>* Pathfinder::randomMovement(Position src, Position dest) {
         attempts++;
     }
 
-    return convertQueueToLinkedList(*totalPath);
+    return convertQueueToLinkedList(totalPath);
 }
 
 typedef std::pair<int, int> Pair;

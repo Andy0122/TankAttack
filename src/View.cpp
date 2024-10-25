@@ -11,6 +11,8 @@
 using namespace std;
 using namespace DATA_STRUCTURES;
 
+// TODO: Add boucing bullet
+
 LinkedList<Position>* queueToLinkedList(Queue<Position>* queue) {
     auto* list = new LinkedList<Position>();
 
@@ -463,6 +465,7 @@ gboolean View::onClick(GtkWidget* widget, const GdkEventButton* event, gpointer 
             auto* moveData = new MoveData{view, selectedTank, path};
             view->soundManager.playSoundEffect("fire");
             g_timeout_add(100, moveBulletStep, moveData);
+            selectedTank->setSelected(false);
         }
     }
     view->update();
@@ -474,8 +477,8 @@ gboolean View::moveTankStep(gpointer data) {
     auto* moveData = static_cast<MoveData*>(data);
     View* view = moveData->view;
     Tank* tank = moveData->tank;
-    int currentStep = moveData->currentStep;
-    LinkedList<Position>* path = moveData->path;
+    const int currentStep = moveData->currentStep;
+    const LinkedList<Position>* path = moveData->path;
 
     if (path->size() == currentStep) {
         tank->setSelected(false);
@@ -531,9 +534,9 @@ gboolean View::moveBulletStep(gpointer data) {
     auto* moveData = static_cast<MoveData*>(data);
     auto* view = moveData->view;
     Tank* tank = moveData->tank;
-    int currentStep = moveData->currentStep;
+    const int currentStep = moveData->currentStep;
     const auto* controller = view->controller;
-    LinkedList<Position>* path = moveData->path;
+    const LinkedList<Position>* path = moveData->path;
     Bullet* bullet = controller->getBullet();
 
     if (bullet == nullptr) { // No bullet
@@ -545,9 +548,6 @@ gboolean View::moveBulletStep(gpointer data) {
     }
 
     if (path->size() == currentStep) { // Movement finished
-        tank->setSelected(false);
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
         controller->destroyBullet();
 
         view->update();

@@ -133,8 +133,6 @@ int Model::calculateProbability(const Color color, const POWER_UP powerUp) const
     return 8;
 }
 
-
-
 Player* Model::getPlayers() const {
     return players;
 }
