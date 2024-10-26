@@ -56,7 +56,7 @@ public:
     */
     void handleMoveTank(const Tank* tank, Position dest);
 
-    [[nodiscard]] DATA_STRUCTURES::LinkedList<Position> *calculatePath(Color color, POWER_UP powerUp, Position src,
+    [[nodiscard]] DATA_STRUCTURES::LinkedList<Position>* calculatePath(Color color, POWER_UP powerUp, Position src,
                                                                        Position dest) const;
 
     [[nodiscard]] int calculateProbability(Color color, POWER_UP powerUp) const;

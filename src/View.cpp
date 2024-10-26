@@ -566,7 +566,7 @@ gboolean View::moveBulletStep(gpointer data) {
     Controller::moveBullet(bullet, newPosition);
 
     // Check collision with tank
-    if (controller->bulletHitTank()) {
+    if (controller->bulletHitTank() && currentStep > 0) { // Avoid collision with the source tank at start
         controller->handleBulletCollision();
         view->soundManager.playSoundEffect("impact");
 
