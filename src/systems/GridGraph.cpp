@@ -1,12 +1,17 @@
-#include "../../include/systems/GridGraph.h"
+#include "systems/GridGraph.h"
 #include <cstdlib>
 #include <ctime>
-#include <queue>
+//#include <queue>
 #include <random>
-#include <vector>
+//#include <vector>
 #include <algorithm>
-#include <unordered_set>
+//#include <unordered_set>
+#include "data_structures/LinkedList.h"
+#include "data_structures/DynamicArray.h"
+#include "data_structures/Queue.h"
+#include "data_structures/HashSet.h"
 
+using namespace DATA_STRUCTURES;
 
 /**
  * @brief Constructor de la clase Node.
@@ -25,26 +30,34 @@ Node::Node(int id, bool accessible) : id(id), obstacle(accessible) {}
 GridGraph::GridGraph() {
     // Inicializar la cuadrícula de nodos con filas y columnas predefinidas
     int id = 0;
+    grid.resize(rows);
     for (int row = 0; row < rows; ++row) {
-        std::vector<Node> rowNodes;
+        grid[row].resize(cols);
         for (int col = 0; col < cols; ++col) {
-            rowNodes.emplace_back(id++, true); // Todos los nodos son accesibles por defecto
+            grid[row][col] = Node(id++, true);  // Todos los nodos son accesibles por defecto
         }
-        grid.push_back(rowNodes);
+
     }
 
     // Inicializar la lista de adyacencia
     adjList.resize(rows * cols);
-
-    safeNodeIdsLeft = {75, 76, 100, 101, 102, 125, 126, 127, 150, 151, 152, 175, 176, 177, 200, 201, 202, 225, 226};
-    safeNodeIdsRight = {98, 99, 122, 123, 124, 147, 148, 149, 172, 173, 174, 197, 198, 199, 222, 223, 224, 248, 249};
+    std::cout << "adjList initialized with size: " << adjList.size() << std::endl;
+    // Inicializar los nodos seguros
+    int safeLeft[] = {75, 76, 100, 101, 102, 125, 126, 127, 150, 151, 152, 175, 176, 177, 200, 201, 202, 225, 226};
+    int safeRight[] = {98, 99, 122, 123, 124, 147, 148, 149, 172, 173, 174, 197, 198, 199, 222, 223, 224, 248, 249};
+    for (int i = 0; i < sizeof(safeLeft) / sizeof(int); ++i) {
+        safeNodeIdsLeft.push_back(safeLeft[i]);
+    }
+    for (int i = 0; i < sizeof(safeRight) / sizeof(int); ++i) {
+        safeNodeIdsRight.push_back(safeRight[i]);
+    }
 }
 
 /**
  * @brief Metodo para obtener la lista de adyacencia del grafo.
  * @return Una referencia constante a la lista de adyacencia.
  */
-const std::vector<std::vector<int>>& GridGraph::getAdjList() const {
+const DynamicArray<LinkedList<int>>& GridGraph::getAdjList() const {
     return adjList;
 }
 
@@ -58,16 +71,26 @@ const std::vector<std::vector<int>>& GridGraph::getAdjList() const {
 int GridGraph::toIndex(int row, int col) const {
     return row * cols + col;
 }
-
 /**
  * @brief Conecta los nodos accesibles en la cuadrícula.
  *
  * Conecta cada nodo con sus vecinos (arriba, abajo, izquierda, derecha) si son accesibles.
  */
 void GridGraph::connectNodes() {
+    std::cout << "adjList size before connecting nodes: " << adjList.size() << std::endl;
+    if (!adjList.empty()) {
+        // Acceder a adjList[currentIndex]
+    } else {
+        std::cerr << "adjList está vacía en connectNodes()" << std::endl;
+    }
+    // Asegurar que adjList tiene el tamaño correcto
+    if (adjList.size() != rows * cols) {
+        adjList.resize(rows * cols);
+    }
+
     // Limpiar la lista de adyacencia antes de reconstruirla
-    for (auto& neighbors : adjList) {
-        neighbors.clear();
+    for (int i = 0; i < adjList.size(); ++i) {
+        adjList[i].clear();
     }
 
     for (int row = 0; row < rows; ++row) {
@@ -139,7 +162,9 @@ void GridGraph::removeTank(int row, int col) {
 void GridGraph::printGraph() const {
     for (int i = 0; i < adjList.size(); ++i) {
         std::cout << "Node " << i << " is connected to: ";
-        for (int neighbor : adjList[i]) {
+        const LinkedList<int>& neighbors = adjList[i];
+        for (int j = 0; j < neighbors.size(); ++j) {
+            int neighbor = neighbors[j];
             std::cout << neighbor << " ";
         }
         std::cout << std::endl;
@@ -200,17 +225,20 @@ const Node& GridGraph::getNode(int row, int col) const {
  */
 bool GridGraph::isSafeNode(int nodeId) const{
 
-    for (int safeNode : safeNodeIdsRight) {
+    for (int i = 0; i < safeNodeIdsRight.size(); ++i) {
+        int safeNode = safeNodeIdsRight[i];
         if (safeNode == nodeId) {
             return true;
         }
     }
 
-    for (int safeNode : safeNodeIdsLeft) {
+    for (int i = 0; i < safeNodeIdsLeft.size(); ++i) {
+        int safeNode = safeNodeIdsLeft[i];
         if (safeNode == nodeId) {
             return true;
         }
     }
+
 
     return false;
 }
@@ -356,11 +384,12 @@ Node& GridGraph::getNodeById(int id) {
 
 void GridGraph::ensureSafeNodesConnectivity() {
     // Realizar BFS desde los nodos seguros de la izquierda
-    std::queue<int> q;
-    std::unordered_set<int> visited;
+    Queue<int> q;
+    HashSet<int> visited;
 
     // Agregar todos los nodos seguros de la izquierda al inicio del BFS
-    for (int nodeId : safeNodeIdsLeft) {
+    for (int i = 0; i < safeNodeIdsLeft.size(); ++i) {
+        int nodeId = safeNodeIdsLeft[i];
         q.push(nodeId);
         visited.insert(nodeId);
     }
@@ -372,8 +401,13 @@ void GridGraph::ensureSafeNodesConnectivity() {
         q.pop();
 
         // Si hemos llegado a un nodo seguro de la derecha, entonces están conectados
-        if (std::find(safeNodeIdsRight.begin(), safeNodeIdsRight.end(), currentId) != safeNodeIdsRight.end()) {
-            connected = true;
+        for (int i = 0; i < safeNodeIdsRight.size(); ++i) {
+            if (currentId == safeNodeIdsRight[i]) {
+                connected = true;
+                break;
+            }
+        }
+        if (connected) {
             break;
         }
 
@@ -381,14 +415,15 @@ void GridGraph::ensureSafeNodesConnectivity() {
         int col = currentId % cols;
 
         // Vecinos (arriba, abajo, izquierda, derecha)
-        std::vector<int> neighbors;
+        LinkedList<int> neighbors;
         if (row > 0 && grid[row - 1][col].obstacle) neighbors.push_back(toIndex(row - 1, col));
         if (row < rows - 1 && grid[row + 1][col].obstacle) neighbors.push_back(toIndex(row + 1, col));
         if (col > 0 && grid[row][col - 1].obstacle) neighbors.push_back(toIndex(row, col - 1));
         if (col < cols - 1 && grid[row][col + 1].obstacle) neighbors.push_back(toIndex(row, col + 1));
 
-        for (int neighborId : neighbors) {
-            if (visited.find(neighborId) == visited.end()) {
+        for (int i = 0; i < neighbors.size(); ++i) {
+            int neighborId = neighbors[i];
+            if (!visited.contains(neighborId)) {
                 visited.insert(neighborId);
                 q.push(neighborId);
             }
@@ -425,17 +460,20 @@ void GridGraph::ensureSafeNodesConnectivity() {
     }
 }
 
+
 void GridGraph::ensureNoIsolatedAreas() {
     // Realizar BFS desde los nodos seguros para marcar nodos alcanzables
-    std::queue<int> q;
-    std::unordered_set<int> visited;
+    Queue<int> q;
+    HashSet<int> visited;
 
     // Agregar todos los nodos seguros al inicio del BFS
-    for (int nodeId : safeNodeIdsLeft) {
+    for (int i = 0; i < safeNodeIdsLeft.size(); ++i) {
+        int nodeId = safeNodeIdsLeft[i];
         q.push(nodeId);
         visited.insert(nodeId);
     }
-    for (int nodeId : safeNodeIdsRight) {
+    for (int i = 0; i < safeNodeIdsRight.size(); ++i) {
+        int nodeId = safeNodeIdsRight[i];
         q.push(nodeId);
         visited.insert(nodeId);
     }
@@ -448,14 +486,15 @@ void GridGraph::ensureNoIsolatedAreas() {
         int col = currentId % cols;
 
         // Vecinos (arriba, abajo, izquierda, derecha)
-        std::vector<int> neighbors;
+        LinkedList<int> neighbors;
         if (row > 0 && grid[row - 1][col].obstacle) neighbors.push_back(toIndex(row - 1, col));
         if (row < rows - 1 && grid[row + 1][col].obstacle) neighbors.push_back(toIndex(row + 1, col));
         if (col > 0 && grid[row][col - 1].obstacle) neighbors.push_back(toIndex(row, col - 1));
         if (col < cols - 1 && grid[row][col + 1].obstacle) neighbors.push_back(toIndex(row, col + 1));
 
-        for (int neighborId : neighbors) {
-            if (visited.find(neighborId) == visited.end()) {
+        for (int i = 0; i < neighbors.size(); ++i) {
+            int neighborId = neighbors[i];
+            if (!visited.contains(neighborId)) {
                 visited.insert(neighborId);
                 q.push(neighborId);
             }
@@ -466,7 +505,7 @@ void GridGraph::ensureNoIsolatedAreas() {
     for (int row = 0; row < rows; ++row) {
         for (int col = 0; col < cols; ++col) {
             int nodeId = toIndex(row, col);
-            if (grid[row][col].obstacle && visited.find(nodeId) == visited.end()) {
+            if (grid[row][col].obstacle && !visited.contains(nodeId)) {
                 grid[row][col].obstacle = false; // Hacer inaccesible
             }
         }
@@ -523,8 +562,8 @@ void GridGraph::ensureObstacleBetweenLeftAndRight() {
 }
 
 bool GridGraph::isConnected(int startId, int goalId) {
-    std::queue<int> q;
-    std::unordered_set<int> visited;
+    Queue<int> q;
+    HashSet<int> visited;
 
     q.push(startId);
     visited.insert(startId);
@@ -537,8 +576,11 @@ bool GridGraph::isConnected(int startId, int goalId) {
             return true;
         }
 
-        for (int neighborId : adjList[currentId]) {
-            if (visited.find(neighborId) == visited.end()) {
+        const LinkedList<int>& neighbors = adjList[currentId];
+
+        for (int i = 0; i < neighbors.size(); ++i) {
+            int neighborId = neighbors[i];
+            if (!visited.contains(neighborId)) {
                 visited.insert(neighborId);
                 q.push(neighborId);
             }

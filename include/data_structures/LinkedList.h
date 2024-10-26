@@ -1,104 +1,136 @@
 #ifndef LINKEDLIST_H
 #define LINKEDLIST_H
 
+#include <stdexcept>
 
 namespace DATA_STRUCTURES {
 
-/**
- * @brief Represents a linked list data structure.
- */
-template <typename T>
+template<typename T>
 class LinkedList {
-public:
-   /**
-    * @brief Creates a new linked list.
-    */
-   LinkedList() : head(nullptr), tail(nullptr), length(0) {}
-
-   /**
-    * @brief Destroys the linked list.
-    */
-    ~LinkedList(){
-          while (!empty()) {
-              const auto temp = head;
-              head = head->next;
-              delete temp;
-              length--;
-          }
-      }
-
-   /**
-    * @brief Appends a new position to the linked list.
-    *
-    * @param data The data to append.
-    */
-    void append(const T data){
-          const auto newNode = new Node{data, nullptr};
-
-          if (empty()) {
-              head = newNode;
-          } else {
-              tail->next = newNode;
-          }
-
-          tail = newNode;
-          length++;
-     }
-
-   /**
-    * @brief Gets the position at the specified index.
-    *
-    * @param index The index of the position to get.
-    * @return The data on the specified index.
-    */
-    [[nodiscard]] T at(const int index) const {
-          if (index < 0 || index >= length) {
-              return T{};
-          }
-
-          auto current = head;
-          for (auto i = 0; i < index; i++) {
-              current = current->next;
-          }
-
-          return current->data;
-    }
-
-   /**
-    * @brief Gets the size of the linked list.
-    *
-    * @return The size of the linked list.
-    */
-    [[nodiscard]] int size() const{
-       return length;
-    }
-
-   /**
-    * @brief Checks if the linked list is empty.
-    *
-    * @return True if the linked list is empty, false otherwise.
-    */
-    [[nodiscard]] bool empty() const{
-       return length == 0;
-    }
-
-
 private:
-    /**
-     * @brief Represents a node in the linked list.
-     */
     struct Node {
-     T data;
-     Node* next;
+        T data;
+        Node* next;
+
+        Node(const T& value) : data(value), next(nullptr) {}
     };
 
-    Node* head; ///< The head of the linked list.
-    Node* tail; ///< The tail of the linked list.
-    int length; ///< The length of the linked list.
+    Node* head;
+    Node* tail;
+    int length;
 
-}; // LinkedList
+public:
+    LinkedList() : head(nullptr), tail(nullptr), length(0) {}
 
+    ~LinkedList() {
+        clear();
+    }
 
-}
+    void push_back(const T& value) {
+        Node* newNode = new Node(value);
+        if (!head) {
+            head = tail = newNode;
+        } else {
+            tail->next = newNode;
+            tail = newNode;
+        }
+        ++length;
+    }
 
-#endif //LINKEDLIST_H
+    void append(const T& value) {
+        push_back(value);
+    }
+
+    void clear() {
+        Node* current = head;
+        while (current) {
+            Node* toDelete = current;
+            current = current->next;
+            delete toDelete;
+        }
+        head = tail = nullptr;
+        length = 0;
+    }
+
+    T& operator[](int index) {
+        if (index < 0 || index >= length) {
+            throw std::out_of_range("Índice fuera de rango");
+        }
+        Node* current = head;
+        for (int i = 0; i < index; ++i) {
+            current = current->next;
+        }
+        return current->data;
+    }
+
+    const T& operator[](int index) const {
+        if (index < 0 || index >= length) {
+            throw std::out_of_range("Índice fuera de rango");
+        }
+        Node* current = head;
+        for (int i = 0; i < index; ++i) {
+            current = current->next;
+        }
+        return current->data;
+    }
+
+    T& at(int index) {
+        return (*this)[index];
+    }
+
+    const T& at(int index) const {
+        return (*this)[index];
+    }
+
+    int size() const {
+        return length;
+    }
+
+    bool empty() const {
+        return length == 0;
+    }
+
+    void remove(int index) {
+        if (index < 0 || index >= length) {
+            throw std::out_of_range("Índice fuera de rango");
+        }
+
+        Node* current = head;
+        Node* previous = nullptr;
+
+        for (int i = 0; i < index; ++i) {
+            previous = current;
+            current = current->next;
+        }
+
+        if (!previous) {
+            head = current->next;
+            if (!head) {
+                tail = nullptr;
+            }
+        } else {
+            previous->next = current->next;
+            if (!current->next) {
+                tail = previous;
+            }
+        }
+
+        delete current;
+        --length;
+    }
+
+    bool contains(const T& value) const {
+        Node* current = head;
+        while (current) {
+            if (current->data == value) {
+                return true;
+            }
+            current = current->next;
+        }
+        return false;
+    }
+};
+
+} // namespace DATA_STRUCTURES
+
+#endif // LINKEDLIST_H

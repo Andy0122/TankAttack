@@ -24,7 +24,7 @@ void SoundManager::playBackgroundMusic(const std::string& filename) {
         std::cerr << "No se pudo cargar la música de fondo: " << Mix_GetError() << std::endl;
         return;
     }
-    Mix_VolumeMusic(64); // Puedes ajustar este valor entre 0 y 128
+    Mix_VolumeMusic(35); // Puedes ajustar este valor entre 0 y 128
     Mix_PlayMusic(music, -1);
 }
 

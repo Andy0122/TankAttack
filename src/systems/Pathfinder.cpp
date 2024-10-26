@@ -97,7 +97,9 @@ LinkedList<Position>* Pathfinder::bfs(Position src, Position dest) {
         }
 
         // Explorar los nodos vecinos
-        for (int neighbor : graph.getAdjList()[current]) {
+        const LinkedList<int>& neighbors = graph.getAdjList()[current];
+        for (int i = 0; i < neighbors.size(); ++i) {
+            int neighbor = neighbors[i];
             if (!visited[neighbor]) {
                 visited[neighbor] = true;
                 parent[neighbor] = current;
@@ -149,7 +151,9 @@ LinkedList<Position>* Pathfinder::dijkstra(Position src, Position dest) {
         if (currentDist > dist[current]) continue;
 
         // Explorar los nodos vecinos
-        for (int neighbor : graph.getAdjList()[current]) {
+        const LinkedList<int>& neighbors = graph.getAdjList()[current];
+        for (int i = 0; i < neighbors.size(); ++i) {
+            int neighbor = neighbors[i];
             // Suponemos un peso de 1 para cada arista
             int newDist = dist[current] + 1;
 

@@ -53,6 +53,8 @@ add_executable(TankAttack
         include/data_structures/Queue.h
         include/data_structures/LinkedList.h
         include/data_structures/Stack.h
+        include/data_structures/DynamicArray.h
+        include/data_structures/HashSet.h
         # Añade otros archivos fuente según sea necesario
 )
 

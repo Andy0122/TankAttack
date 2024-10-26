@@ -464,7 +464,7 @@ gboolean View::onClick(GtkWidget* widget, const GdkEventButton* event, gpointer 
             LinkedList<Position>* path = controller->getBulletPath();
             auto* moveData = new MoveData{view, selectedTank, path, 0};
             view->soundManager.playSoundEffect("fire");
-            g_timeout_add(500, moveBulletStep, moveData);
+            g_timeout_add(100, moveBulletStep, moveData);
             selectedTank->setSelected(false);
         }
     }
@@ -697,9 +697,8 @@ gboolean View::updateTimer(gpointer data) {
         // Format the time
         const int minutes = remainingTime / 60;
         const int seconds = remainingTime % 60;
-        char buffer[6];
+        char buffer[16]; // Aumentamos el tamaño del buffer
         snprintf(buffer, sizeof(buffer), "%02d:%02d", minutes, seconds);
-
         // Update the timer label
         gtk_label_set_text(GTK_LABEL(view->timerLabel), buffer);
 
