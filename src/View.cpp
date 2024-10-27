@@ -484,7 +484,7 @@ gboolean View::onClick(GtkWidget* widget, const GdkEventButton* event, gpointer 
 
                 LinkedList<Position>* path = controller->getTankPath();
                 auto* moveData = new MoveData{view, selectedTank, path};
-                view->moveSoundChannel = view->soundManager.playSoundEffect("move", -1);
+                view->moveSoundChannel = view->soundManager.playSoundEffect(SoundEffectType::Move, -1);
                 g_timeout_add(100, moveTankStep, moveData);
             }
         }
@@ -498,7 +498,7 @@ gboolean View::onClick(GtkWidget* widget, const GdkEventButton* event, gpointer 
 
             LinkedList<Position>* path = controller->getBulletPath();
             auto* moveData = new MoveData{view, selectedTank, path, 0};
-            view->soundManager.playSoundEffect("fire");
+            view->soundManager.playSoundEffect(SoundEffectType::Fire);
             g_timeout_add(100, moveBulletStep, moveData);
             selectedTank->setSelected(false);
         }
@@ -520,7 +520,7 @@ gboolean View::moveTankStep(gpointer data) {
 
         // Stop Sound Effect
         if (view->moveSoundChannel != -1) {
-            view->soundManager.stopSoundEffect("move");
+            view->soundManager.stopSoundEffect(SoundEffectType::Move);
             view->moveSoundChannel = -1;
         }
 
@@ -603,7 +603,7 @@ gboolean View::moveBulletStep(gpointer data) {
     // Check collision with tank
     if (controller->bulletHitTank() && currentStep > 0) { // Avoid collision with the source tank at start
         controller->handleBulletCollision();
-        view->soundManager.playSoundEffect("impact");
+        view->soundManager.playSoundEffect(SoundEffectType::Impact);
 
         if (Tank* tankHit = controller->getTankOnPosition(newPosition);
             tankKilled(tankHit)) {
@@ -652,7 +652,7 @@ void View::startExplosion(View* view, const Position position) {
     const auto explosion = Explosion{position, 0};
     view->explosions.push_back(explosion);
 
-    view->soundManager.playSoundEffect("explosion");
+    view->soundManager.playSoundEffect(SoundEffectType::Explosion);
 
     g_timeout_add(100, animateExplosions, view);
 }
@@ -752,7 +752,7 @@ void View::endGameDueToTime() {
     controller->setGameOver(true);
 
     // Play sound effect
-    soundManager.playSoundEffect("game_over");
+    soundManager.playSoundEffect(SoundEffectType::GameOver);
 
     // Show a message dialog
     if (const Player* winner = controller->determineWinner();
@@ -769,7 +769,7 @@ void View::endGameDueToDestruction(const Player* losingPlayer) {
 
     // Play sound effect
     soundManager.stopBackgroundMusic();
-    soundManager.playSoundEffect("game_over");
+    soundManager.playSoundEffect(SoundEffectType::GameOver);
 
     // Show a message dialog
     const int winner = losingPlayer->getId() == 0 ? 1 : 0;
@@ -812,11 +812,12 @@ void View::initSound() {
     // Play background music
     soundManager.playBackgroundMusic("../assets/sounds/background_music.mp3");
 
-    // Load sound effects
-    soundManager.loadSoundEffect("fire", "../assets/sounds/fire.wav");
-    soundManager.loadSoundEffect("impact", "../assets/sounds/impact.wav");
-    soundManager.loadSoundEffect("explosion", "../assets/sounds/explosion.wav");
-    soundManager.loadSoundEffect("move", "../assets/sounds/move.wav");
-    soundManager.loadSoundEffect("game_over", "../assets/sounds/game_over.wav");
+    // Cargar efectos de sonido
+    soundManager.loadSoundEffect(SoundEffectType::Fire, "../assets/sounds/fire.wav");
+    soundManager.loadSoundEffect(SoundEffectType::Impact, "../assets/sounds/impact.wav");
+    soundManager.loadSoundEffect(SoundEffectType::Explosion, "../assets/sounds/explosion.wav");
+    soundManager.loadSoundEffect(SoundEffectType::Move, "../assets/sounds/move.wav");
+    soundManager.loadSoundEffect(SoundEffectType::GameOver, "../assets/sounds/game_over.wav");
+
 }
 

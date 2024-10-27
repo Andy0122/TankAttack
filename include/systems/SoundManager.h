@@ -1,8 +1,22 @@
 #pragma once
 
 #include <string>
-#include <map>
 #include <SDL2/SDL_mixer.h>
+
+/**
+ * @brief Enumeración que representa los diferentes tipos de efectos de sonido en el juego.
+ *
+ * Esta enumeración facilita la gestión y el acceso a los efectos de sonido sin utilizar cadenas de texto.
+ */
+enum class SoundEffectType {
+ Fire,
+ Impact,
+ Explosion,
+ Move,
+ GameOver,
+ COUNT // Para obtener el número total de efectos de sonido
+};
+
 
 /**
  * @brief Clase encargada de gestionar la reproducción de música y efectos de sonido en el juego.
@@ -39,13 +53,13 @@ public:
     /**
      * @brief Reproduce un efecto de sonido.
      *
-     * @param effectName Nombre del efecto de sonido que fue previamente cargado.
+     * @param effect
      * @param loops Número de veces que se repetirá el efecto de sonido. 0 indica una reproducción única.
      * @return El canal en el que se está reproduciendo el efecto de sonido, o -1 si no se pudo reproducir.
      *
      * Reproduce un efecto de sonido y devuelve el canal donde se reproduce para mayor control.
      */
-    int playSoundEffect(const std::string &effectName, int loops = 0);
+    int playSoundEffect(SoundEffectType effect, int loops = 0);
 
     /**
      * @brief Detiene la reproducción de un efecto de sonido.
@@ -54,7 +68,7 @@ public:
      *
      * Detiene el efecto de sonido en el canal donde se estaba reproduciendo.
      */
-    void stopSoundEffect(const std::string& effectName);
+    void stopSoundEffect(SoundEffectType effectName);
 
     /**
      * @brief Detiene la reproducción de la música de fondo.
@@ -69,13 +83,13 @@ public:
      *
      * Carga un archivo de efecto de sonido en la memoria para que pueda ser reproducido posteriormente.
      */
-    void loadSoundEffect(const std::string& effectName, const std::string& filename);
+    void loadSoundEffect(SoundEffectType effectName, const std::string& filename);
 
 private:
-    /// Mapa que almacena los efectos de sonido cargados, con una clave de nombre y el valor correspondiente a un puntero de `Mix_Chunk`.
-    std::map<std::string, Mix_Chunk*> soundEffects;
+    /// Arreglo que almacena los efectos de sonido cargados, indexados por SoundEffectType.
+    Mix_Chunk* soundEffects[static_cast<int>(SoundEffectType::COUNT)] = {nullptr};
 
-    /// Mapa que almacena los canales donde se están reproduciendo los efectos de sonido, para permitir su control posterior.
-    std::map<std::string, int> playingChannels;
+    /// Arreglo que almacena los canales donde se están reproduciendo los efectos de sonido, indexados por SoundEffectType.
+    int playingChannels[static_cast<int>(SoundEffectType::COUNT)] = {-1};
 };
 
