@@ -17,7 +17,7 @@ private:
      */
     void resize() {
         capacity *= 2;
-        T* newData = static_cast<T*>(operator new[](sizeof(T) * capacity));
+        T* newData = new T[capacity];
 
         for (int i = 0; i < length; ++i) {
             newData[i] = data[i];
@@ -37,8 +37,13 @@ public:
      * @brief Constructor con capacidad inicial.
      * @param initialCapacity Capacidad inicial del arreglo.
      */
-    explicit DynamicArray(int initialCapacity) : data(new T[initialCapacity]), capacity(initialCapacity), length(0) {}
-
+    explicit DynamicArray(int initialCapacity)
+    : data(new T[initialCapacity]), capacity(initialCapacity), length(initialCapacity) {
+        // Inicializar los elementos con valores por defecto
+        for (int i = 0; i < length; ++i) {
+            data[i] = T();
+        }
+    }
     /**
      * @brief Destructor de DynamicArray.
      */
@@ -71,7 +76,6 @@ public:
         return *this;
     }
 
-
     /**
      * @brief Agrega un elemento al final del arreglo.
      * @param value Valor a agregar.
@@ -89,6 +93,8 @@ public:
     void pop_back() {
         if (length > 0) {
             --length;
+        } else {
+            throw std::out_of_range("El arreglo está vacío");
         }
     }
 
@@ -98,7 +104,24 @@ public:
      * @return Referencia al elemento.
      */
     T& operator[](int index) {
+        return at(index);
+    }
 
+    /**
+     * @brief Accede al elemento en la posición indicada (constante).
+     * @param index Índice del elemento.
+     * @return Referencia constante al elemento.
+     */
+    const T& operator[](int index) const {
+        return at(index);
+    }
+
+    /**
+     * @brief Accede al elemento en la posición indicada.
+     * @param index Índice del elemento.
+     * @return Referencia al elemento.
+     */
+    T& at(int index) {
         if (index < 0 || index >= length) {
             throw std::out_of_range("Índice fuera de rango");
         }
@@ -110,7 +133,7 @@ public:
      * @param index Índice del elemento.
      * @return Referencia constante al elemento.
      */
-    const T& operator[](int index) const {
+    const T& at(int index) const {
         if (index < 0 || index >= length) {
             throw std::out_of_range("Índice fuera de rango");
         }
@@ -163,14 +186,34 @@ public:
             for (int i = length; i < newSize; ++i) {
                 data[i] = T();
             }
-        } else if (newSize < length) {
-            // Si reducimos el tamaño, no hacemos nada con los datos excedentes
-            // Opcionalmente, podrías destruir los objetos si T es un tipo que lo requiere
         }
+        // Si newSize < length, ajustamos length
         length = newSize;
     }
 
+    void removeAt(int index) {
+        if (index < 0 || index >= length) {
+            throw std::out_of_range("Índice fuera de rango");
+        }
+        for (int i = index; i < length - 1; ++i) {
+            data[i] = data[i + 1];
+        }
+        --length;
+    }
 
+    T& back() {
+        if (length == 0) {
+            throw std::out_of_range("El arreglo está vacío");
+        }
+        return data[length - 1];
+    }
+
+    const T& back() const {
+        if (length == 0) {
+            throw std::out_of_range("El arreglo está vacío");
+        }
+        return data[length - 1];
+    }
 };
 
 } // namespace DATA_STRUCTURES

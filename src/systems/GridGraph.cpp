@@ -1,15 +1,13 @@
 #include "systems/GridGraph.h"
 #include <cstdlib>
 #include <ctime>
-//#include <queue>
 #include <random>
-//#include <vector>
 #include <algorithm>
-//#include <unordered_set>
 #include "data_structures/LinkedList.h"
 #include "data_structures/DynamicArray.h"
 #include "data_structures/Queue.h"
 #include "data_structures/HashSet.h"
+#include "data_structures/Pair.h"
 
 using namespace DATA_STRUCTURES;
 
@@ -244,7 +242,7 @@ bool GridGraph::isSafeNode(int nodeId) const{
 }
 
 struct ObstacleShape {
-    std::vector<std::pair<int, int>> cells; // Posiciones relativas de la forma
+    std::vector<Pair<int, int>> cells; // Posiciones relativas de la forma
 };
 
 static const std::vector<ObstacleShape> predefinedShapes = {
@@ -305,7 +303,7 @@ void GridGraph::generateObstacles() {
 
         // Verificar si la forma cabe en la posición y no interfiere con nodos seguros
         bool canPlace = true;
-        std::vector<std::pair<int, int>> absolutePositions;
+        std::vector<Pair<int, int>> absolutePositions;
 
         for (const auto& cell : shape.cells) {
             int row = baseRow + cell.first;

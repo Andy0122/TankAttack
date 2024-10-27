@@ -1,7 +1,6 @@
 #ifndef GRIDGRAPH_H
 #define GRIDGRAPH_H
 
-#include <vector>
 #include <iostream>
 #include "Position.h"
 #include "data_structures/DynamicArray.h"

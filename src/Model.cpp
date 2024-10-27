@@ -110,13 +110,16 @@ LinkedList<Position>* Model::calculatePath(const Color color, const POWER_UP pow
 
     if (color == Red || color == Yellow) {
         if (randomNumber <= probability) {
+            std::cout << "Se está usando BFS" << std::endl;
             return pathfinder.bfs(src, dest);
         }
     } else {
         if (randomNumber <= probability) {
+            std::cout << "Se está usando Dijkstra" << std::endl;
             return pathfinder.dijkstra(src, dest);
         }
     }
+    std::cout << "Se está usando Random Movement" << std::endl;
     return pathfinder.randomMovement(src, dest);
 
 }

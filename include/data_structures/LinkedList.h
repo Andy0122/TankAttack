@@ -53,17 +53,14 @@ public:
     }
 
     T& operator[](int index) {
-        if (index < 0 || index >= length) {
-            throw std::out_of_range("Índice fuera de rango");
-        }
-        Node* current = head;
-        for (int i = 0; i < index; ++i) {
-            current = current->next;
-        }
-        return current->data;
+        return at(index);
     }
 
     const T& operator[](int index) const {
+        return at(index);
+    }
+
+    T& at(int index) {
         if (index < 0 || index >= length) {
             throw std::out_of_range("Índice fuera de rango");
         }
@@ -74,12 +71,15 @@ public:
         return current->data;
     }
 
-    T& at(int index) {
-        return (*this)[index];
-    }
-
     const T& at(int index) const {
-        return (*this)[index];
+        if (index < 0 || index >= length) {
+            throw std::out_of_range("Índice fuera de rango");
+        }
+        Node* current = head;
+        for (int i = 0; i < index; ++i) {
+            current = current->next;
+        }
+        return current->data;
     }
 
     int size() const {
@@ -90,7 +90,7 @@ public:
         return length == 0;
     }
 
-    void remove(int index) {
+    void removeAt(int index) {
         if (index < 0 || index >= length) {
             throw std::out_of_range("Índice fuera de rango");
         }
@@ -104,6 +104,7 @@ public:
         }
 
         if (!previous) {
+            // Eliminar la cabeza
             head = current->next;
             if (!head) {
                 tail = nullptr;
@@ -128,6 +129,67 @@ public:
             current = current->next;
         }
         return false;
+    }
+
+    void insertAt(int index, const T& value) {
+        if (index < 0 || index > length) {
+            throw std::out_of_range("Índice fuera de rango");
+        }
+
+        Node* newNode = new Node(value);
+
+        if (index == 0) {
+            // Insertar al inicio
+            newNode->next = head;
+            head = newNode;
+            if (length == 0) {
+                tail = newNode;
+            }
+        } else if (index == length) {
+            // Insertar al final
+            tail->next = newNode;
+            tail = newNode;
+        } else {
+            // Insertar en medio
+            Node* current = head;
+            for (int i = 0; i < index - 1; ++i) {
+                current = current->next;
+            }
+            newNode->next = current->next;
+            current->next = newNode;
+        }
+        ++length;
+    }
+
+    T& back() {
+        if (!tail) {
+            throw std::out_of_range("La lista está vacía");
+        }
+        return tail->data;
+    }
+
+    const T& back() const {
+        if (!tail) {
+            throw std::out_of_range("La lista está vacía");
+        }
+        return tail->data;
+    }
+
+    void reverse() {
+        if (!head || !head->next) {
+            return;
+        }
+        Node* prev = nullptr;
+        Node* current = head;
+        tail = head;
+
+        while (current) {
+            Node* nextTemp = current->next;
+            current->next = prev;
+            prev = current;
+            current = nextTemp;
+        }
+        head = prev;
     }
 };
 

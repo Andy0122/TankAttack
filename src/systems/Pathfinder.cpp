@@ -1,5 +1,5 @@
 #include "../../include/systems/Pathfinder.h"
-#include <queue>
+
 #include <algorithm> // Para std::reverse
 #include <functional>
 #include <limits>
@@ -7,17 +7,21 @@
 #include <cstring>
 #include <ctime>      // Para time()
 #include <float.h>
-#include <bits/stdc++.h>
+#include <cmath>
+#include <set>
 
 #include "data_structures/LinkedList.h"
 #include "data_structures/Stack.h"
+#include "data_structures/PriorityQueue.h"
+#include "data_structures/Queue.h"
+#include "data_structures/DynamicArray.h"
+#include "data_structures/Pair.h"
 
 using namespace  std;
 using namespace DATA_STRUCTURES;
 
 #define ROW 13
 #define COL 25
-
 
 /**
  * @brief Constructor del Pathfinder.
@@ -37,7 +41,7 @@ Queue<Position>* convertStackToQueue(Stack<Position>& stack) {
 LinkedList<Position>* convertStackToLinkedList(Stack<Position>& stack) {
     auto* list = new LinkedList<Position>();
     while (!stack.empty()) {
-        list->append(stack.top());
+        list->insertAt(0, stack.top()); // Inserta al inicio
         stack.pop();
     }
     return list;
@@ -70,10 +74,17 @@ Queue<Position>* convertLinkedListToQueue(LinkedList<Position>& list) {
  * @return Un vector con los nodos que forman el camino desde el inicio hasta el objetivo.
  */
 LinkedList<Position>* Pathfinder::bfs(Position src, Position dest) {
-    std::vector<bool> visited(graph.getRows() * graph.getCols(), false);
-    std::vector<int> parent(graph.getRows() * graph.getCols(), -1); // Para reconstruir el camino.
-    std::queue<int> q;
+    DynamicArray<bool> visited(graph.getRows() * graph.getCols());
+    for (int i = 0; i < visited.size(); ++i) {
+        visited[i] = false;
+    }
 
+    DynamicArray<int> parent(graph.getRows() * graph.getCols());
+    for (int i = 0; i < parent.size(); ++i) {
+        parent[i] = -1;
+    }
+
+    Queue<int> q;
     int startId = graph.toIndex(src.row, src.column);
     int goalId = graph.toIndex(dest.row, dest.column);
 
@@ -87,13 +98,11 @@ LinkedList<Position>* Pathfinder::bfs(Position src, Position dest) {
 
         // Si llegamos al nodo objetivo, reconstruir el camino.
         if (current == goalId) {
-            auto* path = new Stack<Position>();
-            // std::vector<int> path;
+            auto* path = new LinkedList<Position>();
             for (int at = goalId; at != -1; at = parent[at]) {
-                path->push(Position{at / graph.getCols(), at % graph.getCols()});
+                path->insertAt(0, Position{at / graph.getCols(), at % graph.getCols()});
             }
-            // std::reverse(path->begin(), path->end());
-            return convertStackToLinkedList(*path);
+            return path;
         }
 
         // Explorar los nodos vecinos
@@ -109,7 +118,7 @@ LinkedList<Position>* Pathfinder::bfs(Position src, Position dest) {
     }
 
     // Si no se encuentra un camino, devolver un vector vacío.
-    return {};
+    return nullptr;
 }
 
 /**
@@ -120,17 +129,23 @@ LinkedList<Position>* Pathfinder::bfs(Position src, Position dest) {
  */
 LinkedList<Position>* Pathfinder::dijkstra(Position src, Position dest) {
     const int INF = std::numeric_limits<int>::max(); // Valor infinito para inicializar distancias.
-    std::vector<int> dist(graph.getRows() * graph.getCols() , INF); // Distancia a cada nodo.
-    std::vector<int> parent(graph.getRows() * graph.getCols() , -1); // Para reconstruir el camino.
+    DynamicArray<int> dist(graph.getRows() * graph.getCols());
+    for (int i = 0; i < dist.size(); ++i) {
+        dist[i] = INF;
+    }
 
+    DynamicArray<int> parent(graph.getRows() * graph.getCols());
+    for (int i = 0; i < parent.size(); ++i) {
+        parent[i] = -1;
+    }
     int startId = graph.toIndex(src.row, src.column);
     int goalId = graph.toIndex(dest.row, dest.column);
 
     dist[startId] = 0;
 
     // Cola de prioridad que almacena pares (distancia, nodo).
-    std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int>>, std::greater<>> pq;
-    pq.push({0, startId});
+    PriorityQueue<Pair<int, int>> pq;
+    pq.push(Pair<int, int>(0, startId));
 
     while (!pq.empty()) {
         int currentDist = pq.top().first;
@@ -139,12 +154,11 @@ LinkedList<Position>* Pathfinder::dijkstra(Position src, Position dest) {
 
         // Si llegamos al nodo objetivo, reconstruir el camino.
         if (current == goalId) {
-            auto* path = new Stack<Position>();
+            auto* path = new LinkedList<Position>();
             for (int at = goalId; at != -1; at = parent[at]) {
-                path->push(Position{at / graph.getCols(), at % graph.getCols()});
+                path->insertAt(0, Position{at / graph.getCols(), at % graph.getCols()});
             }
-            // std::reverse(path->begin(), path->end());
-            return convertStackToLinkedList(*path);
+            return path;
         }
 
         // Si la distancia actual es mayor que la mejor conocida, omitir.
@@ -166,7 +180,7 @@ LinkedList<Position>* Pathfinder::dijkstra(Position src, Position dest) {
     }
 
     // Si no se encuentra un camino, devolver un vector vacío.
-    return {};
+    return nullptr;
 }
 
 LinkedList<Position>* Pathfinder::lineaVista(Position start, Position goal) const {
@@ -210,34 +224,46 @@ LinkedList<Position>* Pathfinder::randomMovement(Position src, Position dest) {
     int goalId = graph.toIndex(dest.row, dest.column);
 
     int currentId = startId;
-    auto* totalPath = new Queue<Position>();
+    auto* totalPath = new LinkedList<Position>();
     int attempts = 0;
 
     while (attempts < 4) {
         // Intentar línea de vista
-        Queue<Position>* lineaVistaPath = convertLinkedListToQueue(*lineaVista(Position{currentId / graph.getCols()}, Position{goalId % graph.getCols()}));
+        int currentRow = currentId / graph.getCols();
+        int currentCol = currentId % graph.getCols();
+        int goalRow = goalId / graph.getCols();
+        int goalCol = goalId % graph.getCols();
+
+        Position currentPos{currentRow, currentCol};
+        Position goalPos{goalRow, goalCol};
+
+        LinkedList<Position>* lineaVistaPath = lineaVista(currentPos, goalPos);
         if (lineaVistaPath != nullptr && !lineaVistaPath->empty()) {
             // Se encontró línea de vista directa
             // Evitar duplicar el nodo actual si ya está en totalPath
-            if (!totalPath->empty() && totalPath->back() == Position{lineaVistaPath->front().row, lineaVistaPath->front().column}) {
-                lineaVistaPath->pop();
+            if (!totalPath->empty() && totalPath->at(totalPath->size() - 1) == lineaVistaPath->at(0)) {
+                lineaVistaPath->removeAt(0);
             }
             for (int i = 0; i < lineaVistaPath->size(); ++i) {
-                totalPath->push(Position{lineaVistaPath->front().row, lineaVistaPath->front().column});
-                lineaVistaPath->pop();
+                totalPath->append(lineaVistaPath->at(i));
             }
-            // totalPath.insert(totalPath.end(), graph.toIndex(lineaVistaPath->front().row, lineaVistaPath->front().column),
-            //     graph.toIndex(lineaVistaPath->back().row, lineaVistaPath->back().column));
-            return convertQueueToLinkedList(totalPath);
+            delete lineaVistaPath; // Liberar memoria
+            if (!totalPath->empty()) {
+                return totalPath;
+            } else {
+                delete totalPath;
+                return nullptr;
+            }
         }
+        delete lineaVistaPath; // Liberar memoria si no se usó
 
         // No hay línea de vista, realizar movimiento aleatorio
-        std::vector<int> randomPath;
+        DynamicArray<int> randomPath;
         int steps = 3 + std::rand() % 5; // Número aleatorio entre 3 y 7
 
         for (int i = 0; i < steps; ++i) {
             // Obtener las direcciones posibles
-            std::vector<int> directions;
+            DynamicArray<int> directions;
             int row = currentId / graph.getCols();
             int col = currentId % graph.getCols();
 
@@ -270,10 +296,9 @@ LinkedList<Position>* Pathfinder::randomMovement(Position src, Position dest) {
             int nextCol = nextId % graph.getCols();
 
             // Verificar si ya visitamos este nodo para evitar ciclos
-            if (!randomPath.empty() && randomPath.back() == nextId) {
+            if (!randomPath.empty() && randomPath[randomPath.size() - 1] == nextId) {
                 continue;
             }
-
             randomPath.push_back(nextId);
             currentId = nextId;
 
@@ -284,25 +309,38 @@ LinkedList<Position>* Pathfinder::randomMovement(Position src, Position dest) {
         }
 
         // Agregar el camino aleatorio al camino total
-        // Evitar duplicar el nodo actual si ya está en totalPath
-        if (!totalPath->empty() && totalPath->back() == Position{randomPath.front() / graph.getCols(), randomPath.front() % graph.getCols()}) {
-            randomPath.erase(randomPath.begin());
+        if (!randomPath.empty()) {
+            // Evitar duplicar el nodo actual si ya está en totalPath
+            if (!totalPath->empty() && totalPath->at(totalPath->size() - 1) == Position{randomPath[0] / graph.getCols(), randomPath[0] % graph.getCols()}) {
+                randomPath.removeAt(0);
+            }
+
+            for (int i = 0; i < randomPath.size(); ++i) {
+                totalPath->append(Position{randomPath[i] / graph.getCols(), randomPath[i] % graph.getCols()});
+            }
+
+            // Actualizar currentId al último nodo del camino aleatorio
+            currentId = randomPath[randomPath.size() - 1];
+        } else {
+            // No se pudo mover aleatoriamente
+            break;
         }
-        for (int i = 0; i < randomPath.size(); ++i) {
-            totalPath->push(Position{randomPath[i] / graph.getCols(), randomPath[i] % graph.getCols()});
-        }
-        // Intentar línea de vista desde la nueva posición
-        // currentId ya está actualizado
+
         attempts++;
     }
 
-    return convertQueueToLinkedList(totalPath);
+    if (!totalPath->empty()) {
+        return totalPath;
+    } else {
+        delete totalPath;
+        return nullptr;
+    }
 }
 
-typedef std::pair<int, int> Pair;
+typedef std::pair<int, int> IntPair;
 typedef std::pair<double, std::pair<int, int> > pPair;
 
-bool isDestination(const int row, const int col, const Pair &dest) {
+bool isDestination(const int row, const int col, const IntPair &dest) {
     return row == dest.first && col == dest.second;
 }
 
@@ -934,4 +972,3 @@ LinkedList<Position>* Pathfinder::calculateBulletPath(Position start, Position e
 
     return path;
 }
-
