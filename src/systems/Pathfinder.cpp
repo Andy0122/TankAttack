@@ -8,7 +8,7 @@
 #include <ctime>      // Para time()
 #include <float.h>
 #include <cmath>
-#include <set>
+#include <set> // para la funcion A*
 
 #include "data_structures/LinkedList.h"
 #include "data_structures/Stack.h"

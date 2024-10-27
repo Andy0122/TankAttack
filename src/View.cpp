@@ -415,7 +415,8 @@ void View::drawBullet(cairo_t *cr) const { // Add the bullet orientation
 }
 
 void View::drawExplosions(cairo_t *cr) {
-    for (const auto& explosion : explosions) {
+    for (int i = 0; i < explosions.size(); ++i) {
+        const Explosion& explosion = explosions.at(i);
         std::string key = "explosion_" + std::to_string(explosion.currentFrame + 1);
         const GdkPixbuf* pixbuf = assets[key];
 
@@ -426,6 +427,7 @@ void View::drawExplosions(cairo_t *cr) {
         cairo_paint(cr);
     }
 }
+
 
 
 gboolean View::onClick(GtkWidget* widget, const GdkEventButton* event, gpointer data) {
@@ -626,20 +628,24 @@ gboolean View::animateExplosions(gpointer data) {
     auto* view = static_cast<View*>(data);
     bool anyActive = false;
 
-    for (auto it = view->explosions.begin(); it != view->explosions.end();) {
-        it->currentFrame++;
+    int i = 0;
+    while (i < view->explosions.size()) {
+        Explosion& explosion = view->explosions.at(i);
+        explosion.currentFrame++;
 
-        if (it->currentFrame >= 7) {
-            it = view->explosions.erase(it);
+        if (explosion.currentFrame >= 7) {
+            view->explosions.removeAt(i);
+            // No incrementar 'i' ya que los elementos posteriores han sido desplazados
         } else {
             anyActive = true;
-            ++it;
+            i++;
         }
     }
     view->update();
 
     return anyActive ? TRUE : FALSE;
 }
+
 
 gboolean View::onKeyPress(GtkWidget* widget, GdkEventKey* event, gpointer data) {
     const auto* view = static_cast<View*>(data);

@@ -4,11 +4,12 @@
 #include <map>
 #include <string>
 #include <gtk/gtk.h>
-#include <vector>
 #include "entities/Bullet.h"
 #include "entities/Tank.h"
 #include "systems/GridGraph.h"
 #include "systems/SoundManager.h"
+#include "data_structures/LinkedList.h"
+
 
 struct Explosion;
 /**
@@ -39,7 +40,7 @@ private:
     GtkWidget* statusBar = nullptr;      ///< Barra de estado del juego
     GtkWidget* timerLabel = nullptr;     ///< Etiqueta para mostrar el temporizador
     std::map<std::string, GdkPixbuf*> assets; ///< Recursos gráficos del juego
-    std::vector<Explosion> explosions; ///< Lista de explosiones en curso
+    DATA_STRUCTURES::LinkedList<Explosion> explosions; ///< Lista de explosiones en curso
 
     // Constantes
     static constexpr int CELL_SIZE = 50;             ///< Tamaño de cada celda
