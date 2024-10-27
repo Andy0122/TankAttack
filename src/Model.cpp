@@ -209,6 +209,7 @@ void Model::createBullet(const Position src, const Position dest, const POWER_UP
 
     if (powerUp == ATTACK_PRECISION && currentPlayer->getPowerUpActive()) {
         bulletPath = pathfinder.aStar(src, dest);
+        bulletPath->reverse();
         currentPlayer->erasePowerUp();
     } else {
         bulletPath = pathfinder.calculateBulletPath(src, dest, 4); // 4 rebotes máximos
