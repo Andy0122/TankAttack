@@ -91,50 +91,69 @@ void View::createStatusBar(GtkWidget *vbox) {
 }
 
 
+
 void View::loadAssets() {
-    if (GdkPixbuf* originalCell = gdk_pixbuf_new_from_file("../assets/textures/accessible.png", nullptr)) {
-        assets["cell"] = gdk_pixbuf_scale_simple(originalCell, CELL_SIZE, CELL_SIZE, GDK_INTERP_BILINEAR);
+    // Cargar la celda
+    GdkPixbuf* originalCell = gdk_pixbuf_new_from_file("../assets/textures/accessible.png", nullptr);
+    if (originalCell) {
+        GdkPixbuf* scaledCell = gdk_pixbuf_scale_simple(originalCell, CELL_SIZE, CELL_SIZE, GDK_INTERP_BILINEAR);
+        assets[static_cast<int>(AssetType::Cell)] = scaledCell;
         g_object_unref(originalCell);
     }
 
-    if (GdkPixbuf* originalObstacle = gdk_pixbuf_new_from_file("../assets/textures/inaccessible.png", nullptr)) {
-        assets["obstacle"] = gdk_pixbuf_scale_simple(originalObstacle, CELL_SIZE, CELL_SIZE, GDK_INTERP_BILINEAR);
+    // Cargar el obstáculo
+    GdkPixbuf* originalObstacle = gdk_pixbuf_new_from_file("../assets/textures/inaccessible.png", nullptr);
+    if (originalObstacle) {
+        GdkPixbuf* scaledObstacle = gdk_pixbuf_scale_simple(originalObstacle, CELL_SIZE, CELL_SIZE, GDK_INTERP_BILINEAR);
+        assets[static_cast<int>(AssetType::Obstacle)] = scaledObstacle;
         g_object_unref(originalObstacle);
     }
 
-    if (GdkPixbuf* yellowTank = gdk_pixbuf_new_from_file("../assets/tanks/yellow_tank.png", nullptr)) {
-        assets["yellow_tank"] = gdk_pixbuf_scale_simple(yellowTank, CELL_SIZE, CELL_SIZE, GDK_INTERP_BILINEAR);
+    // Cargar tanques
+    GdkPixbuf* yellowTank = gdk_pixbuf_new_from_file("../assets/tanks/yellow_tank.png", nullptr);
+    if (yellowTank) {
+        GdkPixbuf* scaledYellowTank = gdk_pixbuf_scale_simple(yellowTank, CELL_SIZE, CELL_SIZE, GDK_INTERP_BILINEAR);
+        assets[static_cast<int>(AssetType::YellowTank)] = scaledYellowTank;
         g_object_unref(yellowTank);
     }
 
-    if (GdkPixbuf* redTank = gdk_pixbuf_new_from_file("../assets/tanks/red_tank.png", nullptr)) {
-        assets["red_tank"] = gdk_pixbuf_scale_simple(redTank, CELL_SIZE, CELL_SIZE, GDK_INTERP_BILINEAR);
+    GdkPixbuf* redTank = gdk_pixbuf_new_from_file("../assets/tanks/red_tank.png", nullptr);
+    if (redTank) {
+        GdkPixbuf* scaledRedTank = gdk_pixbuf_scale_simple(redTank, CELL_SIZE, CELL_SIZE, GDK_INTERP_BILINEAR);
+        assets[static_cast<int>(AssetType::RedTank)] = scaledRedTank;
         g_object_unref(redTank);
     }
 
-    if (GdkPixbuf* blueTank = gdk_pixbuf_new_from_file("../assets/tanks/blue_tank.png", nullptr)) {
-        assets["blue_tank"] = gdk_pixbuf_scale_simple(blueTank, CELL_SIZE, CELL_SIZE, GDK_INTERP_BILINEAR);
+    GdkPixbuf* blueTank = gdk_pixbuf_new_from_file("../assets/tanks/blue_tank.png", nullptr);
+    if (blueTank) {
+        GdkPixbuf* scaledBlueTank = gdk_pixbuf_scale_simple(blueTank, CELL_SIZE, CELL_SIZE, GDK_INTERP_BILINEAR);
+        assets[static_cast<int>(AssetType::BlueTank)] = scaledBlueTank;
         g_object_unref(blueTank);
     }
 
-    if (GdkPixbuf* cianTank = gdk_pixbuf_new_from_file("../assets/tanks/cian_tank.png", nullptr)) {
-        assets["cian_tank"] = gdk_pixbuf_scale_simple(cianTank, CELL_SIZE, CELL_SIZE, GDK_INTERP_BILINEAR);
+    GdkPixbuf* cianTank = gdk_pixbuf_new_from_file("../assets/tanks/cian_tank.png", nullptr);
+    if (cianTank) {
+        GdkPixbuf* scaledCianTank = gdk_pixbuf_scale_simple(cianTank, CELL_SIZE, CELL_SIZE, GDK_INTERP_BILINEAR);
+        assets[static_cast<int>(AssetType::CianTank)] = scaledCianTank;
         g_object_unref(cianTank);
     }
 
-    if (GdkPixbuf* bullet = gdk_pixbuf_new_from_file("../assets/bullet.png", nullptr)) {
-        assets["bullet"] = gdk_pixbuf_scale_simple(bullet, CELL_SIZE / 2, CELL_SIZE / 2, GDK_INTERP_BILINEAR);
+    GdkPixbuf* bullet = gdk_pixbuf_new_from_file("../assets/bullet.png", nullptr);
+    if (bullet) {
+        GdkPixbuf* scaledBullet = gdk_pixbuf_scale_simple(bullet, CELL_SIZE / 2, CELL_SIZE / 2, GDK_INTERP_BILINEAR);
+        assets[static_cast<int>(AssetType::Bullet)] = scaledBullet;
         g_object_unref(bullet);
     }
 
-    // Load explosion images
+    // Cargar explosiones
     for (int i = 1; i <= 7; ++i) {
-        string key = "explosion_" + to_string(i);
-        string filename = "../assets/explosion/explosion_" + to_string(i) + ".png";
+        std::string key = "explosion_" + std::to_string(i);
+        std::string filename = "../assets/explosion/explosion_" + std::to_string(i) + ".png";
 
-        if (GdkPixbuf* explosionImage = gdk_pixbuf_new_from_file(filename.c_str(), nullptr)) {
-            // Resize the image
-            assets[key] = gdk_pixbuf_scale_simple(explosionImage, CELL_SIZE, CELL_SIZE, GDK_INTERP_BILINEAR);
+        GdkPixbuf* explosionImage = gdk_pixbuf_new_from_file(filename.c_str(), nullptr);
+        if (explosionImage) {
+            GdkPixbuf* scaledExplosion = gdk_pixbuf_scale_simple(explosionImage, CELL_SIZE, CELL_SIZE, GDK_INTERP_BILINEAR);
+            assets[static_cast<int>(AssetType::Explosion1) + (i - 1)] = scaledExplosion;
             g_object_unref(explosionImage);
         }
     }
@@ -198,14 +217,11 @@ void View::drawTankPath(cairo_t *cr) const {
 
 
 GdkPixbuf* View::selectCellImage(const Node& node) {
-    GdkPixbuf* pixbuf = nullptr;
     if (!node.obstacle) {
-        pixbuf = assets["obstacle"];
+        return assets[static_cast<int>(AssetType::Obstacle)];
     } else {
-        pixbuf = assets["cell"];
+        return assets[static_cast<int>(AssetType::Cell)];
     }
-
-    return pixbuf;
 }
 
 void View::drawTanks(cairo_t *cr) {
@@ -239,15 +255,18 @@ void View::drawTanks(cairo_t *cr) {
 }
 
 GdkPixbuf* View::selectTankImage(const Color color) {
-    GdkPixbuf* pixbuf = nullptr;
     switch (color) {
-        case Yellow: pixbuf = assets["yellow_tank"]; break;
-        case Red: pixbuf = assets["red_tank"]; break;
-        case Cian: pixbuf = assets["cian_tank"]; break;
-        case Blue: pixbuf = assets["blue_tank"]; break;
+        case Yellow:
+            return assets[static_cast<int>(AssetType::YellowTank)];
+        case Red:
+            return assets[static_cast<int>(AssetType::RedTank)];
+        case Cian:
+            return assets[static_cast<int>(AssetType::CianTank)];
+        case Blue:
+            return assets[static_cast<int>(AssetType::BlueTank)];
+        default:
+            return nullptr;
     }
-
-    return pixbuf;
 }
 
 GdkPixbuf* View::rotateImage(const GdkPixbuf* image, const double rotationAngle) {
@@ -400,7 +419,7 @@ void View::drawBullet(cairo_t *cr) const { // Add the bullet orientation
         auto [row, column] = bullet->getPosition();
 
         // Get the bullet image
-        const GdkPixbuf* bulletImage = assets.at("bullet");
+        const GdkPixbuf* bulletImage = assets[static_cast<int>(AssetType::Bullet)];
 
         // Rotate the bullet image
         GdkPixbuf* rotatedBulletImage = rotateImage(bulletImage, bullet->getRotationAngle());
@@ -418,17 +437,31 @@ void View::drawExplosions(cairo_t *cr) {
     for (int i = 0; i < explosions.size(); ++i) {
         const Explosion& explosion = explosions.at(i);
         std::string key = "explosion_" + std::to_string(explosion.currentFrame + 1);
-        const GdkPixbuf* pixbuf = assets[key];
+        int explosionIndex = 0;
 
-        const int row = explosion.position.row;
-        const int column = explosion.position.column;
+        // Mapear la cadena "explosion_X" al enum correspondiente
+        switch (explosion.currentFrame + 1) { // Utilizamos el frame para determinar el índice
+            case 1: explosionIndex = static_cast<int>(AssetType::Explosion1); break;
+            case 2: explosionIndex = static_cast<int>(AssetType::Explosion2); break;
+            case 3: explosionIndex = static_cast<int>(AssetType::Explosion3); break;
+            case 4: explosionIndex = static_cast<int>(AssetType::Explosion4); break;
+            case 5: explosionIndex = static_cast<int>(AssetType::Explosion5); break;
+            case 6: explosionIndex = static_cast<int>(AssetType::Explosion6); break;
+            case 7: explosionIndex = static_cast<int>(AssetType::Explosion7); break;
+            default: continue; // Si el frame está fuera de rango, saltar
+        }
 
-        gdk_cairo_set_source_pixbuf(cr, pixbuf, column * CELL_SIZE, row * CELL_SIZE);
-        cairo_paint(cr);
+        const GdkPixbuf* pixbuf = assets[explosionIndex];
+
+        if (pixbuf) { // Verificar si el pixbuf existe
+            const int row = explosion.position.row;
+            const int column = explosion.position.column;
+
+            gdk_cairo_set_source_pixbuf(cr, pixbuf, column * CELL_SIZE, row * CELL_SIZE);
+            cairo_paint(cr);
+        }
     }
 }
-
-
 
 gboolean View::onClick(GtkWidget* widget, const GdkEventButton* event, gpointer data) {
     auto* view = static_cast<View*>(data);

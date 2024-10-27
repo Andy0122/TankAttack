@@ -12,6 +12,23 @@
 
 
 struct Explosion;
+enum class AssetType {
+ Cell,
+ Obstacle,
+ YellowTank,
+ RedTank,
+ BlueTank,
+ CianTank,
+ Bullet,
+ Explosion1,
+ Explosion2,
+ Explosion3,
+ Explosion4,
+ Explosion5,
+ Explosion6,
+ Explosion7,
+ COUNT // Para obtener el número total de activos
+};
 /**
  * @brief Clase que maneja la vista del juego.
  */
@@ -39,7 +56,7 @@ private:
     GtkWidget* drawingArea = nullptr;    ///< Área de dibujo del juego
     GtkWidget* statusBar = nullptr;      ///< Barra de estado del juego
     GtkWidget* timerLabel = nullptr;     ///< Etiqueta para mostrar el temporizador
-    std::map<std::string, GdkPixbuf*> assets; ///< Recursos gráficos del juego
+    GdkPixbuf* assets[static_cast<int>(AssetType::COUNT)] = {nullptr};  ///< Recursos gráficos del juego
     DATA_STRUCTURES::LinkedList<Explosion> explosions; ///< Lista de explosiones en curso
 
     // Constantes
