@@ -192,7 +192,7 @@ LinkedList<Position>* Pathfinder::lineaVista(Position start, Position goal) cons
     if (startRow == goalRow) { // Move horizontally
         const int colIncrement = goalCol > startCol ? 1 : -1;
         for (int col = startCol + colIncrement; col != goalCol + colIncrement; col += colIncrement) {
-            if (GridGraph::isValid(startCol, col) && graph.isObstacle(startRow, col)) {
+            if (GridGraph::isValid(startRow, col) && graph.isObstacle(startRow, col)) {
                 return convertQueueToLinkedList(path);
             }
             path->push(Position{startRow, col});
@@ -220,8 +220,8 @@ LinkedList<Position>* Pathfinder::lineaVista(Position start, Position goal) cons
  * @return Un vector con los nodos que forman el camino desde el inicio hasta el objetivo.
  */
 LinkedList<Position>* Pathfinder::randomMovement(Position src, Position dest) {
-    int startId = graph.toIndex(src.row, src.column);
-    int goalId = graph.toIndex(dest.row, dest.column);
+    const int startId = graph.toIndex(src.row, src.column);
+    const int goalId = graph.toIndex(dest.row, dest.column);
 
     int currentId = startId;
     auto* totalPath = new LinkedList<Position>();
@@ -229,13 +229,13 @@ LinkedList<Position>* Pathfinder::randomMovement(Position src, Position dest) {
 
     while (attempts < 4) {
         // Intentar línea de vista
-        int currentRow = currentId / graph.getCols();
-        int currentCol = currentId % graph.getCols();
-        int goalRow = goalId / graph.getCols();
-        int goalCol = goalId % graph.getCols();
+        const int currentRow = currentId / graph.getCols();
+        const int currentCol = currentId % graph.getCols();
+        const int goalRow = goalId / graph.getCols();
+        const int goalCol = goalId % graph.getCols();
 
-        Position currentPos{currentRow, currentCol};
-        Position goalPos{goalRow, goalCol};
+        const Position currentPos{currentRow, currentCol};
+        const Position goalPos{goalRow, goalCol};
 
         LinkedList<Position>* lineaVistaPath = lineaVista(currentPos, goalPos);
         if (lineaVistaPath != nullptr && !lineaVistaPath->empty()) {
@@ -250,16 +250,15 @@ LinkedList<Position>* Pathfinder::randomMovement(Position src, Position dest) {
             delete lineaVistaPath; // Liberar memoria
             if (!totalPath->empty()) {
                 return totalPath;
-            } else {
-                delete totalPath;
-                return nullptr;
             }
+            delete totalPath;
+            return nullptr;
         }
         delete lineaVistaPath; // Liberar memoria si no se usó
 
         // No hay línea de vista, realizar movimiento aleatorio
         DynamicArray<int> randomPath;
-        int steps = 3 + std::rand() % 5; // Número aleatorio entre 3 y 7
+        const int steps = 3 + std::rand() % 5; // Número aleatorio entre 3 y 7
 
         for (int i = 0; i < steps; ++i) {
             // Obtener las direcciones posibles
@@ -331,10 +330,9 @@ LinkedList<Position>* Pathfinder::randomMovement(Position src, Position dest) {
 
     if (!totalPath->empty()) {
         return totalPath;
-    } else {
-        delete totalPath;
-        return nullptr;
     }
+    delete totalPath;
+    return nullptr;
 }
 
 typedef std::pair<int, int> IntPair;
@@ -352,8 +350,7 @@ bool isDestination(int row, int col, Position dest)
 {
     if (row == dest.row && col == dest.column)
         return (true);
-    else
-        return (false);
+    return (false);
 }
 
 bool isValid(int row, int col)
@@ -379,14 +376,8 @@ LinkedList<Position>* tracePath(cell cellDetails[][COL], const Position dest) {
     }
 
     return convertStackToLinkedList(*path);
-    while (!path->empty()) {
-        Position p = path->top();
-        path->pop();
-        printf("-> (%d, %d)", p.row, p.column);
-    }
 }
 
-//Finish A* algorithm
 LinkedList<Position> *Pathfinder::aStar(const Position src, const Position dest) const {
     if (!GridGraph::isValid(src.row, src.column)) {
         printf("Start node is invalid\n");
