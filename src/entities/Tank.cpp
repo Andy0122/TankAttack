@@ -26,6 +26,14 @@ bool Tank::isSelected() const {
     return selected;
 }
 
+double Tank::getRotationAngle() const {
+    return rotationAngle;
+}
+
+Player* Tank::getPlayer() const {
+    return player;
+}
+
 void Tank::setHealth(const int newHealth) {
     health = newHealth;
 }
@@ -41,6 +49,10 @@ void Tank::setPosition(const Position newPosition) {
 
 void Tank::setSelected(const bool newState) {
     selected = newState;
+}
+
+void Tank::setRotationAngle(const double angle) {
+    rotationAngle = angle;
 }
 
 void Tank::applyDamage(const bool maxDamage) {

@@ -1,5 +1,5 @@
 #include "../../include/systems/Pathfinder.h"
-#include <queue>
+
 #include <algorithm> // Para std::reverse
 #include <functional>
 #include <limits>
@@ -7,9 +7,15 @@
 #include <cstring>
 #include <ctime>      // Para time()
 #include <float.h>
-#include <bits/stdc++.h>
+#include <cmath>
+#include <set> // para la funcion A*
 
+#include "data_structures/LinkedList.h"
 #include "data_structures/Stack.h"
+#include "data_structures/PriorityQueue.h"
+#include "data_structures/Queue.h"
+#include "data_structures/DynamicArray.h"
+#include "data_structures/Pair.h"
 
 using namespace  std;
 using namespace DATA_STRUCTURES;
@@ -17,14 +23,49 @@ using namespace DATA_STRUCTURES;
 #define ROW 13
 #define COL 25
 
-
 /**
  * @brief Constructor del Pathfinder.
  * @param g Referencia a un GridGraph.
  */
 Pathfinder::Pathfinder(GridGraph& g) : graph(g) {}
 
+Queue<Position>* convertStackToQueue(Stack<Position>& stack) {
+    auto* queue = new Queue<Position>();
+    while (!stack.empty()) {
+        queue->push(stack.top());
+        stack.pop();
+    }
+    return queue;
+}
 
+LinkedList<Position>* convertStackToLinkedList(Stack<Position>& stack) {
+    auto* list = new LinkedList<Position>();
+    while (!stack.empty()) {
+        list->insertAt(0, stack.top()); // Inserta al inicio
+        stack.pop();
+    }
+    return list;
+}
+
+LinkedList<Position>* convertQueueToLinkedList(Queue<Position>* queue) {
+    if (!queue) {
+        return nullptr;
+    }
+    auto* list = new LinkedList<Position>();
+    while (!queue->empty()) {
+        list->append(queue->front());
+        queue->pop();
+    }
+    return list;
+}
+
+Queue<Position>* convertLinkedListToQueue(LinkedList<Position>& list) {
+    auto* queue = new Queue<Position>();
+    for (int i = 0; i < list.size(); i++) {
+        queue->push(list.at(i));
+    }
+    return queue;
+}
 
 /**
  * @brief Implementación de BFS para encontrar el camino más corto desde un nodo de inicio a un nodo de destino.
@@ -32,10 +73,20 @@ Pathfinder::Pathfinder(GridGraph& g) : graph(g) {}
  * @param goalId Identificador del nodo objetivo.
  * @return Un vector con los nodos que forman el camino desde el inicio hasta el objetivo.
  */
-std::vector<int> Pathfinder::bfs(int startId, int goalId) {
-    std::vector<bool> visited(graph.getRows() * graph.getCols(), false);
-    std::vector<int> parent(graph.getRows() * graph.getCols(), -1); // Para reconstruir el camino.
-    std::queue<int> q;
+LinkedList<Position>* Pathfinder::bfs(Position src, Position dest) {
+    DynamicArray<bool> visited(graph.getRows() * graph.getCols());
+    for (int i = 0; i < visited.size(); ++i) {
+        visited[i] = false;
+    }
+
+    DynamicArray<int> parent(graph.getRows() * graph.getCols());
+    for (int i = 0; i < parent.size(); ++i) {
+        parent[i] = -1;
+    }
+
+    Queue<int> q;
+    int startId = graph.toIndex(src.row, src.column);
+    int goalId = graph.toIndex(dest.row, dest.column);
 
     // Iniciar BFS desde el nodo inicial.
     visited[startId] = true;
@@ -47,16 +98,17 @@ std::vector<int> Pathfinder::bfs(int startId, int goalId) {
 
         // Si llegamos al nodo objetivo, reconstruir el camino.
         if (current == goalId) {
-            std::vector<int> path;
+            auto* path = new LinkedList<Position>();
             for (int at = goalId; at != -1; at = parent[at]) {
-                path.push_back(at);
+                path->insertAt(0, Position{at / graph.getCols(), at % graph.getCols()});
             }
-            std::reverse(path.begin(), path.end());
             return path;
         }
 
         // Explorar los nodos vecinos
-        for (int neighbor : graph.getAdjList()[current]) {
+        const LinkedList<int>& neighbors = graph.getAdjList()[current];
+        for (int i = 0; i < neighbors.size(); ++i) {
+            int neighbor = neighbors[i];
             if (!visited[neighbor]) {
                 visited[neighbor] = true;
                 parent[neighbor] = current;
@@ -66,7 +118,7 @@ std::vector<int> Pathfinder::bfs(int startId, int goalId) {
     }
 
     // Si no se encuentra un camino, devolver un vector vacío.
-    return {};
+    return nullptr;
 }
 
 /**
@@ -75,15 +127,25 @@ std::vector<int> Pathfinder::bfs(int startId, int goalId) {
  * @param goalId Identificador del nodo objetivo.
  * @return Un vector con los nodos que forman el camino más corto desde el inicio hasta el objetivo.
  */
-std::vector<int> Pathfinder::dijkstra(int startId, int goalId) {
+LinkedList<Position>* Pathfinder::dijkstra(Position src, Position dest) {
     const int INF = std::numeric_limits<int>::max(); // Valor infinito para inicializar distancias.
-    std::vector<int> dist(graph.getRows() * graph.getCols() , INF); // Distancia a cada nodo.
-    std::vector<int> parent(graph.getRows() * graph.getCols() , -1); // Para reconstruir el camino.
+    DynamicArray<int> dist(graph.getRows() * graph.getCols());
+    for (int i = 0; i < dist.size(); ++i) {
+        dist[i] = INF;
+    }
+
+    DynamicArray<int> parent(graph.getRows() * graph.getCols());
+    for (int i = 0; i < parent.size(); ++i) {
+        parent[i] = -1;
+    }
+    int startId = graph.toIndex(src.row, src.column);
+    int goalId = graph.toIndex(dest.row, dest.column);
+
     dist[startId] = 0;
 
     // Cola de prioridad que almacena pares (distancia, nodo).
-    std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int>>, std::greater<>> pq;
-    pq.push({0, startId});
+    PriorityQueue<Pair<int, int>> pq;
+    pq.push(Pair<int, int>(0, startId));
 
     while (!pq.empty()) {
         int currentDist = pq.top().first;
@@ -92,11 +154,10 @@ std::vector<int> Pathfinder::dijkstra(int startId, int goalId) {
 
         // Si llegamos al nodo objetivo, reconstruir el camino.
         if (current == goalId) {
-            std::vector<int> path;
+            auto* path = new LinkedList<Position>();
             for (int at = goalId; at != -1; at = parent[at]) {
-                path.push_back(at);
+                path->insertAt(0, Position{at / graph.getCols(), at % graph.getCols()});
             }
-            std::reverse(path.begin(), path.end());
             return path;
         }
 
@@ -104,7 +165,9 @@ std::vector<int> Pathfinder::dijkstra(int startId, int goalId) {
         if (currentDist > dist[current]) continue;
 
         // Explorar los nodos vecinos
-        for (int neighbor : graph.getAdjList()[current]) {
+        const LinkedList<int>& neighbors = graph.getAdjList()[current];
+        for (int i = 0; i < neighbors.size(); ++i) {
+            int neighbor = neighbors[i];
             // Suponemos un peso de 1 para cada arista
             int newDist = dist[current] + 1;
 
@@ -117,36 +180,34 @@ std::vector<int> Pathfinder::dijkstra(int startId, int goalId) {
     }
 
     // Si no se encuentra un camino, devolver un vector vacío.
-    return {};
+    return nullptr;
 }
 
-
-
-Queue* Pathfinder::lineaVista(Position start, Position goal) const {
+LinkedList<Position>* Pathfinder::lineaVista(Position start, Position goal) const {
     auto [startRow, startCol] = start;
     auto [goalRow, goalCol] = goal;
 
-    auto* path = new Queue();
+    auto* path = new Queue<Position>();
 
     if (startRow == goalRow) { // Move horizontally
         const int colIncrement = goalCol > startCol ? 1 : -1;
         for (int col = startCol + colIncrement; col != goalCol + colIncrement; col += colIncrement) {
-            if (graph.isObstacle(startRow, col)) {
-                return nullptr;
+            if (GridGraph::isValid(startRow, col) && graph.isObstacle(startRow, col)) {
+                return convertQueueToLinkedList(path);
             }
             path->push(Position{startRow, col});
         }
-        return path;
+        return convertQueueToLinkedList(path);
     }
     if (startCol == goalCol) { // Move vertically
         const int rowIncrement = goalRow > startRow ? 1 : -1;
         for (int row = startRow + rowIncrement; row != goalRow + rowIncrement; row += rowIncrement) {
-            if (graph.isObstacle(row, startCol)) {
-                return nullptr;
+            if (GridGraph::isValid(row, startCol) && graph.isObstacle(row, startCol)) {
+                return convertQueueToLinkedList(path);
             }
             path->push(Position{row, startCol});
         }
-        return path;
+        return convertQueueToLinkedList(path);
     }
 
     return nullptr;
@@ -158,36 +219,50 @@ Queue* Pathfinder::lineaVista(Position start, Position goal) const {
  * @param goalId Identificador del nodo objetivo.
  * @return Un vector con los nodos que forman el camino desde el inicio hasta el objetivo.
  */
-std::vector<int> Pathfinder::randomMovement(int startId, int goalId) {
+LinkedList<Position>* Pathfinder::randomMovement(Position src, Position dest) {
+    const int startId = graph.toIndex(src.row, src.column);
+    const int goalId = graph.toIndex(dest.row, dest.column);
+
     int currentId = startId;
-    std::vector<int> totalPath;
+    auto* totalPath = new LinkedList<Position>();
     int attempts = 0;
 
     while (attempts < 4) {
         // Intentar línea de vista
-        Queue* lineaVistaPath = lineaVista(Position{currentId / graph.getCols()}, Position{goalId % graph.getCols()});
-        if (!lineaVistaPath->empty()) {
+        const int currentRow = currentId / graph.getCols();
+        const int currentCol = currentId % graph.getCols();
+        const int goalRow = goalId / graph.getCols();
+        const int goalCol = goalId % graph.getCols();
+
+        const Position currentPos{currentRow, currentCol};
+        const Position goalPos{goalRow, goalCol};
+
+        LinkedList<Position>* lineaVistaPath = lineaVista(currentPos, goalPos);
+        if (lineaVistaPath != nullptr && !lineaVistaPath->empty()) {
             // Se encontró línea de vista directa
             // Evitar duplicar el nodo actual si ya está en totalPath
-            if (!totalPath.empty() && totalPath.back() == graph.toIndex(lineaVistaPath->front().row, lineaVistaPath->front().column)) {
-                lineaVistaPath->pop();
+            if (!totalPath->empty() && totalPath->at(totalPath->size() - 1) == lineaVistaPath->at(0)) {
+                lineaVistaPath->removeAt(0);
             }
             for (int i = 0; i < lineaVistaPath->size(); ++i) {
-                totalPath.push_back(graph.toIndex(lineaVistaPath->front().row, lineaVistaPath->front().column));
-                lineaVistaPath->pop();
+                totalPath->append(lineaVistaPath->at(i));
             }
-            // totalPath.insert(totalPath.end(), graph.toIndex(lineaVistaPath->front().row, lineaVistaPath->front().column),
-            //     graph.toIndex(lineaVistaPath->back().row, lineaVistaPath->back().column));
-            return totalPath;
+            delete lineaVistaPath; // Liberar memoria
+            if (!totalPath->empty()) {
+                return totalPath;
+            }
+            delete totalPath;
+            return nullptr;
         }
+        delete lineaVistaPath; // Liberar memoria si no se usó
 
         // No hay línea de vista, realizar movimiento aleatorio
-        std::vector<int> randomPath;
-        int steps = 3 + std::rand() % 5; // Número aleatorio entre 3 y 7
+        DynamicArray<int> randomPath;
+        const int steps = 3 + std::rand() % 5; // Número aleatorio entre 3 y 7
 
         for (int i = 0; i < steps; ++i) {
             // Obtener las direcciones posibles
-            std::vector<int> directions;
+            DynamicArray<int> directions;
             int row = currentId / graph.getCols();
             int col = currentId % graph.getCols();
 
@@ -220,10 +295,9 @@ std::vector<int> Pathfinder::randomMovement(int startId, int goalId) {
             int nextCol = nextId % graph.getCols();
 
             // Verificar si ya visitamos este nodo para evitar ciclos
-            if (!randomPath.empty() && randomPath.back() == nextId) {
+            if (!randomPath.empty() && randomPath[randomPath.size() - 1] == nextId) {
                 continue;
             }
-
             randomPath.push_back(nextId);
             currentId = nextId;
 
@@ -234,24 +308,37 @@ std::vector<int> Pathfinder::randomMovement(int startId, int goalId) {
         }
 
         // Agregar el camino aleatorio al camino total
-        // Evitar duplicar el nodo actual si ya está en totalPath
-        if (!totalPath.empty() && totalPath.back() == randomPath.front()) {
-            randomPath.erase(randomPath.begin());
-        }
-        totalPath.insert(totalPath.end(), randomPath.begin(), randomPath.end());
+        if (!randomPath.empty()) {
+            // Evitar duplicar el nodo actual si ya está en totalPath
+            if (!totalPath->empty() && totalPath->at(totalPath->size() - 1) == Position{randomPath[0] / graph.getCols(), randomPath[0] % graph.getCols()}) {
+                randomPath.removeAt(0);
+            }
 
-        // Intentar línea de vista desde la nueva posición
-        // currentId ya está actualizado
+            for (int i = 0; i < randomPath.size(); ++i) {
+                totalPath->append(Position{randomPath[i] / graph.getCols(), randomPath[i] % graph.getCols()});
+            }
+
+            // Actualizar currentId al último nodo del camino aleatorio
+            currentId = randomPath[randomPath.size() - 1];
+        } else {
+            // No se pudo mover aleatoriamente
+            break;
+        }
+
         attempts++;
     }
 
-    return totalPath;
+    if (!totalPath->empty()) {
+        return totalPath;
+    }
+    delete totalPath;
+    return nullptr;
 }
 
-typedef std::pair<int, int> Pair;
+typedef std::pair<int, int> IntPair;
 typedef std::pair<double, std::pair<int, int> > pPair;
 
-bool isDestination(const int row, const int col, const Pair &dest) {
+bool isDestination(const int row, const int col, const IntPair &dest) {
     return row == dest.first && col == dest.second;
 }
 
@@ -259,19 +346,11 @@ double calculateHValue(const int row, const int col, const Position &dest) {
     return sqrt((row - dest.row) * (row - dest.row) + (col - dest.column) * (col - dest.column));
 }
 
-void convertStackToQueue(Stack& stack, Queue& queue) {
-    while (!stack.empty()) {
-        queue.push(stack.top());
-        stack.pop();
-    }
-}
-
 bool isDestination(int row, int col, Position dest)
 {
     if (row == dest.row && col == dest.column)
         return (true);
-    else
-        return (false);
+    return (false);
 }
 
 bool isValid(int row, int col)
@@ -282,10 +361,10 @@ bool isValid(int row, int col)
            && (col < COL);
 }
 
-Stack* tracePath(cell cellDetails[][COL], const Position dest) {
+LinkedList<Position>* tracePath(cell cellDetails[][COL], const Position dest) {
     auto [row, col] = dest;
 
-    auto* path = new Stack();
+    auto* path = new Stack<Position>();
 
     while (!(cellDetails[row][col].parent_i == row
             && cellDetails[row][col].parent_j == col)) {
@@ -296,16 +375,10 @@ Stack* tracePath(cell cellDetails[][COL], const Position dest) {
         col = temp_col;
     }
 
-    return path;
-    while (!path->empty()) {
-        Position p = path->top();
-        path->pop();
-        printf("-> (%d, %d)", p.row, p.column);
-    }
+    return convertStackToLinkedList(*path);
 }
 
-//Finish A* algorithm
-Stack* Pathfinder::aStar(const Position src, const Position dest) const {
+LinkedList<Position> *Pathfinder::aStar(const Position src, const Position dest) const {
     if (!GridGraph::isValid(src.row, src.column)) {
         printf("Start node is invalid\n");
         return nullptr;
@@ -419,7 +492,7 @@ Stack* Pathfinder::aStar(const Position src, const Position dest) const {
                 cellDetails[i - 1][j].parent_j = j;
                 printf("The destination cell is found\n");
                 foundDest = true;
-                return tracePath(cellDetails, dest);;
+                return tracePath(cellDetails, dest);
             }
             // If the successor is already on the closed
             // list or if it is blocked, then ignore it.
@@ -793,4 +866,100 @@ Stack* Pathfinder::aStar(const Position src, const Position dest) const {
         printf("Failed to find the Destination Cell\n");
 
     return nullptr;
+}
+
+LinkedList<Position>* Pathfinder::calculateBulletPath(Position start, Position end, int maxBounces) const {
+    auto* path = new LinkedList<Position>();
+
+    int bounces = 0;
+
+    double x = start.column + 0.5;
+    double y = start.row + 0.5;
+
+    double dx = end.column - start.column;
+    double dy = end.row - start.row;
+
+    // Normalizar el vector de dirección
+    double length = sqrt(dx * dx + dy * dy);
+    dx /= length;
+    dy /= length;
+
+    int gridX = static_cast<int>(x);
+    int gridY = static_cast<int>(y);
+
+    path->append(Position{gridY, gridX});
+
+    while (bounces <= maxBounces) {
+        x += dx;
+        y += dy;
+
+        int newGridX = static_cast<int>(x);
+        int newGridY = static_cast<int>(y);
+
+        // Verificar si cambió de celda en la cuadrícula
+        if (newGridX != gridX || newGridY != gridY) {
+            gridX = newGridX;
+            gridY = newGridY;
+
+            // Verificar límites del mapa
+            if (!GridGraph::isValid(gridY, gridX)) {
+                // Reflexionar dirección
+                if (gridX < 0 || gridX >= graph.getCols()) {
+                    dx = -dx;
+                    x += 2 * dx;
+                    bounces++;
+                }
+                if (gridY < 0 || gridY >= graph.getRows()) {
+                    dy = -dy;
+                    y += 2 * dy;
+                    bounces++;
+                }
+                if (bounces > maxBounces) {
+                    break;
+                }
+                continue;
+            }
+
+            Position pos{gridY, gridX};
+            path->append(pos);
+
+            // Verificar colisión con obstáculo
+            if (graph.isObstacle(gridY, gridX)) {
+                // Reflexionar dirección
+                double prevX = x - dx;
+                double prevY = y - dy;
+
+                int prevGridX = static_cast<int>(prevX);
+                int prevGridY = static_cast<int>(prevY);
+
+                if (gridX != prevGridX && gridY != prevGridY) {
+                    // Colisión diagonal, reflexionar ambos ejes
+                    dx = -dx;
+                    dy = -dy;
+                } else if (gridX != prevGridX) {
+                    dx = -dx;
+                } else if (gridY != prevGridY) {
+                    dy = -dy;
+                }
+                bounces++;
+
+                if (bounces > maxBounces) {
+                    break;
+                }
+
+                // Ajustar posición para evitar bucles
+                x += dx;
+                y += dy;
+                continue;
+            }
+
+            // Verificar colisión con tanque
+            if (graph.isOccupied(gridY, gridX)) {
+                // La bala golpea un tanque
+                break;
+            }
+        }
+    }
+
+    return path;
 }

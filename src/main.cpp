@@ -13,11 +13,11 @@ static void activate(GtkApplication* app, gpointer user_data) {
     gtk_widget_set_vexpand(window, TRUE);
     gtk_widget_set_hexpand(window, TRUE);
 
-    // Create view
-    auto* view = new View(window);
-
     // Create controller
-    auto* controller = new Controller(view, model);
+    auto* controller = new Controller(model);
+
+    // Create view
+    auto* view = new View(controller, window);
 
     gtk_widget_show_all(window);
 }

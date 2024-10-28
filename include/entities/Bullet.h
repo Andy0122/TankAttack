@@ -2,17 +2,7 @@
 #define BULLET_H
 
 #include "Position.h"
-#include "data_structures/Queue.h"
-#include "data_structures/Stack.h"
 
-/**
- * @brief Represents a unitary vector for the direction of the bullet.
- * X and Y values are between -1 and 1.
- */
-struct Direction {
-    int x; ///< X value.
-    int y; ///< Y value.
-};
 
 /**
  * @brief Represents a bullet in the game.
@@ -40,79 +30,31 @@ public:
     [[nodiscard]] Position getPosition() const;
 
     /**
-     * @brief Gets the direction of the bullet.
+     * @brief Gets if the bullet applies max damage.
      *
-     * @return The direction of the bullet.
+     * @return True if the bullet applies max damage, false otherwise.
      */
-    [[nodiscard]] Direction getDirection() const;
-
-    /**
-     * @brief Gets the distance the bullet has to travel.
-     *
-     * @return The distance the bullet has to travel.
-     */
-    [[nodiscard]] int getDistance() const;
-
     [[nodiscard]] bool getMaxDamage() const;
 
-    [[nodiscard]] DATA_STRUCTURES::Queue* getPath() const;
-
-    [[nodiscard]] bool reachedTarget() const;
+    [[nodiscard]] double getRotationAngle() const;
 
     /**
-     * @brief Sets the direction of the bullet.
+     * @brief Sets if the bullet applies max damage.
      *
-     * @param newDirection The new direction of the bullet.
+     * @param maxDamage True if the bullet applies max damage, false otherwise.
      */
-    void setDirection(Direction newDirection);
-
     void setMaxDamage(bool maxDamage);
 
-    void setPath(DATA_STRUCTURES::Queue& path);
+    void setRotationAngle(double angle);
 
-    void setPath(DATA_STRUCTURES::Stack& path);
-
-    /**
-    * @brief Moves the bullet.
-    *
-    * @return True if the bullet is still moving, false otherwise.
-    */
-    [[nodiscard]] bool move();
-
-    /**
-     * @brief Checks if the bullet collides with another position.
-     *
-     * @param other The position to check collision with.
-     * @return true if the bullet collides with the other position, false otherwise.
-     */
-    [[nodiscard]] bool bulletCollision(const Position& other) const;
+    void setPosition(Position position);
 
 
 private:
     Position position; ///< The position of the bullet.
     Position target; ///< The position where the bullet is aimed.
-    Direction direction{}; ///< The direction of the bullet.
-    DATA_STRUCTURES::Queue* path = nullptr; ///< The path the bullet has to follow.
-    DATA_STRUCTURES::Stack* precisePath = nullptr; ///< The precise path the bullet has to follow.
+    double rotationAngle = 0.0; ///< The rotation angle of the bullet.
     bool maxDamage = false; ///< If the bullet applies max damage.
-    int distance; ///< The distance the bullet has to travel.
-    int speed = 1; ///< The speed of the bullet.
-    float bounceAngle = 0.0; ///< The angle of the bounce.
-
-    /**
-     * @brief Calculates the direction of the bullet.
-     *
-     * @param origin The position where the bullet is created.
-     * @param target The position where the bullet is aimed.
-     */
-    void calculateDirection(Position origin, Position target);
-
-    /**
-     * @brief Calculates the distance between the bullet and the target.
-     *
-     * @return The distance between the bullet and the target.
-     */
-    [[nodiscard]] int calculateDistance() const;
 };
 
 

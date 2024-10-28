@@ -68,11 +68,32 @@ public:
     [[nodiscard]] int getColumn() const;
 
     /**
-     * @brief Checks if the tank is selected.
-     *
-     * @return True if the tank is selected, false otherwise.
-     */
+    * @brief Checks if the tank is selected.
+    *
+    * @return True if the tank is selected, false otherwise.
+    */
     [[nodiscard]] bool isSelected() const;
+
+    /**
+    * @brief Gets the rotation angle of the tank.
+    *
+    * @return The rotation angle of the tank.
+    */
+    [[nodiscard]] double getRotationAngle() const;
+
+    /**
+    * @brief Gets the player that owns the tank.
+    *
+    * @return The player that owns the tank.
+    */
+    [[nodiscard]] Player* getPlayer() const;
+
+    /**
+    * @brief Sets the position of the tank.
+    *
+    * @param newPosition New position where the tank will be placed.
+    */
+    void setPosition(Position newPosition);
 
     /**
      * @brief Sets the health of the tank.
@@ -89,44 +110,48 @@ public:
     void setColor(Color newColor);
 
     /**
-    * @brief Sets the position of the tank.
-    *
-    * @param newPosition New position where the tank will be placed.
-    */
-    void setPosition(Position newPosition);
-
-    /**
      * @brief Sets the selected state of the tank.
      *
      * @param newState New state for selected.
      */
     void setSelected(bool newState);
 
+     /**
+     * @brief Sets the rotation angle of the tank.
+     *
+     * @param angle The rotation angle to set.
+     */
+     void setRotationAngle(double angle);
+
+    /**
+     * @brief Applies damage to the tank.
+     *
+     * The damage applied depends on the tank's color.
+     *
+     * @param maxDamage True if the tank receives the maximum damage.
+     */
     void applyDamage(bool maxDamage);
 
     /**
-    * @brief Verifica si el tanque ha sido destruido.
-    * @return True si el tanque está destruido.
-    */
+     * @brief Checks if the tank is destroyed.
+     *
+     * @return True if the tank is destroyed, false otherwise.
+     */
     [[nodiscard]] bool isDestroyed() const;
 
     /**
-     * @brief Marca el tanque como destruido.
+     * @brief Sets the tank as destroyed.
      */
     void destroy();
-
-    void setRotationAngle(double angle) { rotationAngle = angle; }
-    [[nodiscard]] double getRotationAngle() const { return rotationAngle; }
-    [[nodiscard]] Player* getPlayer() const { return player; }
 
 private:
     int health; ///< The health of the tank (integer value).
     Color color; ///< The color of the tank (as a string).
     int row, column; ///< The cell position of the tank in the grid map.
     bool selected = false; ///< Indicates if the tank is selected.
-    double rotationAngle = 0.0; // Angulo de rotación en grados
-    Player* player;
-    bool destroyed = false; ///< Indica si el tanque ha sido destruido.
+    double rotationAngle = 0.0; ///< The rotation angle of the tank.
+    Player* player; ///< The player that owns the tank.
+    bool destroyed = false; ///< Indicates if the tank is destroyed.
 
     static constexpr int TANK_FULL_HEALTH = 100; ///< The full health of the tank.
 };

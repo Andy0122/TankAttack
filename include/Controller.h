@@ -1,6 +1,5 @@
 #pragma once
 
-#include "View.h"
 #include "Model.h"
 #include "systems/GridGraph.h"
 
@@ -12,10 +11,10 @@ class Controller {
 public:
     /**
     * @brief Controller Constructor
-    * @param view View of the game
+    *
     * @param model Model of the game
     */
-    Controller(View* view, Model* model);
+    explicit Controller(Model* model);
 
     /**
     * @brief Gets the map of the game
@@ -24,11 +23,72 @@ public:
     [[nodiscard]] GridGraph* getMap() const;
 
     /**
-    * @brief Updates the game state
+    * @brief Gets the tanks of the game
     */
-    void updateGameState() const;
+    [[nodiscard]] Tank* getTanks() const;
+
+    [[nodiscard]] Tank* getTankOnPosition(Position position) const;
+
+    [[nodiscard]] Tank* getSelectedTank() const;
+
+    bool allTanksDestroyed(const Player* player) const;
+
+    void handleSelectTank(Tank* tank) const;
+
+    void handleMoveTank(const Tank* tank, Position position) const;
+
+    void moveTank(Tank* tank, Position position) const;
+
+    /**
+    * @brief Gets the players of the game
+    */
+    [[nodiscard]] Player* getPlayers() const;
+
+    /**
+    * @brief Gets the current player
+    */
+    [[nodiscard]] Player* getCurrentPlayer() const;
+
+    /**
+    * @brief Gets the bullet of the game
+    */
+    [[nodiscard]] Bullet* getBullet() const;
+
+    [[nodiscard]] DATA_STRUCTURES::LinkedList<Position> *getBulletPath() const;
+
+    void handleFireBullet(Position src, Position dest) const;
+
+    static void moveBullet(Bullet* bullet, Position position) ;
+
+    [[nodiscard]] bool bulletHitTank() const;
+
+    void handleBulletCollision() const;
+
+    void handleTankDestruction(Tank* tank) const;
+
+    void destroyBullet() const;
+
+    void destroyTankPath() const;
+
+    void generatePowerUps() const;
+
+    void handlePowerUpActivation() const;
+
+    [[nodiscard]] int getRemainingTime() const;
+
+    void decreaseTime() const;
+
+    [[nodiscard]] Player* determineWinner() const;
+
+    /**
+    * @brief Gets the path of the tank
+    */
+    [[nodiscard]] DATA_STRUCTURES::LinkedList<Position> *getTankPath() const;
+
+    [[nodiscard]] bool getGameOver() const;
+
+    void setGameOver(bool gameOver) const;
 
 private:
     Model* model; ///< Model of the game
-    View* view; ///< View of the game
 };

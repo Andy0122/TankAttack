@@ -51,11 +51,12 @@ add_executable(TankAttack
         include/entities/Player.h
         src/entities/Player.cpp
         include/data_structures/Queue.h
-        src/data_structures/Queue.cpp
         include/data_structures/LinkedList.h
-        src/data_structures/LinkedList.cpp
         include/data_structures/Stack.h
-        src/data_structures/Stack.cpp
+        include/data_structures/DynamicArray.h
+        include/data_structures/HashSet.h
+        include/data_structures/PriorityQueue.h
+        include/data_structures/Pair.h
         # Añade otros archivos fuente según sea necesario
 )
 

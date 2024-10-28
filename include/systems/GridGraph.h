@@ -1,9 +1,10 @@
 #ifndef GRIDGRAPH_H
 #define GRIDGRAPH_H
 
-#include <vector>
 #include <iostream>
 #include "Position.h"
+#include "data_structures/DynamicArray.h"
+#include "data_structures/LinkedList.h"
 
 /**
  * @brief Clase que representa un nodo individual en la cuadrícula del grafo.
@@ -13,6 +14,8 @@ public:
     int id;            ///< Identificador único del nodo.
     bool obstacle;     ///< Indica si el nodo es un obstáculo (false si es accesible).
     bool occupied = false;   ///< Indica si el nodo está ocupado o no.
+
+    Node() : id(0), obstacle(true), occupied(false) {} // Constructor predeterminado
 
     /**
      * @brief Constructor del nodo.
@@ -33,10 +36,10 @@ private:
     static constexpr int cols = 25; ///< Número predefinido de columnas en la cuadrícula.
 
     // Miembros privados
-    std::vector<std::vector<Node>> grid;  ///< Matriz que contiene los nodos del grafo.
-    std::vector<std::vector<int>> adjList; ///< Lista de adyacencia para representar conexiones entre nodos.
-    std::vector<int> safeNodeIdsLeft; ///< Lista de IDs de nodos seguros de la zona izquierda.
-    std::vector<int> safeNodeIdsRight; ///< Lista de IDs de nodos seguros de la zona derecha.
+    DATA_STRUCTURES::DynamicArray<DATA_STRUCTURES::DynamicArray<Node>> grid;  ///< Matriz que contiene los nodos del grafo.
+    DATA_STRUCTURES::DynamicArray<DATA_STRUCTURES::LinkedList<int>> adjList; ///< Lista de adyacencia para representar conexiones entre nodos.
+    DATA_STRUCTURES::DynamicArray<int> safeNodeIdsLeft; ///< Lista de IDs de nodos seguros de la zona izquierda.
+    DATA_STRUCTURES::DynamicArray<int> safeNodeIdsRight; ///< Lista de IDs de nodos seguros de la zona derecha.
 
 public:
     // Constructor
@@ -105,7 +108,7 @@ public:
      * @brief Metodo para obtener la lista de adyacencia del grafo.
      * @return Una referencia constante a la lista de adyacencia.
      */
-    const std::vector<std::vector<int>>& getAdjList() const;
+    const DATA_STRUCTURES::DynamicArray<DATA_STRUCTURES::LinkedList<int>>& getAdjList() const;
 
     // Métodos de modificación
     /**
@@ -212,6 +215,12 @@ public:
      */
     void fillLargeOpenAreas();
 
+    /**
+    * @brief Verifica si una posición es válida dentro de la cuadrícula.
+    * @param row Fila de la posición.
+    * @param column Columna de la posición.
+    * @return true si la posición es válida, false en caso contrario.
+    */
     [[nodiscard]] static bool isValid(int row, int column) ;
 
 };

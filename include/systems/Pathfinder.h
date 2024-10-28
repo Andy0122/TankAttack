@@ -1,8 +1,8 @@
 #ifndef PATHFINDER_H
 #define PATHFINDER_H
 
-#include <vector>
 #include "GridGraph.h"
+#include "data_structures/LinkedList.h"
 #include "data_structures/Queue.h"
 #include "data_structures/Stack.h"
 
@@ -33,7 +33,7 @@ public:
      * @param goalId Identificador del nodo objetivo.
      * @return Un vector con los nodos que forman el camino desde el inicio hasta el objetivo.
      */
-    std::vector<int> bfs(int startId, int goalId);
+    DATA_STRUCTURES::LinkedList<Position> *bfs(Position src, Position dest);
 
 	/**
 	* @brief Implementación del algoritmo de Dijkstra para encontrar el camino más corto desde un nodo de inicio a un nodo de destino.
@@ -41,7 +41,7 @@ public:
 	* @param goalId Identificador del nodo objetivo.
 	* @return Un vector con los nodos que forman el camino más corto desde el inicio hasta el objetivo.
 	*/
-	std::vector<int> dijkstra(int startId, int goalId);
+    DATA_STRUCTURES::LinkedList<Position> *dijkstra(Position src, Position dest);
 
 	/**
 	 * @brief Search for a direct path between two positions.
@@ -49,7 +49,7 @@ public:
 	 * @param goal Goal position.
 	 * @return A pointer to queue with the found path or nullptr if there is no linear path.
 	 */
-	[[nodiscard]] DATA_STRUCTURES::Queue* lineaVista(Position start, Position goal) const;
+	[[nodiscard]] DATA_STRUCTURES::LinkedList<Position> *lineaVista(Position start, Position goal) const;
 
 	/**
 	 * @brief Metodo que intenta moverse al objetivo utilizando línea de vista y movimiento aleatorio si es necesario.
@@ -57,9 +57,19 @@ public:
 	 * @param goalId Identificador del nodo objetivo.
 	 * @return Un vector con los nodos que forman el camino desde el inicio hasta el objetivo.
 	 */
-	std::vector<int> randomMovement(int startId, int goalId);
+    DATA_STRUCTURES::LinkedList<Position> *randomMovement(Position src, Position dest);
 
-	[[nodiscard]] DATA_STRUCTURES::Stack* aStar(Position src, Position dest) const;
+	[[nodiscard]] DATA_STRUCTURES::LinkedList<Position> *aStar(Position src, Position dest) const;
+
+	/**
+	 * @brief Calcula la ruta de la bala considerando rebotes y colisiones.
+	 * @param start Posición inicial de la bala.
+	 * @param end Posición objetivo (donde se hizo clic).
+	 * @param maxBounces Número máximo de rebotes permitidos.
+	 * @return Puntero a LinkedList<Position> con la ruta calculada.
+	 */
+	DATA_STRUCTURES::LinkedList<Position>* calculateBulletPath(Position start, Position end, int maxBounces) const;
+
 };
 
 #endif // PATHFINDER_H
